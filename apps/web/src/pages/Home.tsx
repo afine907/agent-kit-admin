@@ -60,7 +60,7 @@ export default function Home() {
           <SearchBar
             value={search}
             onChange={handleSearch}
-            placeholder="搜索包名或描述..."
+            placeholder="搜索包名或描述…"
           />
         </div>
         <div className="flex gap-1 p-1 bg-secondary/50 rounded-lg border border-border/50">
@@ -68,7 +68,7 @@ export default function Home() {
             <button
               key={f.label}
               onClick={() => handleTypeChange(f.value)}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
                 type === f.value
                   ? 'bg-primary text-primary-foreground shadow-sm glow-cyan'
                   : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
@@ -103,7 +103,7 @@ export default function Home() {
 
       {/* 错误状态 */}
       {error && (
-        <div className="flex flex-col items-center justify-center py-16 animate-fade-in-up">
+        <div role="alert" aria-live="polite" className="flex flex-col items-center justify-center py-16 animate-fade-in-up">
           <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-destructive/10 border border-destructive/20 mb-4">
             <AlertCircle className="w-6 h-6 text-destructive" />
           </div>
@@ -134,7 +134,7 @@ export default function Home() {
               <button
                 onClick={() => setPage(page - 1)}
                 disabled={page === 1}
-                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-border/50 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed hover:bg-secondary/50 transition-colors"
+                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-border/50 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed hover:bg-secondary/50 transition-colors focus-visible:ring-2 focus-visible:ring-primary/20"
               >
                 <ChevronLeft className="w-4 h-4" />
                 上一页
@@ -145,7 +145,7 @@ export default function Home() {
               <button
                 onClick={() => setPage(page + 1)}
                 disabled={page === data.pagination.total_pages}
-                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-border/50 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed hover:bg-secondary/50 transition-colors"
+                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-border/50 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed hover:bg-secondary/50 transition-colors focus-visible:ring-2 focus-visible:ring-primary/20"
               >
                 下一页
                 <ChevronRight className="w-4 h-4" />

@@ -5,7 +5,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../lib/api';
-import { ArrowLeft, Search, Package, Trash2, RotateCcw, Pause, Play } from 'lucide-react';
+import { ArrowLeft, Trash2, Pause, Play } from 'lucide-react';
 
 interface AdminPackage {
   id: string;
@@ -102,7 +102,7 @@ export default function AdminPackages() {
     <div className="container mx-auto px-4 py-8">
       {/* 头部 */}
       <div className="flex items-center gap-4 mb-8">
-        <Link to="/admin" className="p-2 rounded-lg hover:bg-secondary transition-colors">
+        <Link to="/admin" aria-label="返回管理后台" className="p-2 rounded-lg hover:bg-secondary transition-colors focus-visible:ring-2 focus-visible:ring-primary/20">
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div>
@@ -116,6 +116,7 @@ export default function AdminPackages() {
         <select
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value)}
+          aria-label="筛选类型"
           className="px-4 py-2 rounded-lg bg-background border border-input"
         >
           <option value="">所有类型</option>
@@ -135,7 +136,7 @@ export default function AdminPackages() {
 
       {/* 错误提示 */}
       {error && (
-        <div className="mb-6 p-4 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive">
+        <div role="alert" aria-live="polite" className="mb-6 p-4 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive">
           {error}
         </div>
       )}
@@ -158,7 +159,7 @@ export default function AdminPackages() {
             {loading ? (
               <tr>
                 <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">
-                  加载中...
+                  加载中…
                 </td>
               </tr>
             ) : packages.length === 0 ? (
@@ -187,7 +188,7 @@ export default function AdminPackages() {
                     {pkg.downloads_count.toLocaleString()}
                   </td>
                   <td className="px-6 py-4 text-sm text-muted-foreground">
-                    {pkg.created_at ? new Date(pkg.created_at).toLocaleDateString() : '-'}
+                    {pkg.created_at ? new Date(pkg.created_at).toLocaleDateString('zh-CN') : '-'}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-end gap-2">
@@ -196,7 +197,8 @@ export default function AdminPackages() {
                           {pkg.admin_status === 'active' ? (
                             <button
                               onClick={() => handleStatusChange(pkg.id, 'suspended')}
-                              className="p-2 rounded-lg hover:bg-yellow-500/10 text-yellow-500"
+                              aria-label="下架包"
+                              className="p-2 rounded-lg hover:bg-yellow-500/10 text-yellow-500 focus-visible:ring-2 focus-visible:ring-primary/20"
                               title="下架"
                             >
                               <Pause className="w-4 h-4" />
@@ -204,7 +206,8 @@ export default function AdminPackages() {
                           ) : (
                             <button
                               onClick={() => handleStatusChange(pkg.id, 'active')}
-                              className="p-2 rounded-lg hover:bg-green-500/10 text-green-500"
+                              aria-label="恢复包"
+                              className="p-2 rounded-lg hover:bg-green-500/10 text-green-500 focus-visible:ring-2 focus-visible:ring-primary/20"
                               title="恢复"
                             >
                               <Play className="w-4 h-4" />
@@ -212,7 +215,8 @@ export default function AdminPackages() {
                           )}
                           <button
                             onClick={() => handleDelete(pkg.id)}
-                            className="p-2 rounded-lg hover:bg-red-500/10 text-red-500"
+                            aria-label="永久删除包"
+                            className="p-2 rounded-lg hover:bg-red-500/10 text-red-500 focus-visible:ring-2 focus-visible:ring-primary/20"
                             title="永久删除"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -238,14 +242,14 @@ export default function AdminPackages() {
             <button
               onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
               disabled={pagination.page <= 1}
-              className="px-4 py-2 rounded-lg border border-input hover:bg-secondary disabled:opacity-50"
+              className="px-4 py-2 rounded-lg border border-input hover:bg-secondary disabled:opacity-50 transition-colors focus-visible:ring-2 focus-visible:ring-primary/20"
             >
               上一页
             </button>
             <button
               onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
               disabled={pagination.page >= pagination.total_pages}
-              className="px-4 py-2 rounded-lg border border-input hover:bg-secondary disabled:opacity-50"
+              className="px-4 py-2 rounded-lg border border-input hover:bg-secondary disabled:opacity-50 transition-colors focus-visible:ring-2 focus-visible:ring-primary/20"
             >
               下一页
             </button>

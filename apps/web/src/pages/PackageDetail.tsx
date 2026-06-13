@@ -28,7 +28,7 @@ export default function PackageDetail() {
     return (
       <div className="container mx-auto py-16 flex flex-col items-center justify-center">
         <Loader2 className="w-6 h-6 text-primary animate-spin mb-3" />
-        <p className="text-sm text-muted-foreground font-mono">Loading package...</p>
+        <p className="text-sm text-muted-foreground font-mono">正在加载…</p>
       </div>
     );
   }

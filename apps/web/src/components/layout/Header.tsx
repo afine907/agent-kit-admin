@@ -36,7 +36,7 @@ export const Header = React.memo(function Header() {
         <nav className="flex items-center gap-1">
           <Link
             to="/"
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground rounded-md hover:bg-secondary/50 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground rounded-md hover:bg-secondary/50 transition-colors focus-visible:ring-2 focus-visible:ring-primary/20"
           >
             <Terminal className="w-3.5 h-3.5" />
             包列表
@@ -47,7 +47,7 @@ export const Header = React.memo(function Header() {
               {isAdmin && (
                 <Link
                   to="/admin"
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-orange-500 hover:text-orange-400 rounded-md hover:bg-orange-500/10 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-orange-500 hover:text-orange-400 rounded-md hover:bg-orange-500/10 transition-colors focus-visible:ring-2 focus-visible:ring-primary/20"
                 >
                   <Shield className="w-3.5 h-3.5" />
                   管理后台
@@ -55,26 +55,30 @@ export const Header = React.memo(function Header() {
               )}
               <Link
                 to="/profile"
-                className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground rounded-md hover:bg-secondary/50 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground rounded-md hover:bg-secondary/50 transition-colors focus-visible:ring-2 focus-visible:ring-primary/20"
               >
                 <User className="w-3.5 h-3.5" />
                 我的包
               </Link>
               <div className="w-px h-5 bg-border mx-1" />
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 min-w-0">
                 {user?.avatar_url && (
                   <img
                     src={user.avatar_url}
                     alt={user.username}
+                    width={24}
+                    height={24}
+                    loading="lazy"
                     className="w-6 h-6 rounded-full ring-2 ring-border"
                   />
                 )}
-                <span className="text-sm text-muted-foreground">
+                <span className="text-sm text-muted-foreground truncate">
                   {user?.display_name || user?.username}
                 </span>
                 <button
                   onClick={handleLogout}
-                  className="p-1.5 text-muted-foreground hover:text-destructive rounded-md hover:bg-destructive/10 transition-colors"
+                  aria-label="退出登录"
+                  className="p-1.5 text-muted-foreground hover:text-destructive rounded-md hover:bg-destructive/10 transition-colors focus-visible:ring-2 focus-visible:ring-primary/20"
                   title="退出登录"
                 >
                   <LogOut className="w-3.5 h-3.5" />
@@ -84,7 +88,7 @@ export const Header = React.memo(function Header() {
           ) : (
             <Link
               to="/login"
-              className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors glow-cyan"
+              className="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors glow-cyan focus-visible:ring-2 focus-visible:ring-primary/20"
             >
               登录
             </Link>

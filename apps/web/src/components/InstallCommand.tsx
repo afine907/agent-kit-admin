@@ -47,7 +47,8 @@ export const InstallCommand = React.memo(function InstallCommand({ scope, name }
       </code>
       <button
         onClick={handleCopy}
-        className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+        aria-label={copied ? '已复制' : '复制安装命令'}
+        className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors focus-visible:ring-2 focus-visible:ring-primary/20 ${
           copied
             ? 'bg-primary/20 text-primary border border-primary/30'
             : 'bg-border/50 text-muted-foreground hover:text-foreground hover:bg-border border border-transparent'

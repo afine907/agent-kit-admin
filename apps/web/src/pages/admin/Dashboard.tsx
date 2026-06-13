@@ -140,7 +140,7 @@ export default function AdminDashboard() {
                     day: 'numeric',
                   });
                 }}
-                formatter={(value: number) => [value, '下载量']}
+                formatter={(value) => [value, '下载量']}
               />
               <Line
                 type="monotone"
@@ -159,7 +159,7 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Link
           to="/admin/users"
-          className="p-6 rounded-xl bg-card border border-border hover:border-primary/50 transition-colors group"
+          className="p-6 rounded-xl bg-card border border-border hover:border-primary/50 transition-colors group focus-visible:ring-2 focus-visible:ring-primary/20"
         >
           <div className="flex items-center justify-between">
             <div>
@@ -172,7 +172,7 @@ export default function AdminDashboard() {
 
         <Link
           to="/admin/packages"
-          className="p-6 rounded-xl bg-card border border-border hover:border-primary/50 transition-colors group"
+          className="p-6 rounded-xl bg-card border border-border hover:border-primary/50 transition-colors group focus-visible:ring-2 focus-visible:ring-primary/20"
         >
           <div className="flex items-center justify-between">
             <div>

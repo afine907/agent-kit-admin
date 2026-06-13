@@ -49,7 +49,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
           </p>
           <button
             onClick={this.handleGoHome}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors focus-visible:ring-2 focus-visible:ring-primary/20"
           >
             <Home className="w-4 h-4" />
             返回首页

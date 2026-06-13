@@ -5,10 +5,10 @@
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { api, APIKeyResponse } from '../lib/api';
-import { User, Mail, Calendar, Shield, Key, Plus, Trash2, Copy, Check, AlertCircle } from 'lucide-react';
+import { User, Mail, Shield, Key, Plus, Trash2, Copy, Check, AlertCircle } from 'lucide-react';
 
 export default function Profile() {
-  const { user, updateToken } = useAuthStore();
+  const { user } = useAuthStore();
   const [isEditing, setIsEditing] = useState(false);
   const [displayName, setDisplayName] = useState(user?.display_name || '');
   const [saving, setSaving] = useState(false);
@@ -100,7 +100,7 @@ export default function Profile() {
           {!isEditing && (
             <button
               onClick={() => setIsEditing(true)}
-              className="text-sm text-primary hover:underline"
+              className="text-sm text-primary hover:underline focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:outline-none"
             >
               编辑
             </button>
@@ -114,6 +114,8 @@ export default function Profile() {
               <img
                 src={user.avatar_url}
                 alt={user.username}
+                width={80}
+                height={80}
                 className="w-20 h-20 rounded-full object-cover"
               />
             ) : (
@@ -144,7 +146,7 @@ export default function Profile() {
                   <button
                     onClick={handleSaveProfile}
                     disabled={saving}
-                    className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50"
+                    className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary/20"
                   >
                     {saving ? '保存中…' : '保存'}
                   </button>
@@ -153,7 +155,7 @@ export default function Profile() {
                       setIsEditing(false);
                       setDisplayName(user.display_name || '');
                     }}
-                    className="px-4 py-2 border border-border rounded-lg hover:bg-muted"
+                    className="px-4 py-2 border border-border rounded-lg hover:bg-muted focus-visible:ring-2 focus-visible:ring-primary/20"
                   >
                     取消
                   </button>
@@ -235,7 +237,7 @@ export default function Profile() {
             </div>
 
             {keyError && (
-              <div className="mt-2 flex items-center gap-2 text-sm text-destructive">
+              <div role="alert" aria-live="polite" className="mt-2 flex items-center gap-2 text-sm text-destructive">
                 <AlertCircle className="w-4 h-4" />
                 {keyError}
               </div>
@@ -253,7 +255,8 @@ export default function Profile() {
                   </code>
                   <button
                     onClick={handleCopyKey}
-                    className="p-2 hover:bg-muted rounded-lg"
+                    aria-label="复制 API Key"
+                    className="p-2 hover:bg-muted rounded-lg focus-visible:ring-2 focus-visible:ring-primary/20"
                     title="复制"
                   >
                     {copiedKey ? (
@@ -306,7 +309,8 @@ export default function Profile() {
                 </div>
                 <button
                   onClick={() => handleDeleteKey(key.id)}
-                  className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                  aria-label="删除 API Key"
+                  className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-primary/20"
                   title="删除"
                 >
                   <Trash2 className="w-4 h-4" />

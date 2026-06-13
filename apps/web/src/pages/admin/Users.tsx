@@ -121,7 +121,7 @@ export default function AdminUsers() {
     <div className="container mx-auto px-4 py-8">
       {/* 头部 */}
       <div className="flex items-center gap-4 mb-8">
-        <Link to="/admin" className="p-2 rounded-lg hover:bg-secondary transition-colors">
+        <Link to="/admin" aria-label="返回管理后台" className="p-2 rounded-lg hover:bg-secondary transition-colors focus-visible:ring-2 focus-visible:ring-primary/20">
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div>
@@ -136,16 +136,20 @@ export default function AdminUsers() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             type="text"
-            placeholder="搜索用户名/邮箱..."
+            name="keyword"
+            aria-label="搜索用户名或邮箱"
+            autoComplete="off"
+            placeholder="搜索用户名/邮箱…"
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-            className="w-full pl-10 pr-4 py-2 rounded-lg bg-background border border-input focus:border-primary outline-none"
+            className="w-full pl-10 pr-4 py-2 rounded-lg bg-background border border-input focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20 outline-none"
           />
         </div>
         <select
           value={roleFilter}
           onChange={(e) => setRoleFilter(e.target.value)}
+          aria-label="筛选角色"
           className="px-4 py-2 rounded-lg bg-background border border-input"
         >
           <option value="">所有角色</option>
@@ -156,6 +160,7 @@ export default function AdminUsers() {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
+          aria-label="筛选状态"
           className="px-4 py-2 rounded-lg bg-background border border-input"
         >
           <option value="">所有状态</option>
@@ -167,7 +172,7 @@ export default function AdminUsers() {
 
       {/* 错误提示 */}
       {error && (
-        <div className="mb-6 p-4 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive">
+        <div role="alert" aria-live="polite" className="mb-6 p-4 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive">
           {error}
         </div>
       )}
@@ -189,7 +194,7 @@ export default function AdminUsers() {
             {loading ? (
               <tr>
                 <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
-                  加载中...
+                  加载中…
                 </td>
               </tr>
             ) : users.length === 0 ? (
@@ -213,14 +218,15 @@ export default function AdminUsers() {
                     {user.oauth_provider === 'local' ? '本地' : user.oauth_provider}
                   </td>
                   <td className="px-6 py-4 text-sm text-muted-foreground">
-                    {user.created_at ? new Date(user.created_at).toLocaleDateString() : '-'}
+                    {user.created_at ? new Date(user.created_at).toLocaleDateString('zh-CN') : '-'}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-end gap-2">
                       {user.status === 'active' ? (
                         <button
                           onClick={() => handleStatusChange(user.id, 'suspended')}
-                          className="p-2 rounded-lg hover:bg-yellow-500/10 text-yellow-500"
+                          aria-label="停用用户"
+                          className="p-2 rounded-lg hover:bg-yellow-500/10 text-yellow-500 focus-visible:ring-2 focus-visible:ring-primary/20"
                           title="停用"
                         >
                           <UserX className="w-4 h-4" />
@@ -228,7 +234,8 @@ export default function AdminUsers() {
                       ) : (
                         <button
                           onClick={() => handleStatusChange(user.id, 'active')}
-                          className="p-2 rounded-lg hover:bg-green-500/10 text-green-500"
+                          aria-label="启用用户"
+                          className="p-2 rounded-lg hover:bg-green-500/10 text-green-500 focus-visible:ring-2 focus-visible:ring-primary/20"
                           title="启用"
                         >
                           <UserCheck className="w-4 h-4" />
@@ -237,7 +244,8 @@ export default function AdminUsers() {
                       {user.role === 'member' && (
                         <button
                           onClick={() => handleRoleChange(user.id, 'admin')}
-                          className="p-2 rounded-lg hover:bg-orange-500/10 text-orange-500"
+                          aria-label="设为管理员"
+                          className="p-2 rounded-lg hover:bg-orange-500/10 text-orange-500 focus-visible:ring-2 focus-visible:ring-primary/20"
                           title="设为管理员"
                         >
                           <Shield className="w-4 h-4" />
@@ -246,7 +254,8 @@ export default function AdminUsers() {
                       {user.role === 'admin' && (
                         <button
                           onClick={() => handleRoleChange(user.id, 'member')}
-                          className="p-2 rounded-lg hover:bg-blue-500/10 text-blue-500"
+                          aria-label="取消管理员"
+                          className="p-2 rounded-lg hover:bg-blue-500/10 text-blue-500 focus-visible:ring-2 focus-visible:ring-primary/20"
                           title="取消管理员"
                         >
                           <Shield className="w-4 h-4" />
@@ -254,7 +263,8 @@ export default function AdminUsers() {
                       )}
                       <button
                         onClick={() => handleDelete(user.id)}
-                        className="p-2 rounded-lg hover:bg-red-500/10 text-red-500"
+                        aria-label="删除用户"
+                        className="p-2 rounded-lg hover:bg-red-500/10 text-red-500 focus-visible:ring-2 focus-visible:ring-primary/20"
                         title="删除"
                       >
                         <Ban className="w-4 h-4" />
@@ -278,14 +288,14 @@ export default function AdminUsers() {
             <button
               onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
               disabled={pagination.page <= 1}
-              className="px-4 py-2 rounded-lg border border-input hover:bg-secondary disabled:opacity-50"
+              className="px-4 py-2 rounded-lg border border-input hover:bg-secondary disabled:opacity-50 transition-colors focus-visible:ring-2 focus-visible:ring-primary/20"
             >
               上一页
             </button>
             <button
               onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
               disabled={pagination.page >= pagination.total_pages}
-              className="px-4 py-2 rounded-lg border border-input hover:bg-secondary disabled:opacity-50"
+              className="px-4 py-2 rounded-lg border border-input hover:bg-secondary disabled:opacity-50 transition-colors focus-visible:ring-2 focus-visible:ring-primary/20"
             >
               下一页
             </button>

@@ -18,7 +18,7 @@ export const PackageCard = React.memo(function PackageCard({ package: pkg, index
   return (
     <Link
       to={`/packages/${pkg.scope}/${pkg.name}`}
-      className="group block p-5 rounded-xl bg-card border border-border/50 hover:border-primary/30 transition-all duration-300 card-glow animate-fade-in-up"
+      className="group block p-5 rounded-xl bg-card border border-border/50 hover:border-primary/30 transition-colors duration-300 card-glow animate-fade-in-up focus-visible:ring-2 focus-visible:ring-primary/20"
       style={{ animationDelay: `${index * 60}ms` }}
     >
       {/* 标题行 */}

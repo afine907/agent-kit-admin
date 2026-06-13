@@ -103,7 +103,7 @@ export default function Login() {
 
         {/* 错误提示 */}
         {error && (
-          <div className="mb-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+          <div role="alert" aria-live="polite" className="mb-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
             {error}
           </div>
         )}
@@ -179,7 +179,7 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary/20"
           >
             {loading ? '处理中…' : mode === 'login' ? '登录' : '注册'}
             <ArrowRight className="w-4 h-4" />
@@ -191,14 +191,14 @@ export default function Login() {
           {mode === 'login' ? (
             <span className="text-muted-foreground">
               没有账号？{' '}
-              <button onClick={() => { setMode('register'); setError(null); }} className="text-primary hover:underline">
+              <button onClick={() => { setMode('register'); setError(null); }} className="text-primary hover:underline focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:outline-none">
                 注册
               </button>
             </span>
           ) : (
             <span className="text-muted-foreground">
               已有账号？{' '}
-              <button onClick={() => { setMode('login'); setError(null); }} className="text-primary hover:underline">
+              <button onClick={() => { setMode('login'); setError(null); }} className="text-primary hover:underline focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:outline-none">
                 登录
               </button>
             </span>
