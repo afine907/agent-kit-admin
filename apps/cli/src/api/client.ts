@@ -8,11 +8,14 @@ import { configManager } from '../config/manager.js';
 // 类型定义
 export interface AuthResponse {
   token: string;
+  refresh_token?: string;
   user: {
     id: string;
     username: string;
     display_name: string;
     avatar_url?: string;
+    role?: string;
+    status?: string;
   };
 }
 
@@ -143,6 +146,46 @@ export class ApiClient {
       '/api/v1/auth/me'
     );
     return response.data;
+  }
+
+  /**
+   * 本地登录
+   */
+  async login(email: string, password: string): Promise<AuthResponse> {
+    const response = await this.client.post<AuthResponse>(
+      '/api/v1/auth/login',
+      { email, password }
+    );
+    return response.data;
+  }
+
+  /**
+   * 本地注册
+   */
+  async register(username: string, email: string, password: string, displayName?: string): Promise<AuthResponse> {
+    const response = await this.client.post<AuthResponse>(
+      '/api/v1/auth/register',
+      { username, email, password, display_name: displayName }
+    );
+    return response.data;
+  }
+
+  /**
+   * 刷新 Token
+   */
+  async refreshToken(refreshToken: string): Promise<{ token: string }> {
+    const response = await this.client.post<{ token: string }>(
+      '/api/v1/auth/refresh',
+      { refresh_token: refreshToken }
+    );
+    return response.data;
+  }
+
+  /**
+   * 登出
+   */
+  async logout(): Promise<void> {
+    await this.client.post('/api/v1/auth/logout');
   }
 
   // ============================================

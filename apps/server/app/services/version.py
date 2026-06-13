@@ -1,12 +1,13 @@
 """版本管理服务"""
 
 import re
+from fastapi import UploadFile
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.version import Version
 from app.models.package import Package
-from app.services.storage import StorageService
+from app.services.storage import get_storage_service
 from app.errors import AppError, ErrorCodes
 
 
@@ -100,14 +101,14 @@ class VersionService:
                 )
 
             if content_size > 10 * 1024:  # > 10KB，存储到 MinIO
-                storage = StorageService()
+                storage = get_storage_service()
                 content_path = f"skills/{package_id}/{version}/content.md"
                 await storage.upload_content(content_path, content.encode("utf-8"))
                 manifest["skill"]["content_url"] = content_path
                 del manifest["skill"]["content"]
 
         # 上传 tarball 到 MinIO
-        storage = StorageService()
+        storage = get_storage_service()
         package = await self.db.get(Package, package_id)
         if not package:
             raise AppError(
@@ -137,6 +138,114 @@ class VersionService:
             manifest=manifest,
             tarball_hash=tarball_hash,  # SHA256 from storage upload
             tarball_size=len(tarball_data),
+            tarball_path=tarball_path,
+            tag=tag,
+            published_by=published_by,
+        )
+        self.db.add(ver)
+
+        # 更新包的 latest_version
+        if tag == "latest":
+            package.latest_version = version  # type: ignore[assignment]
+
+        try:
+            await self.db.commit()
+        except IntegrityError:
+            await self.db.rollback()
+            raise AppError(
+                code=ErrorCodes.VERSION_ALREADY_EXISTS,
+                message=f"版本 {version} 已存在",
+                status_code=409,
+            )
+
+        await self.db.refresh(ver)
+        return ver
+
+    async def publish_version_streaming(
+        self,
+        package_id: str,
+        version: str,
+        manifest: dict,
+        tarball_file: UploadFile,
+        tag: str | None = None,
+        published_by: str | None = None,
+    ) -> Version:
+        """发布新版本 - 流式上传
+
+        使用流式上传避免将整个 tarball 读入内存。
+        大文件 (>10MB) 会临时落盘，显著减少内存压力。
+        """
+        # 验证版本号格式
+        if not SEMVER_PATTERN.match(version):
+            raise AppError(
+                code=ErrorCodes.VERSION_INVALID_SEMVER,
+                message=f"无效的版本号: {version}",
+                status_code=400,
+            )
+
+        # 检查版本号是否已存在
+        existing = await self.get_version(package_id, version)
+        if existing:
+            raise AppError(
+                code=ErrorCodes.VERSION_ALREADY_EXISTS,
+                message=f"版本 {version} 已存在",
+                status_code=409,
+            )
+
+        # 验证 manifest
+        self._validate_manifest(manifest)
+
+        # 处理 Skill content 存储
+        if manifest.get("type") == "skill" and "skill" in manifest:
+            content = manifest["skill"].get("content", "")
+            content_size = len(content.encode("utf-8"))
+
+            if content_size > 50 * 1024:  # > 50KB
+                raise AppError(
+                    code=ErrorCodes.VERSION_CONTENT_TOO_LARGE,
+                    message="Skill content 超过 50KB 限制",
+                    status_code=400,
+                )
+
+            if content_size > 10 * 1024:  # > 10KB，存储到 MinIO
+                storage = get_storage_service()
+                content_path = f"skills/{package_id}/{version}/content.md"
+                await storage.upload_content(content_path, content.encode("utf-8"))
+                manifest["skill"]["content_url"] = content_path
+                del manifest["skill"]["content"]
+
+        # 流式上传 tarball 到 MinIO
+        storage = get_storage_service()
+        package = await self.db.get(Package, package_id)
+        if not package:
+            raise AppError(
+                code=ErrorCodes.PACKAGE_NOT_FOUND,
+                message=f"包不存在: {package_id}",
+                status_code=404,
+            )
+
+        tarball_path, tarball_hash, tarball_size = await storage.upload_tarball_streaming(
+            scope=str(package.scope),
+            name=str(package.name),
+            version=version,
+            file=tarball_file,
+        )
+
+        # 确定 tag
+        is_prerelease = bool(PRERELEASE_PATTERN.search(version))
+        if not tag:
+            # 首次发布或正式版本，设为 latest
+            latest = await self.get_latest_version(package_id)
+            if not latest or not is_prerelease:
+                tag = "latest"
+
+        # 创建版本记录
+        ver = Version(
+            package_id=package_id,
+            version=version,
+            manifest=manifest,
+            tarball_hash=tarball_hash,
+            tarball_size=tarball_size,
             tarball_path=tarball_path,
             tag=tag,
             published_by=published_by,

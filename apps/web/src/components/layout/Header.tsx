@@ -5,11 +5,12 @@
 import React, { useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
-import { Terminal, LogOut, User, Boxes } from 'lucide-react';
+import { Terminal, LogOut, User, Boxes, Shield } from 'lucide-react';
 
 export const Header = React.memo(function Header() {
   const user = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isAdmin = useAuthStore((s) => s.isAdmin);
   const clearAuth = useAuthStore((s) => s.clearAuth);
   const navigate = useNavigate();
 
@@ -43,6 +44,15 @@ export const Header = React.memo(function Header() {
 
           {isAuthenticated ? (
             <>
+              {isAdmin && (
+                <Link
+                  to="/admin"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-orange-500 hover:text-orange-400 rounded-md hover:bg-orange-500/10 transition-colors"
+                >
+                  <Shield className="w-3.5 h-3.5" />
+                  管理后台
+                </Link>
+              )}
               <Link
                 to="/profile"
                 className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground rounded-md hover:bg-secondary/50 transition-colors"

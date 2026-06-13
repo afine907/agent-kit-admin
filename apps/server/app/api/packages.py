@@ -1,14 +1,17 @@
 """包管理 API 路由"""
 
-from fastapi import APIRouter, Depends, Query
+import logging
+from fastapi import APIRouter, BackgroundTasks, Depends, Query
 from fastapi.responses import RedirectResponse
+from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.services.package import PackageService
-from app.services.storage import StorageService
-from app.api.deps import get_current_user, get_current_user_optional
-from app.models.user import User
+from app.services.storage import get_storage_service
+from app.api.deps import get_current_user, get_current_user_optional, UserType
 from app.schemas.package import PackageCreate, PackageResponse, PackageListResponse
+
+logger = logging.getLogger("akit.download")
 
 router = APIRouter(prefix="/packages", tags=["packages"])
 
@@ -22,7 +25,7 @@ async def list_packages(
     order: str = Query("desc", description="排序方向"),
     page: int = Query(1, ge=1, description="页码"),
     per_page: int = Query(20, ge=1, le=100, description="每页数量"),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: UserType | None = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db),
 ):
     """列出包 (支持搜索、筛选、分页)"""
@@ -44,7 +47,7 @@ async def list_packages(
 async def get_package(
     scope: str,
     name: str,
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: UserType | None = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db),
 ):
     """获取包详情"""
@@ -56,7 +59,7 @@ async def get_package(
 @router.post("", response_model=PackageResponse, status_code=201)
 async def create_package(
     data: PackageCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: UserType = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """创建包 (需要认证)"""
@@ -79,7 +82,7 @@ async def create_package(
 async def delete_package(
     scope: str,
     name: str,
-    current_user: User = Depends(get_current_user),
+    current_user: UserType = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """删除包 (软删除，需要认证且为 owner)"""
@@ -104,7 +107,8 @@ async def delete_package(
 async def download_latest(
     scope: str,
     name: str,
-    current_user: User | None = Depends(get_current_user_optional),
+    background_tasks: BackgroundTasks,
+    current_user: UserType | None = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db),
 ):
     """下载最新版本 (302 重定向到 MinIO 预签名 URL)"""
@@ -123,8 +127,16 @@ async def download_latest(
         raise AppError(code=ErrorCodes.VERSION_NOT_FOUND, message="没有可用的版本", status_code=404)
 
     # 生成预签名 URL
-    storage = StorageService()
+    storage = get_storage_service()
     url = await storage.get_presigned_url(str(version.tarball_path))
+
+    # 使用 FastAPI BackgroundTasks 记录下载计数（请求完成后执行）
+    # 只传递 ID 字符串，避免 ORM 对象 detached 问题
+    background_tasks.add_task(
+        _record_download,
+        str(package.id),
+        str(version.id),
+    )
 
     return RedirectResponse(url=url, status_code=302)
 
@@ -134,7 +146,8 @@ async def download_version(
     scope: str,
     name: str,
     version: str,
-    current_user: User | None = Depends(get_current_user_optional),
+    background_tasks: BackgroundTasks,
+    current_user: UserType | None = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db),
 ):
     """下载指定版本 (302 重定向到 MinIO 预签名 URL)"""
@@ -153,7 +166,50 @@ async def download_version(
         raise AppError(code=ErrorCodes.VERSION_NOT_FOUND, message=f"版本 {version} 不存在", status_code=404)
 
     # 生成预签名 URL
-    storage = StorageService()
+    storage = get_storage_service()
     url = await storage.get_presigned_url(str(ver.tarball_path))
 
+    # 使用 FastAPI BackgroundTasks 记录下载计数
+    background_tasks.add_task(
+        _record_download,
+        str(package.id),
+        str(ver.id),
+    )
+
     return RedirectResponse(url=url, status_code=302)
+
+
+async def _record_download(
+    package_id: str,
+    version_id: str,
+) -> None:
+    """记录下载（后台任务）
+
+    使用独立数据库会话和原子操作更新下载计数。
+    只接收 ID 字符串，避免 ORM 对象 detached 问题。
+    下载计数失败不影响用户体验。
+    """
+    try:
+        from app.models.download import Download
+        from app.models.package import Package
+        from app.database import AsyncSessionLocal
+
+        async with AsyncSessionLocal() as session:
+            # 记录下载
+            download = Download(
+                package_id=package_id,
+                version_id=version_id,
+            )
+            session.add(download)
+
+            # 使用 SQL 原子操作更新计数，避免并发竞态
+            await session.execute(
+                update(Package)
+                .where(Package.id == package_id)
+                .values(downloads_count=Package.downloads_count + 1)
+            )
+
+            await session.commit()
+    except Exception as e:
+        # 下载计数失败只记录日志，不影响用户体验
+        logger.warning("记录下载失败 package_id=%s version_id=%s: %s", package_id, version_id, e)

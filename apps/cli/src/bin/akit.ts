@@ -8,6 +8,7 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { loginCommand } from '../commands/login.js';
+import { registerCommand } from '../commands/register.js';
 import { logoutCommand } from '../commands/logout.js';
 import { whoamiCommand } from '../commands/whoami.js';
 import { initCommand } from '../commands/init.js';
@@ -39,6 +40,7 @@ const program = new Command()
 
 // 注册所有命令
 program.addCommand(loginCommand);
+program.addCommand(registerCommand);
 program.addCommand(logoutCommand);
 program.addCommand(whoamiCommand);
 program.addCommand(initCommand);
@@ -64,6 +66,7 @@ Agent Kit Admin CLI v${version}
 
 命令:
   login       登录到 Agent Kit Registry
+  register    注册新账号
   logout      登出当前用户
   whoami      显示当前登录用户
   init        初始化项目
@@ -82,7 +85,9 @@ Agent Kit Admin CLI v${version}
   -h, --help     显示帮助信息
 
 示例:
+  akit register
   akit login
+  akit login --email user@example.com --password pass123
   akit init
   akit publish
   akit install @team/web-search

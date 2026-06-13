@@ -31,6 +31,11 @@ class ErrorCodes:
     AUTH_OAUTH_FAILED = 20001
     AUTH_FORBIDDEN = 20002
 
+    # 用户错误
+    USER_ALREADY_EXISTS = 20004  # 用户名或邮箱冲突
+    USER_SUSPENDED = 20002  # 账号已停用
+    USER_BANNED = 20002  # 账号已封禁
+
     # 包错误
     PACKAGE_NOT_FOUND = 20003
     PACKAGE_ALREADY_EXISTS = 20004

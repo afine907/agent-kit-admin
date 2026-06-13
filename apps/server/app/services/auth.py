@@ -1,16 +1,53 @@
-"""认证服务 - OAuth + JWT"""
+"""认证服务 - OAuth + JWT + 本地认证"""
 
 import secrets
 import httpx
 from datetime import datetime, timedelta, timezone
+from cachetools import TTLCache
 from jose import jwt, JWTError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import get_settings
 from app.models.user import User
 from app.errors import AppError, ErrorCodes
+from app.core.security import hash_password, verify_password
 
 settings = get_settings()
+
+# 用户信息缓存 - 最多 1000 个用户，TTL 60 秒
+# 存储 dict 而非 ORM 对象，避免 detached 问题
+# TTL 60 秒：平衡性能与安全（封禁/角色变更后最多 60 秒生效）
+_user_cache: TTLCache[str, dict] = TTLCache(maxsize=1000, ttl=60)
+
+
+class UserSnapshot:
+    """用户快照 - 用于缓存场景
+
+    不绑定数据库 session 的轻量级用户对象。
+    仅包含认证和权限检查所需的字段。
+    """
+
+    __slots__ = ("id", "username", "email", "display_name", "avatar_url", "oauth_provider", "role", "status")
+
+    def __init__(
+        self,
+        id: str,
+        username: str,
+        email: str | None = None,
+        display_name: str | None = None,
+        avatar_url: str | None = None,
+        oauth_provider: str = "local",
+        role: str = "member",
+        status: str = "active",
+    ):
+        self.id = id
+        self.username = username
+        self.email = email
+        self.display_name = display_name
+        self.avatar_url = avatar_url
+        self.oauth_provider = oauth_provider
+        self.role = role
+        self.status = status
 
 # OAuth state 存储 - 用于防止 CSRF 攻击
 # 格式: {state_token: {"provider": str, "expires": datetime}}
@@ -25,24 +62,102 @@ class AuthService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
+    @staticmethod
+    def _user_to_dict(user: User) -> dict:
+        """将 User ORM 对象转换为可缓存的 dict"""
+        return {
+            "id": str(user.id),
+            "username": user.username,
+            "email": user.email,
+            "display_name": user.display_name,
+            "avatar_url": user.avatar_url,
+            "oauth_provider": user.oauth_provider,
+            "role": user.role,
+            "status": user.status,
+        }
+
     # ============================================
     # JWT Token
     # ============================================
 
+    # Token 黑名单 - 用于登出后使 token 失效
+    # 生产环境应使用 Redis
+    _token_blacklist: set[str] = set()
+
     def create_token(self, user_id: str, username: str) -> str:
-        """生成 JWT Token"""
-        expire = datetime.now(timezone.utc) + timedelta(hours=settings.JWT_EXPIRE_HOURS)
+        """生成 Access Token"""
+        expire = datetime.now(timezone.utc) + timedelta(hours=2)  # 2小时有效
         payload = {
             "sub": str(user_id),
             "username": username,
+            "type": "access",
             "exp": expire,
         }
         return jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
 
-    async def verify_token(self, token: str) -> User | None:
+    def create_refresh_token(self, user_id: str) -> str:
+        """生成 Refresh Token"""
+        expire = datetime.now(timezone.utc) + timedelta(days=7)  # 7天有效
+        payload = {
+            "sub": str(user_id),
+            "type": "refresh",
+            "exp": expire,
+        }
+        return jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
+
+    async def verify_token(self, token: str) -> User | UserSnapshot | None:
         """验证 JWT Token 并返回用户"""
+        # 检查黑名单
+        if token in self._token_blacklist:
+            return None
+
         try:
             payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+            user_id = payload.get("sub")
+            if not user_id:
+                return None
+
+            # 先查缓存（存储的是 dict，避免 detached 问题）
+            cached_data = _user_cache.get(user_id)
+            if cached_data:
+                # 从 dict 创建轻量级 User 对象用于认证检查
+                return self._user_from_dict(cached_data)
+
+            # 缓存未命中，查数据库
+            result = await self.db.execute(select(User).where(User.id == user_id))
+            user = result.scalar_one_or_none()
+            if user:
+                # 缓存 dict，避免 ORM 对象 detached 问题
+                _user_cache[user_id] = self._user_to_dict(user)
+            return user
+        except JWTError:
+            return None
+
+    @staticmethod
+    def _user_from_dict(data: dict) -> "UserSnapshot":
+        """从 dict 创建轻量级用户快照（用于认证检查）
+
+        创建一个不绑定数据库的用户对象，仅包含认证所需字段。
+        使用 UserSnapshot 类而非 ORM 对象，避免 detached 问题。
+        """
+        return UserSnapshot(
+            id=data["id"],
+            username=data["username"],
+            email=data.get("email"),
+            display_name=data.get("display_name"),
+            avatar_url=data.get("avatar_url"),
+            oauth_provider=data.get("oauth_provider"),
+            role=data.get("role", "member"),
+            status=data.get("status", "active"),
+        )
+
+    async def verify_refresh_token(self, token: str) -> User | None:
+        """验证 Refresh Token 并返回用户"""
+        try:
+            payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+            if payload.get("type") != "refresh":
+                return None
+
             user_id = payload.get("sub")
             if not user_id:
                 return None
@@ -51,6 +166,176 @@ class AuthService:
             return result.scalar_one_or_none()
         except JWTError:
             return None
+
+    def blacklist_token(self, token: str) -> None:
+        """将 Token 加入黑名单"""
+        self._token_blacklist.add(token)
+
+    @staticmethod
+    def invalidate_user_cache(user_id: str) -> None:
+        """清除指定用户的缓存
+
+        在用户信息更新或登出时调用。
+        """
+        _user_cache.pop(user_id, None)
+
+    @staticmethod
+    def clear_user_cache() -> None:
+        """清除所有用户缓存"""
+        _user_cache.clear()
+
+    # ============================================
+    # 本地注册/登录
+    # ============================================
+
+    async def register(
+        self,
+        username: str,
+        email: str,
+        password: str,
+        display_name: str | None = None,
+    ) -> dict:
+        """本地注册"""
+        # 检查用户名是否已存在
+        result = await self.db.execute(select(User).where(User.username == username))
+        if result.scalar_one_or_none():
+            raise AppError(
+                code=ErrorCodes.USER_ALREADY_EXISTS,
+                message="用户名已存在",
+                status_code=409,
+            )
+
+        # 检查邮箱是否已存在
+        result = await self.db.execute(select(User).where(User.email == email))
+        if result.scalar_one_or_none():
+            raise AppError(
+                code=ErrorCodes.USER_ALREADY_EXISTS,
+                message="邮箱已存在",
+                status_code=409,
+            )
+
+        # 创建用户
+        user = User(
+            username=username,
+            email=email,
+            display_name=display_name or username,
+            password_hash=hash_password(password),
+            oauth_provider="local",
+            oauth_id=None,
+            role="member",
+            status="active",
+        )
+        self.db.add(user)
+        await self.db.commit()
+        await self.db.refresh(user)
+
+        # 生成 Token
+        access_token = self.create_token(str(user.id), user.username)
+        refresh_token = self.create_refresh_token(str(user.id))
+
+        return {
+            "token": access_token,
+            "refresh_token": refresh_token,
+            "user": {
+                "id": str(user.id),
+                "username": user.username,
+                "email": user.email,
+                "display_name": user.display_name,
+                "avatar_url": user.avatar_url,
+                "role": user.role,
+                "status": user.status,
+            },
+        }
+
+    async def login(self, email: str, password: str) -> dict:
+        """本地登录"""
+        # 查找用户
+        result = await self.db.execute(select(User).where(User.email == email))
+        user = result.scalar_one_or_none()
+
+        if not user:
+            raise AppError(
+                code=ErrorCodes.AUTH_REQUIRED,
+                message="邮箱或密码错误",
+                status_code=401,
+            )
+
+        # 检查账号状态
+        if user.status == "suspended":
+            raise AppError(
+                code=ErrorCodes.USER_SUSPENDED,
+                message="账号已被停用",
+                status_code=403,
+            )
+        if user.status == "banned":
+            raise AppError(
+                code=ErrorCodes.USER_BANNED,
+                message="账号已被封禁",
+                status_code=403,
+            )
+
+        # 验证密码
+        if not user.password_hash:
+            raise AppError(
+                code=ErrorCodes.AUTH_REQUIRED,
+                message="该账号不支持密码登录",
+                status_code=401,
+            )
+
+        if not verify_password(password, user.password_hash):
+            raise AppError(
+                code=ErrorCodes.AUTH_REQUIRED,
+                message="邮箱或密码错误",
+                status_code=401,
+            )
+
+        # 更新最后登录时间
+        user.last_login_at = datetime.now(timezone.utc)
+        await self.db.commit()
+        await self.db.refresh(user)
+
+        # 生成 Token
+        access_token = self.create_token(str(user.id), user.username)
+        refresh_token = self.create_refresh_token(str(user.id))
+
+        return {
+            "token": access_token,
+            "refresh_token": refresh_token,
+            "user": {
+                "id": str(user.id),
+                "username": user.username,
+                "email": user.email,
+                "display_name": user.display_name,
+                "avatar_url": user.avatar_url,
+                "role": user.role,
+                "status": user.status,
+            },
+        }
+
+    async def refresh_token(self, refresh_token: str) -> dict:
+        """刷新 Access Token"""
+        user = await self.verify_refresh_token(refresh_token)
+        if not user:
+            raise AppError(
+                code=ErrorCodes.AUTH_INVALID_TOKEN,
+                message="无效或过期的 Refresh Token",
+                status_code=401,
+            )
+
+        # 检查账号状态
+        if user.status != "active":
+            raise AppError(
+                code=ErrorCodes.AUTH_FORBIDDEN,
+                message="账号状态异常",
+                status_code=403,
+            )
+
+        # 生成新的 Access Token
+        access_token = self.create_token(str(user.id), user.username)
+
+        return {
+            "token": access_token,
+        }
 
     # ============================================
     # 开发环境登录

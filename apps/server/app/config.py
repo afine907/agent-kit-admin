@@ -69,6 +69,10 @@ class Settings(BaseSettings):
     DINGTALK_APP_KEY: str = ""
     DINGTALK_APP_SECRET: str = ""
 
+    # 初始化管理员
+    INIT_ADMIN_EMAIL: str = ""
+    INIT_ADMIN_PASSWORD: str = ""
+
     # CORS
     CORS_ORIGINS: list[str] = ["http://localhost:5173", "http://localhost:3000"]
 

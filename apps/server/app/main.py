@@ -1,5 +1,6 @@
 """Agent Kit Admin - FastAPI 主入口"""
 
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
@@ -8,7 +9,7 @@ from sqlalchemy import text
 from app.config import get_settings
 from app.errors import AppError, app_error_handler
 from app.middleware import RequestIDMiddleware, LoggingMiddleware
-from app.api import auth, packages, versions
+from app.api import auth, packages, versions, admin
 
 # 配置日志
 logging.basicConfig(
@@ -22,7 +23,7 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """应用生命周期 - 启动时创建数据库表"""
+    """应用生命周期 - 启动时创建数据库表和初始化管理员"""
     from app.database import engine, Base
     from app.models import user, package, version, download, review  # noqa: F401
 
@@ -30,6 +31,15 @@ async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     logger.info("Database tables created/verified")
+
+    # 初始化管理员
+    if settings.INIT_ADMIN_EMAIL and settings.INIT_ADMIN_PASSWORD:
+        from app.cli import create_admin
+        await create_admin(
+            email=settings.INIT_ADMIN_EMAIL,
+            password=settings.INIT_ADMIN_PASSWORD,
+        )
+        logger.info(f"Admin user initialized: {settings.INIT_ADMIN_EMAIL}")
 
     yield
 
@@ -65,24 +75,14 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(packages.router, prefix="/api/v1")
 app.include_router(versions.router, prefix="/api/v1")
-
-
-# 缓存 StorageService 实例，避免健康检查每次创建新连接
-_storage_service_instance = None
-
-
-def _get_storage_service():
-    global _storage_service_instance
-    if _storage_service_instance is None:
-        from app.services.storage import StorageService
-
-        _storage_service_instance = StorageService()
-    return _storage_service_instance
+app.include_router(admin.router, prefix="/api/v1")
 
 
 @app.get("/api/health")
 async def health_check():
     """健康检查端点 - 包含服务状态"""
+    from app.services.storage import get_storage_service
+
     services = {}
 
     # 检查数据库
@@ -95,10 +95,11 @@ async def health_check():
     except Exception as e:
         services["database"] = f"error: {str(e)}"
 
-    # 检查 MinIO
+    # 检查 MinIO - 使用 run_in_executor 避免阻塞事件循环
     try:
-        storage = _get_storage_service()
-        storage.client.list_buckets()
+        storage = get_storage_service()
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(None, storage.client.list_buckets)
         services["minio"] = "ok"
     except Exception as e:
         services["minio"] = f"error: {str(e)}"

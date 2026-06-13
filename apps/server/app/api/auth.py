@@ -6,8 +6,9 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.services.auth import AuthService
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, get_current_user_with_token
 from app.models.user import User
+from app.schemas.auth import RegisterRequest, LoginRequest, RefreshRequest, AuthResponse
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -16,6 +17,60 @@ class DevLoginRequest(BaseModel):
     """开发环境登录请求"""
     username: str
     display_name: str | None = None
+
+
+@router.post("/register", status_code=201)
+async def register(
+    data: RegisterRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """本地注册"""
+    auth_service = AuthService(db)
+    result = await auth_service.register(
+        username=data.username,
+        email=data.email,
+        password=data.password,
+        display_name=data.display_name,
+    )
+    return result
+
+
+@router.post("/login")
+async def login(
+    data: LoginRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """本地登录"""
+    auth_service = AuthService(db)
+    result = await auth_service.login(
+        email=data.email,
+        password=data.password,
+    )
+    return result
+
+
+@router.post("/refresh")
+async def refresh_token(
+    data: RefreshRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """刷新 Access Token"""
+    auth_service = AuthService(db)
+    result = await auth_service.refresh_token(data.refresh_token)
+    return result
+
+
+@router.post("/logout")
+async def logout(
+    user_and_token: tuple = Depends(get_current_user_with_token),
+    db: AsyncSession = Depends(get_db),
+):
+    """登出"""
+    user, token = user_and_token
+    auth_service = AuthService(db)
+    # 将 token 加入黑名单
+    auth_service.blacklist_token(token)
+    return {"message": "登出成功"}
 
 
 @router.post("/dev-login")

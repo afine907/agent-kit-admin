@@ -9,6 +9,7 @@ export interface UserInfo {
   id: string;
   username: string;
   display_name: string;
+  role?: string;
 }
 
 export interface InstalledPackage {
@@ -24,6 +25,7 @@ export interface InstalledPackage {
 
 export interface ConfigData {
   token?: string;
+  refresh_token?: string;
   user?: UserInfo;
   registry: string;
   updated_at?: string;
@@ -75,6 +77,20 @@ class ConfigManager {
   }
 
   /**
+   * 获取 refresh token
+   */
+  getRefreshToken(): string | undefined {
+    return this.get('refresh_token');
+  }
+
+  /**
+   * 设置 refresh token
+   */
+  setRefreshToken(token: string): void {
+    this.set('refresh_token', token);
+  }
+
+  /**
    * 获取用户信息
    */
   getUser(): UserInfo | undefined {
@@ -118,6 +134,7 @@ class ConfigManager {
    */
   clearAuth(): void {
     this.config.delete('token');
+    this.config.delete('refresh_token');
     this.config.delete('user');
     this.config.delete('updated_at');
   }

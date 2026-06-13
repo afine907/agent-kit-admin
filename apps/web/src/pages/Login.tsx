@@ -1,10 +1,12 @@
 /**
- * 登录页面 - 终端风格 OAuth 选择
+ * 登录/注册页面 - 支持本地登录和 OAuth
  */
 
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
-import { Boxes, MessageSquare, Bird, Smartphone, ArrowRight, Shield } from 'lucide-react';
+import { useAuthStore } from '../stores/authStore';
+import { Boxes, MessageSquare, Bird, Smartphone, ArrowRight, Shield, Mail, Lock, User } from 'lucide-react';
 
 const PROVIDERS = [
   {
@@ -33,13 +35,55 @@ const PROVIDERS = [
   },
 ];
 
-export default function Login() {
-  const [loading, setLoading] = useState(false);
-  const [selected, setSelected] = useState<string | null>(null);
+type Mode = 'login' | 'register';
 
-  const handleLogin = (provider: string) => {
+export default function Login() {
+  const navigate = useNavigate();
+  const { setAuth } = useAuthStore();
+  const [mode, setMode] = useState<Mode>('login');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // 表单数据
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState('');
+  const [displayName, setDisplayName] = useState('');
+
+  const handleLocalLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
     setLoading(true);
-    setSelected(provider);
+    setError(null);
+
+    try {
+      const data = await api.login(email, password);
+      setAuth(data.token, data.user, data.refresh_token);
+      navigate('/');
+    } catch (err: any) {
+      setError(err.message || '登录失败');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      const data = await api.register(username, email, password, displayName || undefined);
+      setAuth(data.token, data.user, data.refresh_token);
+      navigate('/');
+    } catch (err: any) {
+      setError(err.message || '注册失败');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOAuthLogin = (provider: string) => {
+    setLoading(true);
     window.location.href = api.getOAuthUrl(provider);
   };
 
@@ -52,24 +96,114 @@ export default function Login() {
             <Boxes className="w-7 h-7 text-primary" />
           </div>
           <h1 className="text-2xl font-extrabold tracking-tight">Agent Kit</h1>
-          <p className="text-sm text-muted-foreground mt-1">登录到包注册中心</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            {mode === 'login' ? '登录到包注册中心' : '注册新账号'}
+          </p>
         </div>
 
-        {/* 登录按钮组 */}
+        {/* 错误提示 */}
+        {error && (
+          <div className="mb-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+            {error}
+          </div>
+        )}
+
+        {/* 本地登录/注册表单 */}
+        <form onSubmit={mode === 'login' ? handleLocalLogin : handleRegister} className="space-y-3">
+          {mode === 'register' && (
+            <>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder="用户名"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                  minLength={3}
+                  maxLength={50}
+                  pattern="[a-zA-Z0-9_-]+"
+                  className="w-full pl-10 pr-4 py-3 rounded-lg bg-background border border-input focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-sm"
+                />
+              </div>
+              <input
+                type="text"
+                placeholder="显示名称（可选）"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                className="w-full px-4 py-3 rounded-lg bg-background border border-input focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-sm"
+              />
+            </>
+          )}
+          <div className="relative">
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              type="email"
+              placeholder="邮箱"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full pl-10 pr-4 py-3 rounded-lg bg-background border border-input focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-sm"
+            />
+          </div>
+          <div className="relative">
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              type="password"
+              placeholder="密码"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={8}
+              className="w-full pl-10 pr-4 py-3 rounded-lg bg-background border border-input focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-sm"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+          >
+            {loading ? '处理中...' : mode === 'login' ? '登录' : '注册'}
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </form>
+
+        {/* 切换登录/注册 */}
+        <div className="mt-4 text-center text-sm">
+          {mode === 'login' ? (
+            <span className="text-muted-foreground">
+              没有账号？{' '}
+              <button onClick={() => { setMode('register'); setError(null); }} className="text-primary hover:underline">
+                注册
+              </button>
+            </span>
+          ) : (
+            <span className="text-muted-foreground">
+              已有账号？{' '}
+              <button onClick={() => { setMode('login'); setError(null); }} className="text-primary hover:underline">
+                登录
+              </button>
+            </span>
+          )}
+        </div>
+
+        {/* 分隔线 */}
+        <div className="flex items-center gap-3 my-6">
+          <div className="flex-1 h-px bg-border" />
+          <span className="text-xs text-muted-foreground">或</span>
+          <div className="flex-1 h-px bg-border" />
+        </div>
+
+        {/* OAuth 登录 */}
         <div className="space-y-2.5">
           {PROVIDERS.map((provider, i) => {
             const Icon = provider.icon;
-            const isActive = selected === provider.id;
             return (
               <button
                 key={provider.id}
-                onClick={() => handleLogin(provider.id)}
+                onClick={() => handleOAuthLogin(provider.id)}
                 disabled={loading}
-                className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border transition-all duration-200 group ${
-                  isActive
-                    ? `${provider.bg} ${provider.border} ring-1 ring-primary/20`
-                    : `bg-card border-border/50 hover:border-border hover:bg-secondary/30`
-                } disabled:opacity-50`}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-200 group bg-card border-border/50 hover:border-border hover:bg-secondary/30 disabled:opacity-50`}
                 style={{ animationDelay: `${i * 80}ms` }}
               >
                 <div className={`flex items-center justify-center w-9 h-9 rounded-lg ${provider.bg} ${provider.border}`}>

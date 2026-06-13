@@ -6,8 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.services.package import PackageService
 from app.services.version import VersionService
-from app.api.deps import get_current_user, get_current_user_optional
-from app.models.user import User
+from app.api.deps import get_current_user, get_current_user_optional, UserType
 from app.schemas.package import VersionResponse, VersionListResponse
 
 router = APIRouter(prefix="/packages/{scope}/{name}/versions", tags=["versions"])
@@ -37,7 +36,7 @@ async def get_version(
     scope: str,
     name: str,
     version: str,
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: UserType | None = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db),
 ):
     """获取版本详情"""
@@ -63,7 +62,7 @@ async def publish_version(
     manifest: str = Form(..., description="akit.json 内容 (JSON 字符串)"),
     tarball: UploadFile = File(..., description="包文件 (.tar.gz)"),
     tag: str = Form(None, description="版本标签"),
-    current_user: User = Depends(get_current_user),
+    current_user: UserType = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """发布新版本 (需要认证)"""
@@ -93,27 +92,13 @@ async def publish_version(
             status_code=403,
         )
 
-    # 读取 tarball
-    tarball_data = await tarball.read()
-
-    # 检查文件大小限制 (50MB)
-    MAX_TARBALL_SIZE = 50 * 1024 * 1024  # 50MB
-    if len(tarball_data) > MAX_TARBALL_SIZE:
-        from app.errors import AppError, ErrorCodes
-
-        raise AppError(
-            code=ErrorCodes.VERSION_CONTENT_TOO_LARGE,
-            message=f"包文件大小超过限制 ({len(tarball_data)} bytes)，最大允许 {MAX_TARBALL_SIZE} bytes (50MB)",
-            status_code=413,
-        )
-
-    # 发布版本
+    # 发布版本 - 使用流式上传，避免将整个 tarball 读入内存
     version_service = VersionService(db)
-    ver = await version_service.publish_version(
+    ver = await version_service.publish_version_streaming(
         package_id=str(package.id),
         version=version,
         manifest=manifest_data,
-        tarball_data=tarball_data,
+        tarball_file=tarball,
         tag=tag,
         published_by=str(current_user.id),
     )

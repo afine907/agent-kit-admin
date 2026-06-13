@@ -11,6 +11,7 @@ os.environ.setdefault("DEBUG", "true")
 
 import pytest
 import jwt
+from unittest.mock import AsyncMock, MagicMock, patch
 from datetime import datetime, timedelta, timezone
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
@@ -105,7 +106,7 @@ def _generate_token(user: User) -> str:
 
 @pytest.fixture
 async def test_user(db: AsyncSession):
-    """创建测试用户"""
+    """创建测试用户 (OAuth 用户)"""
     user = User(
         username="testuser",
         email="test@example.com",
@@ -113,6 +114,88 @@ async def test_user(db: AsyncSession):
         avatar_url="https://example.com/avatar.png",
         oauth_provider="wechat_work",
         oauth_id="test-oauth-id-001",
+        role="member",
+        status="active",
+    )
+    db.add(user)
+    await db.flush()
+    await db.refresh(user)
+    return user
+
+
+@pytest.fixture
+async def local_user(db: AsyncSession):
+    """创建本地注册用户"""
+    from app.core.security import hash_password
+    user = User(
+        username="localuser",
+        email="local@example.com",
+        display_name="Local User",
+        password_hash=hash_password("SecurePass123!"),
+        oauth_provider="local",
+        oauth_id=None,
+        role="member",
+        status="active",
+    )
+    db.add(user)
+    await db.flush()
+    await db.refresh(user)
+    return user
+
+
+@pytest.fixture
+async def admin_user(db: AsyncSession):
+    """创建管理员用户"""
+    from app.core.security import hash_password
+    user = User(
+        username="admin",
+        email="admin@example.com",
+        display_name="Admin User",
+        password_hash=hash_password("AdminPass123!"),
+        oauth_provider="local",
+        oauth_id=None,
+        role="admin",
+        status="active",
+    )
+    db.add(user)
+    await db.flush()
+    await db.refresh(user)
+    return user
+
+
+@pytest.fixture
+async def super_admin_user(db: AsyncSession):
+    """创建超级管理员用户"""
+    from app.core.security import hash_password
+    user = User(
+        username="superadmin",
+        email="superadmin@example.com",
+        display_name="Super Admin",
+        password_hash=hash_password("SuperAdminPass123!"),
+        oauth_provider="local",
+        oauth_id=None,
+        role="super_admin",
+        status="active",
+    )
+    db.add(user)
+    await db.flush()
+    await db.refresh(user)
+    return user
+
+
+@pytest.fixture
+async def suspended_user(db: AsyncSession):
+    """创建已停用的用户"""
+    from app.core.security import hash_password
+    user = User(
+        username="suspended",
+        email="suspended@example.com",
+        display_name="Suspended User",
+        password_hash=hash_password("SuspendedPass123!"),
+        oauth_provider="local",
+        oauth_id=None,
+        role="member",
+        status="suspended",
     )
     db.add(user)
     await db.flush()
@@ -129,6 +212,8 @@ async def another_user(db: AsyncSession):
         display_name="Another User",
         oauth_provider="wechat_work",
         oauth_id="test-oauth-id-002",
+        role="member",
+        status="active",
     )
     db.add(user)
     await db.flush()
@@ -158,6 +243,42 @@ def another_auth_token(another_user: User):
 def another_auth_headers(another_auth_token: str):
     """另一个用户的认证 Headers"""
     return {"Authorization": f"Bearer {another_auth_token}"}
+
+
+@pytest.fixture
+def local_user_token(local_user: User):
+    """本地用户的 JWT Token"""
+    return _generate_token(local_user)
+
+
+@pytest.fixture
+def local_user_headers(local_user_token: str):
+    """本地用户的认证 Headers"""
+    return {"Authorization": f"Bearer {local_user_token}"}
+
+
+@pytest.fixture
+def admin_token(admin_user: User):
+    """管理员的 JWT Token"""
+    return _generate_token(admin_user)
+
+
+@pytest.fixture
+def admin_headers(admin_token: str):
+    """管理员的认证 Headers"""
+    return {"Authorization": f"Bearer {admin_token}"}
+
+
+@pytest.fixture
+def super_admin_token(super_admin_user: User):
+    """超级管理员的 JWT Token"""
+    return _generate_token(super_admin_user)
+
+
+@pytest.fixture
+def super_admin_headers(super_admin_token: str):
+    """超级管理员的认证 Headers"""
+    return {"Authorization": f"Bearer {super_admin_token}"}
 
 
 @pytest.fixture
@@ -308,3 +429,67 @@ async def multiple_packages(db: AsyncSession, test_user: User):
         }
         for p in packages
     ]
+
+
+class MockStorageClient:
+    """Mock S3 Client 用于健康检查"""
+
+    def list_buckets(self):
+        """模拟列出桶"""
+        return {"Buckets": []}
+
+
+class MockStorageService:
+    """Mock StorageService 用于测试
+
+    模拟 MinIO 存储服务，避免测试时连接真实服务。
+    """
+
+    def __init__(self):
+        self.client = MockStorageClient()
+        self.bucket = "packages"
+
+    async def upload_tarball(self, scope: str, name: str, version: str, data: bytes) -> tuple[str, str]:
+        """模拟上传包文件"""
+        object_path = f"packages/{scope}/{name}/{version}.tar.gz"
+        import hashlib
+        sha256 = hashlib.sha256(data).hexdigest()
+        return object_path, sha256
+
+    async def upload_tarball_streaming(self, scope: str, name: str, version: str, file) -> tuple[str, str, int]:
+        """模拟流式上传包文件"""
+        object_path = f"packages/{scope}/{name}/{version}.tar.gz"
+        # 读取文件内容以计算 hash 和大小
+        content = await file.read()
+        import hashlib
+        sha256 = hashlib.sha256(content).hexdigest()
+        return object_path, sha256, len(content)
+
+    async def upload_content(self, object_path: str, data: bytes) -> None:
+        """模拟上传内容文件"""
+        pass
+
+    async def get_presigned_url(self, object_path: str, expires: int = 900) -> str:
+        """模拟生成预签名 URL"""
+        return f"http://minio:9000/packages/{object_path}?presigned=true"
+
+    async def delete_tarball(self, object_path: str) -> None:
+        """模拟删除包文件"""
+        pass
+
+    async def get_tarball_size(self, object_path: str) -> int:
+        """模拟获取文件大小"""
+        return 1024
+
+
+@pytest.fixture(autouse=True)
+def mock_storage_service():
+    """Mock StorageService 用于所有测试
+
+    自动应用到所有测试，避免连接真实 MinIO。
+    """
+    mock_service = MockStorageService()
+
+    with patch("app.services.storage.get_storage_service", return_value=mock_service), \
+         patch("app.services.storage.StorageService", return_value=mock_service):
+        yield mock_service

@@ -26,6 +26,8 @@ class Package(Base):
     downloads_count = Column(BigInteger, default=0)
     latest_version = Column(String(50), nullable=True)
     tags = Column(CompatJSONB, default=list)  # 标签数组 - 使用 list 工厂函数避免可变默认值问题
+    admin_status = Column(String(20), default="active")  # active / suspended - 管理员下架状态
+    admin_note = Column(Text, nullable=True)  # 管理员备注（如下架原因）
     deleted_at = Column(DateTime(timezone=True), nullable=True)  # 软删除
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
