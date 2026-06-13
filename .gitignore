@@ -1,0 +1,105 @@
+# Agent Kit Admin - Git Ignore
+
+# ============================================
+# 通用
+# ============================================
+*.log
+*.tmp
+*.bak
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# ============================================
+# Python (Server)
+# ============================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+*.manifest
+*.spec
+pip-log.txt
+pip-delete-this-directory.txt
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+venv/
+.venv/
+env/
+.env
+!.env.example
+
+# ============================================
+# Node.js (CLI + Web)
+# ============================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+
+# ============================================
+# IDE
+# ============================================
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ============================================
+# Docker
+# ============================================
+docker-compose.override.yml
+
+# ============================================
+# 项目特定
+# ============================================
+# MinIO 数据
+minio_data/
+
+# PostgreSQL 数据
+postgres_data/
+
+# 测试包
+test-packages/*.tar.gz
+
+# CLI 配置
+.akit/
+
+# 构建产物
+server/dist/
+cli/dist/
+web/dist/

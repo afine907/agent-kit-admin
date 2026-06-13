@@ -1,0 +1,65 @@
+# Agent Kit Admin - 开发环境 Docker Compose
+# 包含 PostgreSQL 16 + MinIO 对象存储
+
+services:
+  # PostgreSQL 16 数据库
+  db:
+    image: postgres:16-alpine
+    container_name: akit-db
+    restart: unless-stopped
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    environment:
+      POSTGRES_USER: ${DB_USER:-agentkit}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-agentkit_dev_2024}
+      POSTGRES_DB: ${DB_NAME:-agentkit}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-agentkit}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MinIO 对象存储
+  minio:
+    image: minio/minio:latest
+    container_name: akit-minio
+    restart: unless-stopped
+    ports:
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin_dev_2024}
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MinIO 初始化 - 创建 bucket
+  minio-init:
+    image: minio/mc:latest
+    container_name: akit-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+        mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD};
+        mc mb --ignore-existing local/packages;
+        mc anonymous set download local/packages;
+        echo 'MinIO initialization complete!';
+      "
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin_dev_2024}
+
+volumes:
+  postgres_data:
+  minio_data:

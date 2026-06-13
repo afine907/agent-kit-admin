@@ -1,0 +1,41 @@
+# Agent Kit Admin - Caddy 配置
+
+# 生产环境配置
+# 替换 your-domain.com 为实际域名
+
+:80 {
+    # API 代理
+    handle /api/* {
+        reverse_proxy server:8000
+    }
+
+    # Web UI
+    handle {
+        reverse_proxy web:80
+    }
+
+    # 日志
+    log {
+        output file /var/log/caddy/access.log
+    }
+}
+
+# HTTPS 配置（取消注释并替换域名）
+# your-domain.com {
+#     tls your-email@example.com
+#
+#     # API 代理
+#     handle /api/* {
+#         reverse_proxy server:8000
+#     }
+#
+#     # Web UI
+#     handle {
+#         reverse_proxy web:80
+#     }
+#
+#     # 日志
+#     log {
+#         output file /var/log/caddy/access.log
+#     }
+# }
