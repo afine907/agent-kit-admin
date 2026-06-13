@@ -103,3 +103,9 @@ test-packages/*.tar.gz
 server/dist/
 cli/dist/
 web/dist/
+
+# ============================================
+# Specs & Orchestra (本地开发文档)
+# ============================================
+specs/
+.claude/orchestra/
