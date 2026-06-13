@@ -69,6 +69,9 @@ class VersionService:
         验证版本号、manifest，处理 Skill content。
         返回 (package, processed_manifest)。
         """
+        # 创建副本，避免修改调用方传入的字典
+        manifest = manifest.copy()
+
         # 验证版本号格式
         if not SEMVER_PATTERN.match(version):
             raise AppError(

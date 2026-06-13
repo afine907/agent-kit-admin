@@ -1,11 +1,16 @@
 """FastAPI 依赖注入"""
 
+import re
+
 from fastapi import Depends, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models.user import User
 from app.services.auth import UserSnapshot
 from app.errors import AppError, ErrorCodes
+
+# 严格匹配 Bearer token 格式：必须以 "Bearer " 开头，后面跟非空白字符
+_BEARER_TOKEN_RE = re.compile(r"^Bearer\s+(\S+)$", re.IGNORECASE)
 
 # 用户类型 - 支持 ORM 对象和缓存快照
 UserType = User | UserSnapshot
@@ -31,7 +36,10 @@ async def get_current_user_optional(
     if not authorization:
         return None
 
-    token = authorization.replace("Bearer ", "")
+    match = _BEARER_TOKEN_RE.match(authorization)
+    if not match:
+        raise AppError(code=ErrorCodes.AUTH_INVALID_TOKEN, message="无效的 Authorization 格式", status_code=401)
+    token = match.group(1)
 
     # API Key 认证 (Phase 2 实现)
     if token.startswith("akit_"):
@@ -54,7 +62,11 @@ async def get_current_user(
     """强制用户认证 - 必须登录"""
     if not authorization:
         raise AppError(code=ErrorCodes.AUTH_REQUIRED, message="未提供认证信息", status_code=401)
-    token = authorization.replace("Bearer ", "")
+
+    match = _BEARER_TOKEN_RE.match(authorization)
+    if not match:
+        raise AppError(code=ErrorCodes.AUTH_INVALID_TOKEN, message="无效的 Authorization 格式", status_code=401)
+    token = match.group(1)
 
     # API Key 认证 (Phase 2 实现)
     if token.startswith("akit_"):
@@ -77,7 +89,11 @@ async def get_current_user_with_token(
     """获取当前用户和原始 token - 用于需要 token 操作的场景（如登出）"""
     if not authorization:
         raise AppError(code=ErrorCodes.AUTH_REQUIRED, message="未提供认证信息", status_code=401)
-    token = authorization.replace("Bearer ", "")
+
+    match = _BEARER_TOKEN_RE.match(authorization)
+    if not match:
+        raise AppError(code=ErrorCodes.AUTH_INVALID_TOKEN, message="无效的 Authorization 格式", status_code=401)
+    token = match.group(1)
 
     # JWT 认证
     from app.services.auth import AuthService

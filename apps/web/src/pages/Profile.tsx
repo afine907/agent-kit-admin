@@ -124,26 +124,29 @@ export default function Profile() {
           {/* 信息 */}
           <div className="flex-1 space-y-4">
             <div>
-              <label className="text-sm text-muted-foreground">用户名</label>
+              <span className="text-sm text-muted-foreground">用户名</span>
               <p className="font-medium">{user.username}</p>
             </div>
 
             <div>
-              <label className="text-sm text-muted-foreground">显示名称</label>
+              <label htmlFor="displayName" className="text-sm text-muted-foreground">显示名称</label>
               {isEditing ? (
                 <div className="flex items-center gap-2 mt-1">
                   <input
+                    id="displayName"
+                    name="displayName"
                     type="text"
+                    autoComplete="name"
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
-                    className="flex-1 px-3 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    className="flex-1 px-3 py-2 bg-background border border-border rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                   />
                   <button
                     onClick={handleSaveProfile}
                     disabled={saving}
                     className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50"
                   >
-                    {saving ? '保存中...' : '保存'}
+                    {saving ? '保存中…' : '保存'}
                   </button>
                   <button
                     onClick={() => {
@@ -203,11 +206,14 @@ export default function Profile() {
           <div className="mb-6 p-4 bg-muted/50 rounded-lg">
             <div className="flex items-center gap-2">
               <input
+                id="keyName"
+                name="keyName"
                 type="text"
+                aria-label="API Key 名称"
                 value={newKeyName}
                 onChange={(e) => setNewKeyName(e.target.value)}
-                placeholder="输入 API Key 名称（例如：CI/CD Token）"
-                className="flex-1 px-3 py-2 bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+                placeholder="输入 API Key 名称（例如：CI/CD Token）…"
+                className="flex-1 px-3 py-2 bg-background border border-border rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                 onKeyDown={(e) => e.key === 'Enter' && handleCreateKey()}
               />
               <button

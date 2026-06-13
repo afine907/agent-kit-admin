@@ -1,14 +1,16 @@
 """应用配置 - 使用 Pydantic Settings 管理环境变量"""
 
+import logging
 from pydantic_settings import BaseSettings
 from pydantic import model_validator
 from functools import lru_cache
 
+logger = logging.getLogger(__name__)
 
-# 默认值常量 - 用于检测是否配置了真实值
-_DEFAULT_JWT_SECRET = "agent-kit-jwt-secret-key-change-in-production-2024"
-_DEFAULT_DB_PASSWORD = "agentkit_dev_2024"
-_DEFAULT_MINIO_PASSWORD = "minioadmin_dev_2024"
+# 开发环境默认值 - 仅在 ENVIRONMENT=development 时允许使用
+_DEV_JWT_SECRET = "dev-only-jwt-secret-do-not-use-in-production"
+_DEV_DB_PASSWORD = "agentkit_dev_2024"
+_DEV_MINIO_PASSWORD = "minioadmin_dev_2024"
 
 
 class Settings(BaseSettings):
@@ -19,12 +21,13 @@ class Settings(BaseSettings):
     APP_VERSION: str = "0.1.0"
     APP_BASE_URL: str = "http://localhost:8000"  # 应用基础 URL，用于 OAuth 回调等
     DEBUG: bool = False
+    ENVIRONMENT: str = "development"  # development / staging / production
 
     # 数据库 - 支持 PostgreSQL 和 SQLite
     DB_HOST: str = "localhost"
     DB_PORT: int = 5432
     DB_USER: str = "agentkit"
-    DB_PASSWORD: str = "agentkit_dev_2024"
+    DB_PASSWORD: str = _DEV_DB_PASSWORD
     DB_NAME: str = "agentkit"
     DATABASE_URL: str = ""  # 可选：直接指定数据库 URL（覆盖上述字段）
 
@@ -47,12 +50,12 @@ class Settings(BaseSettings):
     # MinIO
     MINIO_ENDPOINT: str = "localhost:9000"
     MINIO_ROOT_USER: str = "minioadmin"
-    MINIO_ROOT_PASSWORD: str = "minioadmin_dev_2024"
+    MINIO_ROOT_PASSWORD: str = _DEV_MINIO_PASSWORD
     MINIO_BUCKET: str = "packages"
     MINIO_SECURE: bool = False
 
     # JWT
-    JWT_SECRET: str = "agent-kit-jwt-secret-key-change-in-production-2024"
+    JWT_SECRET: str = _DEV_JWT_SECRET
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRE_HOURS: int = 24
 
@@ -80,22 +83,46 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_production_secrets(self) -> "Settings":
-        """生产环境安全检查 - 验证敏感配置是否使用了默认值"""
-        if not self.DEBUG:
-            # 生产环境检查
+        """生产环境安全检查 - 验证敏感配置是否使用了默认值
+
+        使用 ENVIRONMENT 而非 DEBUG 判断，避免调试模式绕过安全检查。
+        production / staging 环境必须显式配置所有敏感值。
+        """
+        is_production = self.ENVIRONMENT in ("production", "staging")
+
+        if is_production:
             errors = []
 
-            if self.JWT_SECRET == _DEFAULT_JWT_SECRET:
-                errors.append("JWT_SECRET 使用了默认值，生产环境必须更改")
+            if self.JWT_SECRET in (_DEV_JWT_SECRET, "agent-kit-jwt-secret-key-change-in-production-2024"):
+                errors.append("JWT_SECRET 使用了默认值，生产环境必须通过环境变量设置")
 
-            if self.DB_PASSWORD == _DEFAULT_DB_PASSWORD:
-                errors.append("DB_PASSWORD 使用了默认值，生产环境必须更改")
+            if self.DB_PASSWORD == _DEV_DB_PASSWORD:
+                errors.append("DB_PASSWORD 使用了默认值，生产环境必须通过环境变量设置")
 
-            if self.MINIO_ROOT_PASSWORD == _DEFAULT_MINIO_PASSWORD:
-                errors.append("MINIO_ROOT_PASSWORD 使用了默认值，生产环境必须更改")
+            if self.MINIO_ROOT_PASSWORD == _DEV_MINIO_PASSWORD:
+                errors.append("MINIO_ROOT_PASSWORD 使用了默认值，生产环境必须通过环境变量设置")
 
             if errors:
                 raise ValueError("生产环境安全检查失败:\n" + "\n".join(f"  - {e}" for e in errors))
+
+        else:
+            # 开发/测试环境 - 警告使用默认值
+            warnings = []
+
+            if self.JWT_SECRET == _DEV_JWT_SECRET:
+                warnings.append("JWT_SECRET 使用开发默认值，仅限本地开发")
+
+            if self.DB_PASSWORD == _DEV_DB_PASSWORD:
+                warnings.append("DB_PASSWORD 使用开发默认值，仅限本地开发")
+
+            if self.MINIO_ROOT_PASSWORD == _DEV_MINIO_PASSWORD:
+                warnings.append("MINIO_ROOT_PASSWORD 使用开发默认值，仅限本地开发")
+
+            if warnings:
+                logger.warning(
+                    "使用开发环境默认密钥:\n%s",
+                    "\n".join(f"  - {w}" for w in warnings),
+                )
 
         return self
 

@@ -1,16 +1,33 @@
 """管理员 API 路由"""
 
+import logging
+import re
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_
 from app.database import get_db
 from app.models.user import User
 from app.models.package import Package
+from app.models.version import Version
+from app.models.download import Download
+from app.models.api_key import APIKey
 from app.api.deps import require_admin, require_super_admin
 from app.errors import AppError, ErrorCodes
+from app.services.storage import get_storage_service
 from pydantic import BaseModel
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/admin", tags=["admin"])
+
+
+def _escape_like_pattern(value: str) -> str:
+    """转义 ILIKE 通配符，防止 % 和 _ 被当作模式匹配使用"""
+    value = value.replace("\\", "\\\\")
+    value = value.replace("%", "\\%")
+    value = value.replace("_", "\\_")
+    return value
 
 
 # ============================================
@@ -127,15 +144,69 @@ async def hard_delete_package(
     db: AsyncSession = Depends(get_db),
     admin: User = Depends(require_super_admin),
 ):
-    """硬删除包（仅超级管理员）"""
+    """硬删除包（仅超级管理员）
+
+    级联清理: versions 记录 -> downloads 记录 -> MinIO 存储文件 -> 包记录
+    """
     package = await db.get(Package, package_id)
     if not package:
         raise AppError(code=ErrorCodes.NOT_FOUND, message="包不存在", status_code=404)
 
+    storage = get_storage_service()
+    deleted_files = 0
+    failed_files = 0
+
+    # 1. 查询该包的所有版本
+    versions_result = await db.execute(
+        select(Version).where(Version.package_id == package_id)
+    )
+    versions = versions_result.scalars().all()
+
+    # 2. 删除每个版本的 MinIO tarball 文件
+    for version in versions:
+        try:
+            await storage.delete_tarball(version.tarball_path)
+            deleted_files += 1
+        except Exception as e:
+            # 存储删除失败不阻塞数据库清理，记录警告继续
+            failed_files += 1
+            logger.warning(
+                "删除 MinIO 文件失败 (package=%s, version=%s, path=%s): %s",
+                package.full_name,
+                version.version,
+                version.tarball_path,
+                e,
+            )
+
+    # 3. 删除下载记录（数据库外键 ondelete=CASCADE 会处理，但显式删除更安全）
+    downloads_result = await db.execute(
+        select(Download).where(Download.package_id == package_id)
+    )
+    downloads = downloads_result.scalars().all()
+    for download in downloads:
+        await db.delete(download)
+
+    # 4. 删除版本记录
+    for version in versions:
+        await db.delete(version)
+
+    # 5. 最后删除包本身
     await db.delete(package)
     await db.commit()
 
-    return {"message": "包已删除"}
+    if failed_files:
+        logger.warning(
+            "包 %s 硬删除完成: %d 个文件成功删除, %d 个文件删除失败",
+            package.full_name, deleted_files, failed_files,
+        )
+
+    return {
+        "message": "包已删除",
+        "versions_deleted": len(versions),
+        "downloads_deleted": len(downloads),
+        "files_deleted": deleted_files,
+        "files_failed": failed_files,
+    }
 
 
 # ============================================
@@ -161,11 +232,12 @@ async def list_users(
     if status:
         query = query.where(User.status == status)
     if keyword:
+        escaped = _escape_like_pattern(keyword)
         query = query.where(
             or_(
-                User.username.ilike(f"%{keyword}%"),
-                User.email.ilike(f"%{keyword}%"),
-                User.display_name.ilike(f"%{keyword}%"),
+                User.username.ilike(f"%{escaped}%", escape="\\"),
+                User.email.ilike(f"%{escaped}%", escape="\\"),
+                User.display_name.ilike(f"%{escaped}%", escape="\\"),
             )
         )
 
@@ -302,7 +374,13 @@ async def delete_user(
     db: AsyncSession = Depends(get_db),
     admin: User = Depends(require_super_admin),
 ):
-    """删除用户（仅超级管理员，软删除）"""
+    """删除用户（仅超级管理员，软删除）
+
+    安全处理:
+    - 删除所有 API Key，立即失效 API 认证
+    - 清除用户缓存，使 JWT token 在下次验证时重新检查数据库状态
+    - 设置 status=deleted，后续 verify_token 会因账号状态异常而拒绝
+    """
     user = await db.get(User, user_id)
     if not user:
         raise AppError(code=ErrorCodes.NOT_FOUND, message="用户不存在", status_code=404)
@@ -311,11 +389,24 @@ async def delete_user(
     if str(user.id) == str(admin.id):
         raise AppError(code=ErrorCodes.INVALID_PARAM, message="不能删除自己", status_code=400)
 
-    # 软删除 - 设置状态为 deleted
+    # 1. 删除该用户的所有 API Key（立即失效 API 认证）
+    api_keys_result = await db.execute(
+        select(APIKey).where(APIKey.user_id == user_id)
+    )
+    api_keys = api_keys_result.scalars().all()
+    for api_key in api_keys:
+        await db.delete(api_key)
+
+    # 2. 软删除 - 设置状态为 deleted
     user.status = "deleted"
     await db.commit()
 
-    return {"message": "用户已删除"}
+    # 3. 清除用户缓存，使已颁发的 JWT token 在下次使用时重新查库验证
+    # verify_token 会重新从 DB 读取用户，发现 status=deleted 后拒绝请求
+    from app.services.auth import AuthService
+    AuthService.invalidate_user_cache(user_id)
+
+    return {"message": "用户已删除", "api_keys_invalidated": len(api_keys)}
 
 
 # ============================================

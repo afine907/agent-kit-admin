@@ -81,8 +81,6 @@ async def dev_login(
 ):
     """开发环境快速登录 - 仅用于测试"""
     from app.config import get_settings
-    import jwt
-    from datetime import datetime, timedelta
 
     settings = get_settings()
     if not settings.DEBUG:
@@ -94,15 +92,8 @@ async def dev_login(
         display_name=data.display_name or data.username,
     )
 
-    # 生成 JWT Token
-    token = jwt.encode(
-        {
-            "sub": str(user.id),
-            "exp": datetime.utcnow() + timedelta(hours=settings.JWT_EXPIRE_HOURS),
-        },
-        settings.JWT_SECRET,
-        algorithm=settings.JWT_ALGORITHM,
-    )
+    # 复用 AuthService 的 create_token（使用 python-jose + timezone-aware datetime）
+    token = auth_service.create_token(str(user.id), user.username)
 
     return {
         "token": token,

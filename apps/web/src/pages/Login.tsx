@@ -115,47 +115,65 @@ export default function Login() {
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <input
+                  id="username"
+                  name="username"
                   type="text"
-                  placeholder="用户名"
+                  autoComplete="username"
+                  spellCheck={false}
+                  aria-label="用户名"
+                  placeholder="用户名…"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   required
                   minLength={3}
                   maxLength={50}
                   pattern="[a-zA-Z0-9_-]+"
-                  className="w-full pl-10 pr-4 py-3 rounded-lg bg-background border border-input focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-sm"
+                  className="w-full pl-10 pr-4 py-3 rounded-lg bg-background border border-input focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary outline-none transition-colors text-sm"
                 />
               </div>
               <input
+                id="displayName"
+                name="displayName"
                 type="text"
-                placeholder="显示名称（可选）"
+                autoComplete="name"
+                aria-label="显示名称"
+                placeholder="显示名称（可选）…"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg bg-background border border-input focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-sm"
+                className="w-full px-4 py-3 rounded-lg bg-background border border-input focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary outline-none transition-colors text-sm"
               />
             </>
           )}
           <div className="relative">
             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
+              id="email"
+              name="email"
               type="email"
-              placeholder="邮箱"
+              autoComplete="email"
+              spellCheck={false}
+              aria-label="邮箱"
+              placeholder="邮箱…"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full pl-10 pr-4 py-3 rounded-lg bg-background border border-input focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-sm"
+              className="w-full pl-10 pr-4 py-3 rounded-lg bg-background border border-input focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary outline-none transition-colors text-sm"
             />
           </div>
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
+              id="password"
+              name="password"
               type="password"
-              placeholder="密码"
+              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+              aria-label="密码"
+              placeholder="密码…"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={8}
-              className="w-full pl-10 pr-4 py-3 rounded-lg bg-background border border-input focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-sm"
+              className="w-full pl-10 pr-4 py-3 rounded-lg bg-background border border-input focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary outline-none transition-colors text-sm"
             />
           </div>
           <button
@@ -163,7 +181,7 @@ export default function Login() {
             disabled={loading}
             className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
           >
-            {loading ? '处理中...' : mode === 'login' ? '登录' : '注册'}
+            {loading ? '处理中…' : mode === 'login' ? '登录' : '注册'}
             <ArrowRight className="w-4 h-4" />
           </button>
         </form>
@@ -203,7 +221,7 @@ export default function Login() {
                 key={provider.id}
                 onClick={() => handleOAuthLogin(provider.id)}
                 disabled={loading}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-200 group bg-card border-border/50 hover:border-border hover:bg-secondary/30 disabled:opacity-50`}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-colors duration-200 group bg-card border-border/50 hover:border-border hover:bg-secondary/30 disabled:opacity-50`}
                 style={{ animationDelay: `${i * 80}ms` }}
               >
                 <div className={`flex items-center justify-center w-9 h-9 rounded-lg ${provider.bg} ${provider.border}`}>

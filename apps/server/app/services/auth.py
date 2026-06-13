@@ -1,10 +1,13 @@
 """认证服务 - OAuth + JWT + 本地认证"""
 
+import logging
 import secrets
 import httpx
 from datetime import datetime, timedelta, timezone
 from collections import defaultdict
 from cachetools import TTLCache
+
+logger = logging.getLogger(__name__)
 from jose import jwt, JWTError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,9 +26,17 @@ _user_cache: TTLCache[str, dict] = TTLCache(maxsize=1000, ttl=60)
 # 登录失败次数跟踪
 # 格式: {email: {"count": int, "first_failure": datetime, "locked_until": datetime}}
 # 生产环境应使用 Redis
-_login_failures: dict[str, dict] = {}
 _LOGIN_MAX_ATTEMPTS = 5  # 最大失败次数
 _LOGIN_LOCKOUT_MINUTES = 15  # 锁定时间（分钟）
+_login_failures: TTLCache[str, dict] = TTLCache(
+    maxsize=10000,
+    ttl=_LOGIN_LOCKOUT_MINUTES * 60,  # 自动过期，防止无限增长
+)
+
+logger.warning(
+    "认证服务使用内存存储（登录限制/OAuth state/Token 黑名单），"
+    "多实例部署时请改用 Redis"
+)
 
 
 class UserSnapshot:
@@ -123,9 +134,8 @@ class AuthService:
             if expire_time > datetime.now(timezone.utc):
                 return None  # token 在黑名单中且未过期
             else:
-                # 已过期，清理
+                # 已过期，清理后继续正常验证
                 del self._token_blacklist[token]
-            return None
 
         try:
             payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
@@ -547,7 +557,11 @@ class AuthService:
             del _oauth_state_store[key]
 
     def _verify_oauth_state(self, state: str | None, provider: str) -> None:
-        """验证 OAuth state token"""
+        """验证 OAuth state token
+
+        使用 dict.pop() 原子操作获取并删除 state，防止并发请求的竞态条件。
+        两个并发请求同时通过 CSRF 防护的风险被消除，因为 pop() 是原子的。
+        """
         if not state:
             raise AppError(
                 code=ErrorCodes.AUTH_OAUTH_FAILED,
@@ -555,8 +569,9 @@ class AuthService:
                 status_code=400,
             )
 
-        # 先检查是否存在（不删除）
-        state_data = _oauth_state_store.get(state)
+        # 原子操作: 获取并删除 state，防止竞态条件
+        # pop() 确保同一 state 只能被一个请求成功获取
+        state_data = _oauth_state_store.pop(state, None)
         if not state_data:
             raise AppError(
                 code=ErrorCodes.AUTH_OAUTH_FAILED,
@@ -566,8 +581,6 @@ class AuthService:
 
         # 检查是否过期
         if state_data["expires"] < datetime.now(timezone.utc):
-            # 过期后才删除
-            del _oauth_state_store[state]
             raise AppError(
                 code=ErrorCodes.AUTH_OAUTH_FAILED,
                 message="OAuth state 已过期",
@@ -581,9 +594,6 @@ class AuthService:
                 message="OAuth state 与 provider 不匹配",
                 status_code=400,
             )
-
-        # 验证通过后删除 state（一次性使用）
-        del _oauth_state_store[state]
 
     async def handle_oauth_callback(self, provider: str, code: str, state: str | None = None) -> dict:
         """处理 OAuth 回调，返回 token 和用户信息"""
@@ -683,11 +693,34 @@ class AuthService:
 
     async def _feishu_callback(self, client: httpx.AsyncClient, code: str) -> dict:
         """飞书 OAuth 回调处理"""
-        # 获取 access_token
+        # 先获取 tenant_access_token
+        tenant_resp = await client.post(
+            "https://open.feishu.cn/open-apis/auth/v3/app_access_token/internal",
+            json={
+                "app_id": settings.FEISHU_APP_ID,
+                "app_secret": settings.FEISHU_APP_SECRET,
+            },
+        )
+        if tenant_resp.status_code != 200:
+            raise AppError(
+                code=ErrorCodes.AUTH_OAUTH_FAILED,
+                message=f"飞书获取 tenant_access_token 失败: HTTP {tenant_resp.status_code}",
+                status_code=502,
+            )
+        tenant_data = tenant_resp.json()
+        tenant_token = tenant_data.get("app_access_token")
+        if not tenant_token:
+            raise AppError(
+                code=ErrorCodes.AUTH_OAUTH_FAILED,
+                message=f"飞书获取 tenant_access_token 失败: {tenant_data.get('msg', '未知错误')}",
+                status_code=502,
+            )
+
+        # 使用 tenant_access_token 获取用户 access_token
         token_resp = await client.post(
             "https://open.feishu.cn/open-apis/authen/v1/oidc/access_token",
             json={"grant_type": "authorization_code", "code": code},
-            headers={"Authorization": f"Bearer {settings.FEISHU_APP_ID}"},
+            headers={"Authorization": f"Bearer {tenant_token}"},
         )
         if token_resp.status_code != 200:
             raise AppError(

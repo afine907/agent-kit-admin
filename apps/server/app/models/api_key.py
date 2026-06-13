@@ -15,7 +15,7 @@ class APIKey(Base):
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     name = Column(String(100), nullable=False)  # 描述名称
     key_hash = Column(String(128), unique=True, nullable=False)  # SHA256 哈希
-    key_prefix = Column(String(10), nullable=False)  # 前缀用于展示
+    key_prefix = Column(String(20), nullable=False)  # 前缀用于展示（如 "akit_xxxx..."）
     permissions = Column(CompatJSONB, default=["read", "write"])
     last_used_at = Column(DateTime(timezone=True), nullable=True)
     expires_at = Column(DateTime(timezone=True), nullable=True)
