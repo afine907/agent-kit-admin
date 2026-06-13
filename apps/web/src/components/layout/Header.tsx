@@ -2,18 +2,21 @@
  * Header 组 - 终端风格导航栏
  */
 
+import React, { useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { Terminal, LogOut, User, Boxes } from 'lucide-react';
 
-export function Header() {
-  const { user, isAuthenticated, clearAuth } = useAuthStore();
+export const Header = React.memo(function Header() {
+  const user = useAuthStore((s) => s.user);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const clearAuth = useAuthStore((s) => s.clearAuth);
   const navigate = useNavigate();
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     clearAuth();
     navigate('/');
-  };
+  }, [clearAuth, navigate]);
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
@@ -80,4 +83,4 @@ export function Header() {
       </div>
     </header>
   );
-}
+});

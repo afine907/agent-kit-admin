@@ -2,6 +2,7 @@
  * Profile 页面 - 个人中心
  */
 
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { usePackages } from '../hooks/usePackages';
@@ -18,13 +19,21 @@ import {
 } from 'lucide-react';
 
 export default function Profile() {
-  const { user, isAuthenticated, clearAuth } = useAuthStore();
+  const user = useAuthStore((s) => s.user);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const clearAuth = useAuthStore((s) => s.clearAuth);
 
   // 获取用户的包
-  const { data, isLoading } = usePackages({
+  const { data, isLoading, error } = usePackages({
     scope: user ? `@${user.username}` : undefined,
     per_page: 100,
   });
+
+  // 缓存下载量计算，避免每次渲染重新 reduce
+  const totalDownloads = useMemo(
+    () => data?.data.reduce((sum: number, pkg: PackageResponse) => sum + (pkg.downloads_count || 0), 0) ?? 0,
+    [data],
+  );
 
   if (!isAuthenticated) {
     return (
@@ -94,7 +103,7 @@ export default function Profile() {
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold font-mono text-accent">
-              {data?.data.reduce((sum: number, pkg: PackageResponse) => sum + (pkg.downloads_count || 0), 0) ?? 0}
+              {totalDownloads}
             </div>
             <div className="text-xs text-muted-foreground mt-1">总下载量</div>
           </div>
@@ -129,7 +138,14 @@ export default function Profile() {
           </div>
         )}
 
-        {!isLoading && data && data.data.length === 0 && (
+        {!isLoading && error && (
+          <div className="text-center py-16 rounded-xl border border-dashed border-destructive/30 space-y-2">
+            <p className="text-destructive font-medium">加载失败</p>
+            <p className="text-sm text-muted-foreground">{(error as Error).message}</p>
+          </div>
+        )}
+
+        {!isLoading && !error && data && data.data.length === 0 && (
           <div className="text-center py-16 rounded-xl border border-dashed border-border/50 space-y-4">
             <div className="w-12 h-12 mx-auto rounded-xl bg-secondary/50 flex items-center justify-center">
               <Box className="w-6 h-6 text-muted-foreground" />

@@ -2,6 +2,7 @@
  * VersionList 组 - 版本列表 (终端风格)
  */
 
+import React from 'react';
 import { VersionResponse } from '../lib/api';
 import { Tag, AlertTriangle, Ban } from 'lucide-react';
 
@@ -9,7 +10,7 @@ interface VersionListProps {
   versions: VersionResponse[];
 }
 
-export function VersionList({ versions }: VersionListProps) {
+export const VersionList = React.memo(function VersionList({ versions }: VersionListProps) {
   if (versions.length === 0) {
     return (
       <div className="py-8 text-center">
@@ -57,4 +58,4 @@ export function VersionList({ versions }: VersionListProps) {
       ))}
     </div>
   );
-}
+});

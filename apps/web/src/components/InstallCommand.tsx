@@ -2,7 +2,7 @@
  * InstallCommand 组 - 终端风格安装命令
  */
 
-import { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Copy, Check, Terminal } from 'lucide-react';
 
 interface InstallCommandProps {
@@ -10,9 +10,17 @@ interface InstallCommandProps {
   name: string;
 }
 
-export function InstallCommand({ scope, name }: InstallCommandProps) {
+export const InstallCommand = React.memo(function InstallCommand({ scope, name }: InstallCommandProps) {
   const [copied, setCopied] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>();
   const command = `akit install ${scope}/${name}`;
+
+  // 组件卸载时清除 timer，防止内存泄漏
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
 
   const handleCopy = async () => {
     try {
@@ -26,7 +34,8 @@ export function InstallCommand({ scope, name }: InstallCommandProps) {
       document.body.removeChild(textArea);
     }
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => setCopied(false), 2000);
   };
 
   return (
@@ -58,4 +67,4 @@ export function InstallCommand({ scope, name }: InstallCommandProps) {
       </button>
     </div>
   );
-}
+});

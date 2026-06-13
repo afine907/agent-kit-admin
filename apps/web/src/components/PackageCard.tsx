@@ -2,6 +2,7 @@
  * PackageCard 组 - 包卡片 (终端风格)
  */
 
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { PackageResponse } from '../lib/api';
 import { Download, Tag } from 'lucide-react';
@@ -11,7 +12,7 @@ interface PackageCardProps {
   index?: number;
 }
 
-export function PackageCard({ package: pkg, index = 0 }: PackageCardProps) {
+export const PackageCard = React.memo(function PackageCard({ package: pkg, index = 0 }: PackageCardProps) {
   const isMCP = pkg.type === 'mcp';
 
   return (
@@ -80,4 +81,4 @@ export function PackageCard({ package: pkg, index = 0 }: PackageCardProps) {
       )}
     </Link>
   );
-}
+});
