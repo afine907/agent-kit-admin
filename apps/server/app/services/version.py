@@ -58,122 +58,16 @@ class VersionService:
         )
         return result.scalar_one_or_none()
 
-    async def publish_version(
+    async def _prepare_version(
         self,
         package_id: str,
         version: str,
         manifest: dict,
-        tarball_data: bytes,
-        tag: str | None = None,
-        published_by: str | None = None,
-    ) -> Version:
-        """发布新版本"""
-        # 验证版本号格式
-        if not SEMVER_PATTERN.match(version):
-            raise AppError(
-                code=ErrorCodes.VERSION_INVALID_SEMVER,
-                message=f"无效的版本号: {version}",
-                status_code=400,
-            )
+    ) -> tuple[Package, dict]:
+        """准备版本发布 - 公共验证逻辑
 
-        # 检查版本号是否已存在
-        existing = await self.get_version(package_id, version)
-        if existing:
-            raise AppError(
-                code=ErrorCodes.VERSION_ALREADY_EXISTS,
-                message=f"版本 {version} 已存在",
-                status_code=409,
-            )
-
-        # 验证 manifest
-        self._validate_manifest(manifest)
-
-        # 处理 Skill content 存储
-        if manifest.get("type") == "skill" and "skill" in manifest:
-            content = manifest["skill"].get("content", "")
-            content_size = len(content.encode("utf-8"))
-
-            if content_size > 50 * 1024:  # > 50KB
-                raise AppError(
-                    code=ErrorCodes.VERSION_CONTENT_TOO_LARGE,
-                    message="Skill content 超过 50KB 限制",
-                    status_code=400,
-                )
-
-            if content_size > 10 * 1024:  # > 10KB，存储到 MinIO
-                storage = get_storage_service()
-                content_path = f"skills/{package_id}/{version}/content.md"
-                await storage.upload_content(content_path, content.encode("utf-8"))
-                manifest["skill"]["content_url"] = content_path
-                del manifest["skill"]["content"]
-
-        # 上传 tarball 到 MinIO
-        storage = get_storage_service()
-        package = await self.db.get(Package, package_id)
-        if not package:
-            raise AppError(
-                code=ErrorCodes.PACKAGE_NOT_FOUND,
-                message=f"包不存在: {package_id}",
-                status_code=404,
-            )
-        tarball_path, tarball_hash = await storage.upload_tarball(
-            scope=str(package.scope),
-            name=str(package.name),
-            version=version,
-            data=tarball_data,
-        )
-
-        # 确定 tag
-        is_prerelease = bool(PRERELEASE_PATTERN.search(version))
-        if not tag:
-            # 首次发布或正式版本，设为 latest
-            latest = await self.get_latest_version(package_id)
-            if not latest or not is_prerelease:
-                tag = "latest"
-
-        # 创建版本记录
-        ver = Version(
-            package_id=package_id,
-            version=version,
-            manifest=manifest,
-            tarball_hash=tarball_hash,  # SHA256 from storage upload
-            tarball_size=len(tarball_data),
-            tarball_path=tarball_path,
-            tag=tag,
-            published_by=published_by,
-        )
-        self.db.add(ver)
-
-        # 更新包的 latest_version
-        if tag == "latest":
-            package.latest_version = version  # type: ignore[assignment]
-
-        try:
-            await self.db.commit()
-        except IntegrityError:
-            await self.db.rollback()
-            raise AppError(
-                code=ErrorCodes.VERSION_ALREADY_EXISTS,
-                message=f"版本 {version} 已存在",
-                status_code=409,
-            )
-
-        await self.db.refresh(ver)
-        return ver
-
-    async def publish_version_streaming(
-        self,
-        package_id: str,
-        version: str,
-        manifest: dict,
-        tarball_file: UploadFile,
-        tag: str | None = None,
-        published_by: str | None = None,
-    ) -> Version:
-        """发布新版本 - 流式上传
-
-        使用流式上传避免将整个 tarball 读入内存。
-        大文件 (>10MB) 会临时落盘，显著减少内存压力。
+        验证版本号、manifest，处理 Skill content。
+        返回 (package, processed_manifest)。
         """
         # 验证版本号格式
         if not SEMVER_PATTERN.match(version):
@@ -214,8 +108,7 @@ class VersionService:
                 manifest["skill"]["content_url"] = content_path
                 del manifest["skill"]["content"]
 
-        # 流式上传 tarball 到 MinIO
-        storage = get_storage_service()
+        # 获取包
         package = await self.db.get(Package, package_id)
         if not package:
             raise AppError(
@@ -224,24 +117,32 @@ class VersionService:
                 status_code=404,
             )
 
-        tarball_path, tarball_hash, tarball_size = await storage.upload_tarball_streaming(
-            scope=str(package.scope),
-            name=str(package.name),
-            version=version,
-            file=tarball_file,
-        )
+        return package, manifest
 
-        # 确定 tag
+    async def _determine_tag(self, package_id: str, version: str, tag: str | None) -> str | None:
+        """确定版本 tag"""
         is_prerelease = bool(PRERELEASE_PATTERN.search(version))
         if not tag:
-            # 首次发布或正式版本，设为 latest
             latest = await self.get_latest_version(package_id)
             if not latest or not is_prerelease:
                 tag = "latest"
+        return tag
 
+    async def _finalize_version(
+        self,
+        package: Package,
+        version: str,
+        manifest: dict,
+        tarball_path: str,
+        tarball_hash: str,
+        tarball_size: int,
+        tag: str | None,
+        published_by: str | None,
+    ) -> Version:
+        """完成版本发布 - 创建记录并提交"""
         # 创建版本记录
         ver = Version(
-            package_id=package_id,
+            package_id=str(package.id),
             version=version,
             manifest=manifest,
             tarball_hash=tarball_hash,
@@ -268,6 +169,78 @@ class VersionService:
 
         await self.db.refresh(ver)
         return ver
+
+    async def publish_version(
+        self,
+        package_id: str,
+        version: str,
+        manifest: dict,
+        tarball_data: bytes,
+        tag: str | None = None,
+        published_by: str | None = None,
+    ) -> Version:
+        """发布新版本 - 同步上传"""
+        package, manifest = await self._prepare_version(package_id, version, manifest)
+
+        # 上传 tarball 到 MinIO
+        storage = get_storage_service()
+        tarball_path, tarball_hash = await storage.upload_tarball(
+            scope=str(package.scope),
+            name=str(package.name),
+            version=version,
+            data=tarball_data,
+        )
+
+        tag = await self._determine_tag(package_id, version, tag)
+
+        return await self._finalize_version(
+            package=package,
+            version=version,
+            manifest=manifest,
+            tarball_path=tarball_path,
+            tarball_hash=tarball_hash,
+            tarball_size=len(tarball_data),
+            tag=tag,
+            published_by=published_by,
+        )
+
+    async def publish_version_streaming(
+        self,
+        package_id: str,
+        version: str,
+        manifest: dict,
+        tarball_file: UploadFile,
+        tag: str | None = None,
+        published_by: str | None = None,
+    ) -> Version:
+        """发布新版本 - 流式上传
+
+        使用流式上传避免将整个 tarball 读入内存。
+        大文件 (>10MB) 会临时落盘，显著减少内存压力。
+        """
+        package, manifest = await self._prepare_version(package_id, version, manifest)
+
+        # 流式上传 tarball 到 MinIO
+        storage = get_storage_service()
+        tarball_path, tarball_hash, tarball_size = await storage.upload_tarball_streaming(
+            scope=str(package.scope),
+            name=str(package.name),
+            version=version,
+            file=tarball_file,
+        )
+
+        tag = await self._determine_tag(package_id, version, tag)
+
+        return await self._finalize_version(
+            package=package,
+            version=version,
+            manifest=manifest,
+            tarball_path=tarball_path,
+            tarball_hash=tarball_hash,
+            tarball_size=tarball_size,
+            tag=tag,
+            published_by=published_by,
+        )
 
     def _validate_manifest(self, manifest: dict) -> None:
         """验证 manifest 格式"""

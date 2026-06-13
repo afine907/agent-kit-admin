@@ -6,9 +6,10 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.services.auth import AuthService
+from app.services.api_key import APIKeyService
 from app.api.deps import get_current_user, get_current_user_with_token
 from app.models.user import User
-from app.schemas.auth import RegisterRequest, LoginRequest, RefreshRequest, AuthResponse
+from app.schemas.auth import RegisterRequest, LoginRequest, RefreshRequest, AuthResponse, CreateAPIKeyRequest
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -150,3 +151,40 @@ async def get_me(
         "display_name": user.display_name,
         "avatar_url": user.avatar_url,
     }
+
+
+# ============================================
+# API Key 管理
+# ============================================
+
+
+@router.post("/api-keys", status_code=201)
+async def create_api_key(
+    data: CreateAPIKeyRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """创建 API Key"""
+    service = APIKeyService(db)
+    return await service.create_key(user_id=str(user.id), name=data.name)
+
+
+@router.get("/api-keys")
+async def list_api_keys(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """列出当前用户的所有 API Key"""
+    service = APIKeyService(db)
+    return await service.list_keys(user_id=str(user.id))
+
+
+@router.delete("/api-keys/{key_id}", status_code=204)
+async def delete_api_key(
+    key_id: str,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """删除 API Key"""
+    service = APIKeyService(db)
+    await service.delete_key(user_id=str(user.id), key_id=key_id)

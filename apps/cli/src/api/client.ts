@@ -61,6 +61,16 @@ export interface VersionListResponse {
   total: number;
 }
 
+export interface APIKeyResponse {
+  id: string;
+  name: string;
+  key?: string;  // 只在创建时返回
+  key_prefix: string;
+  permissions: string[];
+  last_used_at?: string;
+  created_at: string;
+}
+
 export interface ListPackagesParams {
   search?: string;
   type?: 'mcp' | 'skill';
@@ -283,6 +293,38 @@ export class ApiClient {
    */
   async searchPackages(query: string, type?: 'mcp' | 'skill'): Promise<PackageListResponse> {
     return this.listPackages({ search: query, type });
+  }
+
+  // ============================================
+  // API Key 管理
+  // ============================================
+
+  /**
+   * 创建 API Key
+   */
+  async createAPIKey(name: string): Promise<APIKeyResponse> {
+    const response = await this.client.post<APIKeyResponse>(
+      '/api/v1/auth/api-keys',
+      { name }
+    );
+    return response.data;
+  }
+
+  /**
+   * 列出 API Key
+   */
+  async listAPIKeys(): Promise<APIKeyResponse[]> {
+    const response = await this.client.get<APIKeyResponse[]>(
+      '/api/v1/auth/api-keys'
+    );
+    return response.data;
+  }
+
+  /**
+   * 删除 API Key
+   */
+  async deleteAPIKey(keyId: string): Promise<void> {
+    await this.client.delete(`/api/v1/auth/api-keys/${keyId}`);
   }
 }
 

@@ -340,3 +340,49 @@ async def get_system_stats(
         "active_users": active_users or 0,
         "total_packages": total_packages or 0,
     }
+
+
+@router.get("/stats/downloads")
+async def get_download_trends(
+    days: int = Query(30, ge=1, le=90, description="统计天数"),
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """获取下载趋势（管理员）
+
+    返回最近 N 天每天的下载量。
+    """
+    from app.models.download import Download
+    from datetime import datetime, timedelta, timezone
+
+    start_date = datetime.now(timezone.utc) - timedelta(days=days)
+
+    # 按日期分组统计下载量
+    stmt = (
+        select(
+            func.date(Download.downloaded_at).label("date"),
+            func.count().label("count"),
+        )
+        .where(Download.downloaded_at >= start_date)
+        .group_by(func.date(Download.downloaded_at))
+        .order_by(func.date(Download.downloaded_at))
+    )
+
+    result = await db.execute(stmt)
+    rows = result.all()
+
+    # 构建完整的日期序列（填充缺失日期为 0）
+    trends = []
+    current_date = start_date.date()
+    end_date = datetime.now(timezone.utc).date()
+    row_dict = {str(row.date): row.count for row in rows}
+
+    while current_date <= end_date:
+        date_str = current_date.isoformat()
+        trends.append({
+            "date": date_str,
+            "downloads": row_dict.get(date_str, 0),
+        })
+        current_date += timedelta(days=1)
+
+    return {"trends": trends, "days": days}

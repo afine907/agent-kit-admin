@@ -47,3 +47,8 @@ class UserInfo(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class CreateAPIKeyRequest(BaseModel):
+    """创建 API Key 请求"""
+    name: str = Field(..., min_length=1, max_length=100, description="API Key 名称")

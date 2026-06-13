@@ -20,6 +20,7 @@ import { listCommand } from '../commands/list.js';
 import { searchCommand } from '../commands/search.js';
 import { infoCommand } from '../commands/info.js';
 import { configCommand } from '../commands/config.js';
+import { tokenCommand } from '../commands/token.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -48,6 +49,7 @@ program.addCommand(publishCommand);
 program.addCommand(installCommand);
 program.addCommand(uninstallCommand);
 program.addCommand(updateCommand);
+program.addCommand(tokenCommand);
 program.addCommand(listCommand);
 program.addCommand(searchCommand);
 program.addCommand(infoCommand);

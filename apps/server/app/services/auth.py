@@ -3,6 +3,7 @@
 import secrets
 import httpx
 from datetime import datetime, timedelta, timezone
+from collections import defaultdict
 from cachetools import TTLCache
 from jose import jwt, JWTError
 from sqlalchemy import select
@@ -18,6 +19,13 @@ settings = get_settings()
 # 存储 dict 而非 ORM 对象，避免 detached 问题
 # TTL 60 秒：平衡性能与安全（封禁/角色变更后最多 60 秒生效）
 _user_cache: TTLCache[str, dict] = TTLCache(maxsize=1000, ttl=60)
+
+# 登录失败次数跟踪
+# 格式: {email: {"count": int, "first_failure": datetime, "locked_until": datetime}}
+# 生产环境应使用 Redis
+_login_failures: dict[str, dict] = {}
+_LOGIN_MAX_ATTEMPTS = 5  # 最大失败次数
+_LOGIN_LOCKOUT_MINUTES = 15  # 锁定时间（分钟）
 
 
 class UserSnapshot:
@@ -81,8 +89,10 @@ class AuthService:
     # ============================================
 
     # Token 黑名单 - 用于登出后使 token 失效
+    # 格式: {token: expire_datetime}，自动清理过期 token 防止内存泄漏
     # 生产环境应使用 Redis
-    _token_blacklist: set[str] = set()
+    _token_blacklist: dict[str, datetime] = {}
+    _BLACKLIST_CLEANUP_INTERVAL = 100  # 每 100 次检查清理一次
 
     def create_token(self, user_id: str, username: str) -> str:
         """生成 Access Token"""
@@ -107,8 +117,14 @@ class AuthService:
 
     async def verify_token(self, token: str) -> User | UserSnapshot | None:
         """验证 JWT Token 并返回用户"""
-        # 检查黑名单
-        if token in self._token_blacklist:
+        # 检查黑名单（带过期时间）
+        expire_time = self._token_blacklist.get(token)
+        if expire_time:
+            if expire_time > datetime.now(timezone.utc):
+                return None  # token 在黑名单中且未过期
+            else:
+                # 已过期，清理
+                del self._token_blacklist[token]
             return None
 
         try:
@@ -168,8 +184,42 @@ class AuthService:
             return None
 
     def blacklist_token(self, token: str) -> None:
-        """将 Token 加入黑名单"""
-        self._token_blacklist.add(token)
+        """将 Token 加入黑名单
+
+        设置过期时间为 token 原始过期时间，防止内存泄漏。
+        """
+        try:
+            payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM], options={"verify_exp": False})
+            exp_timestamp = payload.get("exp")
+            if exp_timestamp:
+                expire_time = datetime.fromtimestamp(exp_timestamp, tz=timezone.utc)
+            else:
+                # 无过期时间，使用默认 2 小时
+                expire_time = datetime.now(timezone.utc) + timedelta(hours=2)
+        except JWTError:
+            expire_time = datetime.now(timezone.utc) + timedelta(hours=2)
+
+        self._token_blacklist[token] = expire_time
+
+        # 定期清理过期 token
+        self._cleanup_blacklist()
+
+    @classmethod
+    def _cleanup_blacklist(cls) -> None:
+        """清理过期的黑名单 token
+
+        使用计数器控制清理频率，避免每次调用都遍历。
+        """
+        if not hasattr(cls, "_blacklist_cleanup_counter"):
+            cls._blacklist_cleanup_counter = 0
+
+        cls._blacklist_cleanup_counter += 1
+        if cls._blacklist_cleanup_counter >= cls._BLACKLIST_CLEANUP_INTERVAL:
+            cls._blacklist_cleanup_counter = 0
+            now = datetime.now(timezone.utc)
+            expired = [token for token, exp in cls._token_blacklist.items() if exp <= now]
+            for token in expired:
+                del cls._token_blacklist[token]
 
     @staticmethod
     def invalidate_user_cache(user_id: str) -> None:
@@ -183,6 +233,63 @@ class AuthService:
     def clear_user_cache() -> None:
         """清除所有用户缓存"""
         _user_cache.clear()
+
+    # ============================================
+    # 登录失败次数限制
+    # ============================================
+
+    def _check_login_rate_limit(self, email: str) -> None:
+        """检查登录失败次数限制
+
+        如果超过限制，抛出 429 错误。
+        """
+        now = datetime.now(timezone.utc)
+        failure_info = _login_failures.get(email)
+
+        if not failure_info:
+            return
+
+        # 检查是否在锁定期间
+        locked_until = failure_info.get("locked_until")
+        if locked_until and now < locked_until:
+            remaining_seconds = int((locked_until - now).total_seconds())
+            remaining_minutes = (remaining_seconds + 59) // 60  # 向上取整
+            raise AppError(
+                code=ErrorCodes.RATE_LIMIT,
+                message=f"登录失败次数过多，请 {remaining_minutes} 分钟后再试",
+                status_code=429,
+            )
+
+        # 如果锁定已过期，清除记录
+        if locked_until and now >= locked_until:
+            del _login_failures[email]
+
+    def _record_login_failure(self, email: str) -> None:
+        """记录登录失败"""
+        now = datetime.now(timezone.utc)
+        failure_info = _login_failures.get(email)
+
+        if not failure_info:
+            _login_failures[email] = {
+                "count": 1,
+                "first_failure": now,
+            }
+            return
+
+        failure_info["count"] += 1
+
+        # 检查是否达到限制
+        if failure_info["count"] >= _LOGIN_MAX_ATTEMPTS:
+            failure_info["locked_until"] = now + timedelta(minutes=_LOGIN_LOCKOUT_MINUTES)
+
+    def _clear_login_failures(self, email: str) -> None:
+        """清除登录失败记录（成功登录时调用）"""
+        _login_failures.pop(email, None)
+
+    @staticmethod
+    def clear_all_login_failures() -> None:
+        """清除所有登录失败记录（用于测试）"""
+        _login_failures.clear()
 
     # ============================================
     # 本地注册/登录
@@ -249,11 +356,16 @@ class AuthService:
 
     async def login(self, email: str, password: str) -> dict:
         """本地登录"""
+        # 检查登录失败次数限制
+        self._check_login_rate_limit(email)
+
         # 查找用户
         result = await self.db.execute(select(User).where(User.email == email))
         user = result.scalar_one_or_none()
 
         if not user:
+            self._record_login_failure(email)
+            self._check_login_rate_limit(email)  # 记录后再次检查
             raise AppError(
                 code=ErrorCodes.AUTH_REQUIRED,
                 message="邮箱或密码错误",
@@ -276,6 +388,8 @@ class AuthService:
 
         # 验证密码
         if not user.password_hash:
+            self._record_login_failure(email)
+            self._check_login_rate_limit(email)  # 记录后再次检查
             raise AppError(
                 code=ErrorCodes.AUTH_REQUIRED,
                 message="该账号不支持密码登录",
@@ -283,11 +397,16 @@ class AuthService:
             )
 
         if not verify_password(password, user.password_hash):
+            self._record_login_failure(email)
+            self._check_login_rate_limit(email)  # 记录后再次检查
             raise AppError(
                 code=ErrorCodes.AUTH_REQUIRED,
                 message="邮箱或密码错误",
                 status_code=401,
             )
+
+        # 登录成功，清除失败记录
+        self._clear_login_failures(email)
 
         # 更新最后登录时间
         user.last_login_at = datetime.now(timezone.utc)

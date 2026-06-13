@@ -4,29 +4,38 @@
 
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { api, AdminStatsResponse } from '../../lib/api';
-import { Users, Package, Activity, ArrowRight } from 'lucide-react';
+import { api, AdminStatsResponse, DownloadTrend } from '../../lib/api';
+import { Users, Package, Activity, ArrowRight, Download } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<AdminStatsResponse | null>(null);
+  const [downloadTrends, setDownloadTrends] = useState<DownloadTrend[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadStats();
+    loadData();
   }, []);
 
-  const loadStats = async () => {
+  const loadData = async () => {
     try {
       setLoading(true);
-      const data = await api.admin.getStats();
-      setStats(data);
+      const [statsData, trendsData] = await Promise.all([
+        api.admin.getStats(),
+        api.admin.getDownloadTrends(30),
+      ]);
+      setStats(statsData);
+      setDownloadTrends(trendsData.trends);
     } catch (err: any) {
       setError(err.message || '加载失败');
     } finally {
       setLoading(false);
     }
   };
+
+  // 计算总下载量
+  const totalDownloads = downloadTrends.reduce((sum, item) => sum + item.downloads, 0);
 
   if (loading) {
     return (
@@ -56,7 +65,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* 统计卡片 */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="p-6 rounded-xl bg-card border border-border">
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-lg bg-primary/10">
@@ -91,6 +100,58 @@ export default function AdminDashboard() {
               <p className="text-3xl font-bold">{stats?.total_packages || 0}</p>
             </div>
           </div>
+        </div>
+
+        <div className="p-6 rounded-xl bg-card border border-border">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-lg bg-orange-500/10">
+              <Download className="w-6 h-6 text-orange-500" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">近 30 天下载</p>
+              <p className="text-3xl font-bold">{totalDownloads}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 下载趋势图 */}
+      <div className="mb-8 p-6 rounded-xl bg-card border border-border">
+        <h2 className="text-lg font-semibold mb-4">下载趋势（近 30 天）</h2>
+        <div className="h-[300px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={downloadTrends}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+              <XAxis
+                dataKey="date"
+                tick={{ fontSize: 12 }}
+                tickFormatter={(value) => {
+                  const date = new Date(value);
+                  return `${date.getMonth() + 1}/${date.getDate()}`;
+                }}
+              />
+              <YAxis tick={{ fontSize: 12 }} />
+              <Tooltip
+                labelFormatter={(value) => {
+                  const date = new Date(value);
+                  return date.toLocaleDateString('zh-CN', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  });
+                }}
+                formatter={(value: number) => [value, '下载量']}
+              />
+              <Line
+                type="monotone"
+                dataKey="downloads"
+                stroke="hsl(var(--primary))"
+                strokeWidth={2}
+                dot={{ fill: 'hsl(var(--primary))' }}
+                activeDot={{ r: 6 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
       </div>
 
