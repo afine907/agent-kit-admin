@@ -2,6 +2,7 @@
 
 import re
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.version import Version
 from app.models.package import Package
@@ -146,7 +147,16 @@ class VersionService:
         if tag == "latest":
             package.latest_version = version  # type: ignore[assignment]
 
-        await self.db.commit()
+        try:
+            await self.db.commit()
+        except IntegrityError:
+            await self.db.rollback()
+            raise AppError(
+                code=ErrorCodes.VERSION_ALREADY_EXISTS,
+                message=f"版本 {version} 已存在",
+                status_code=409,
+            )
+
         await self.db.refresh(ver)
         return ver
 

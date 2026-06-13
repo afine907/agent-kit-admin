@@ -120,11 +120,10 @@ describe('info command', () => {
 
     const { infoCommand } = await import('../../src/commands/info');
 
-    try {
-      await infoCommand.parseAsync(['node', 'test', '@nonexist/nope']);
-    } catch (error) {
-      // Expected to throw
-    }
+    // infoCommand 内部会调用 process.exit(1)，这里验证错误被正确处理
+    await expect(
+      infoCommand.parseAsync(['node', 'test', '@nonexist/nope'])
+    ).rejects.toThrow();
 
     expect(mockConsoleError).toHaveBeenCalledWith(
       expect.stringContaining('Package not found')

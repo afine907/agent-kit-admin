@@ -5,7 +5,8 @@
 /**
  * 格式化数字 (1234 → "1,234")
  */
-export function formatNumber(n: number): string {
+export function formatNumber(n: number | undefined | null): string {
+  if (n == null) return '0';
   return n.toLocaleString('en-US');
 }
 

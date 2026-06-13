@@ -51,20 +51,29 @@ async def setup_db():
 
 @pytest.fixture
 async def db(setup_db):
-    """测试数据库会话 - 使用嵌套事务实现隔离
+    """测试数据库会话 - 使用连接级事务实现隔离。
 
-    每个测试在 savepoint 中运行，结束后回滚，确保测试间数据隔离。
+    在连接上开始事务，将 session 绑定到该连接。
+    拦截 commit() 调用（改为 flush），测试结束后回滚整个事务。
     """
-    async with TestSessionLocal() as session:
-        # 开始一个外层事务
-        async with session.begin():
-            # 创建 savepoint
-            await session.begin_nested()
+    async with test_engine.connect() as conn:
+        trans = await conn.begin()
+        session = AsyncSession(bind=conn, expire_on_commit=False)
 
+        # 拦截 commit：service 层的 commit() 改为 flush()，
+        # 数据留在事务内但不真正提交，最后统一回滚
+        original_commit = session.commit
+
+        async def _no_commit():
+            await session.flush()
+
+        session.commit = _no_commit  # type: ignore[method-assign]
+
+        try:
             yield session
-
-            # 测试结束后回滚到 savepoint，不提交任何数据
-            await session.rollback()
+        finally:
+            await session.close()
+            await trans.rollback()
 
 
 @pytest.fixture

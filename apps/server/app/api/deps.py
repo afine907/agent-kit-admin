@@ -36,10 +36,12 @@ async def get_current_user_optional(
 
 
 async def get_current_user(
-    authorization: str = Header(...),
+    authorization: str | None = Header(None),
     db: AsyncSession = Depends(get_db),
 ) -> User:
     """强制用户认证 - 必须登录"""
+    if not authorization:
+        raise AppError(code=ErrorCodes.AUTH_REQUIRED, message="未提供认证信息", status_code=401)
     token = authorization.replace("Bearer ", "")
 
     # API Key 认证 (Phase 2 实现)

@@ -66,6 +66,6 @@ export const infoCommand = new Command('info')
       console.log('');
     } catch (error: any) {
       console.error(chalk.red(`\n✖ ${error.message}`));
-      process.exit(1);
+      throw error;
     }
   });

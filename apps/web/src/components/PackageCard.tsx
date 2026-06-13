@@ -1,55 +1,81 @@
 /**
- * PackageCard 组件 - 包卡片
+ * PackageCard 组 - 包卡片 (终端风格)
  */
 
 import { Link } from 'react-router-dom';
 import { PackageResponse } from '../lib/api';
+import { Download, Tag } from 'lucide-react';
 
 interface PackageCardProps {
   package: PackageResponse;
+  index?: number;
 }
 
-export function PackageCard({ package: pkg }: PackageCardProps) {
-  const typeLabel = pkg.type === 'mcp' ? 'MCP' : 'Skill';
-  const typeColor = pkg.type === 'mcp' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800';
+export function PackageCard({ package: pkg, index = 0 }: PackageCardProps) {
+  const isMCP = pkg.type === 'mcp';
 
   return (
     <Link
       to={`/packages/${pkg.scope}/${pkg.name}`}
-      className="block p-4 border rounded-lg hover:shadow-md transition-shadow"
+      className="group block p-5 rounded-xl bg-card border border-border/50 hover:border-primary/30 transition-all duration-300 card-glow animate-fade-in-up"
+      style={{ animationDelay: `${index * 60}ms` }}
     >
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <h3 className="font-semibold">{pkg.full_name}</h3>
-            <span className={`px-2 py-0.5 text-xs rounded-full ${typeColor}`}>
-              {typeLabel}
+      {/* 标题行 */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="font-semibold text-foreground truncate group-hover:text-primary transition-colors">
+              {pkg.full_name}
+            </h3>
+            <span
+              className={`inline-flex items-center px-2 py-0.5 text-[10px] font-mono font-medium rounded-md ${
+                isMCP
+                  ? 'bg-primary/10 text-primary border border-primary/20'
+                  : 'bg-accent/10 text-accent border border-accent/20'
+              }`}
+            >
+              {isMCP ? 'MCP' : 'SKILL'}
             </span>
           </div>
-          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-            {pkg.description || '-'}
+          <p className="text-sm text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed">
+            {pkg.description || '暂无描述'}
           </p>
         </div>
       </div>
 
-      <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
+      {/* 元信息 */}
+      <div className="flex items-center gap-4 mt-4 pt-3 border-t border-border/30">
         {pkg.latest_version && (
-          <span>v{pkg.latest_version}</span>
+          <span className="inline-flex items-center gap-1 text-xs font-mono text-muted-foreground">
+            <Tag className="w-3 h-3" />
+            v{pkg.latest_version}
+          </span>
         )}
-        <span>↓ {pkg.downloads_count.toLocaleString()}</span>
-        <span>{pkg.license}</span>
+        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+          <Download className="w-3 h-3" />
+          {pkg.downloads_count.toLocaleString()}
+        </span>
+        <span className="text-xs text-muted-foreground/60 ml-auto">
+          {pkg.license}
+        </span>
       </div>
 
+      {/* 标签 */}
       {pkg.tags.length > 0 && (
-        <div className="flex flex-wrap gap-1 mt-2">
-          {pkg.tags.slice(0, 5).map((tag) => (
+        <div className="flex flex-wrap gap-1.5 mt-3">
+          {pkg.tags.slice(0, 4).map((tag) => (
             <span
               key={tag}
-              className="px-2 py-0.5 text-xs bg-secondary rounded-full"
+              className="px-2 py-0.5 text-[10px] font-mono bg-secondary/80 text-muted-foreground rounded-md"
             >
               {tag}
             </span>
           ))}
+          {pkg.tags.length > 4 && (
+            <span className="text-[10px] text-muted-foreground/50">
+              +{pkg.tags.length - 4}
+            </span>
+          )}
         </div>
       )}
     </Link>

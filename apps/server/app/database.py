@@ -1,5 +1,6 @@
 """数据库连接和会话管理"""
 
+import uuid
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy import types
@@ -37,20 +38,39 @@ class CompatINET(types.TypeDecorator):
 
 
 class CompatUUID(types.TypeDecorator):
-    """兼容 PostgreSQL (UUID) 和 SQLite (CHAR(32)) 的 UUID 类型
+    """兼容 PostgreSQL (UUID) 和 SQLite (CHAR(36)) 的 UUID 类型
 
-    PostgreSQL 使用原生 UUID 类型。
-    SQLite 使用 CHAR(32) 存储十六进制字符串。
+    PostgreSQL 使用原生 UUID(as_uuid=True) 类型，返回 Python uuid.UUID。
+    SQLite 使用 CHAR(36) 存储十六进制字符串。
     """
 
-    impl = types.Uuid
+    impl = types.String(36)
     cache_ok = True
 
     def load_dialect_impl(self, dialect):
         if dialect.name == "postgresql":
             from sqlalchemy.dialects.postgresql import UUID as PgUUID
             return dialect.type_descriptor(PgUUID(as_uuid=True))
-        return dialect.type_descriptor(types.Uuid())
+        return dialect.type_descriptor(types.String(36))
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return value
+        if dialect.name == "postgresql":
+            return value  # PostgreSQL driver handles UUID natively
+        # SQLite: ensure we store as string
+        if isinstance(value, uuid.UUID):
+            return str(value)
+        return str(value)
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return value
+        if dialect.name == "postgresql":
+            return value  # PostgreSQL returns uuid.UUID natively
+        # SQLite: return string as-is (don't convert to uuid.UUID,
+        # because models compare with == and fixtures use string IDs)
+        return value
 
 settings = get_settings()
 

@@ -11,15 +11,28 @@ export interface UserInfo {
   display_name: string;
 }
 
+export interface InstalledPackage {
+  name: string;
+  full_name: string;
+  scope: string;
+  version: string;
+  type: string;
+  agent: string;
+  installed_at: string;
+  updated_at?: string;
+}
+
 export interface ConfigData {
   token?: string;
   user?: UserInfo;
   registry: string;
   updated_at?: string;
+  installed_packages?: InstalledPackage[];
 }
 
 const DEFAULT_CONFIG: ConfigData = {
   registry: 'http://localhost',
+  installed_packages: [],
 };
 
 class ConfigManager {
@@ -71,8 +84,12 @@ class ConfigManager {
   /**
    * 设置用户信息
    */
-  setUser(user: UserInfo): void {
-    this.set('user', user);
+  setUser(user: UserInfo | null): void {
+    if (user) {
+      this.set('user', user);
+    } else {
+      this.config.delete('user');
+    }
   }
 
   /**
@@ -103,6 +120,56 @@ class ConfigManager {
     this.config.delete('token');
     this.config.delete('user');
     this.config.delete('updated_at');
+  }
+
+  /**
+   * 获取已安装的包列表
+   */
+  getInstalledPackages(): InstalledPackage[] {
+    return this.get('installed_packages') || [];
+  }
+
+  /**
+   * 添加已安装的包
+   */
+  addInstalledPackage(pkg: InstalledPackage): void {
+    const packages = this.getInstalledPackages();
+    const existing = packages.findIndex((p) => p.full_name === pkg.full_name);
+    if (existing >= 0) {
+      packages[existing] = pkg;
+    } else {
+      packages.push(pkg);
+    }
+    this.set('installed_packages', packages);
+  }
+
+  /**
+   * 移除已安装的包
+   */
+  removeInstalledPackage(fullName: string): void {
+    const packages = this.getInstalledPackages().filter((p) => p.full_name !== fullName);
+    this.set('installed_packages', packages);
+  }
+
+  /**
+   * 更新已安装的包
+   */
+  updateInstalledPackage(fullName: string, updates: Partial<InstalledPackage>): void {
+    const packages = this.getInstalledPackages();
+    const index = packages.findIndex((p) => p.full_name === fullName);
+    if (index >= 0) {
+      packages[index] = { ...packages[index], ...updates };
+      this.set('installed_packages', packages);
+    }
+  }
+
+  /**
+   * 重置所有配置
+   */
+  reset(): void {
+    this.config.clear();
+    this.config.set('registry', DEFAULT_CONFIG.registry);
+    this.config.set('installed_packages', []);
   }
 
   /**

@@ -99,17 +99,21 @@ class PackageService:
 
     async def get_package(self, scope: str, name: str, current_user: User | None = None) -> Package:
         """获取包详情"""
+        # 先查所有（包括已删除），用于区分 404 和 410
         result = await self.db.execute(
             select(Package).where(
                 Package.scope == scope,
                 Package.name == name,
-                Package.deleted_at.is_(None),
             )
         )
         package = result.scalar_one_or_none()
 
         if not package:
             raise AppError(code=ErrorCodes.PACKAGE_NOT_FOUND, message=f"包 {scope}/{name} 不存在", status_code=404)
+
+        # 已删除的包返回 410 Gone
+        if package.deleted_at:
+            raise AppError(code=ErrorCodes.PACKAGE_DELETED, message=f"包 {scope}/{name} 已被删除", status_code=410)
 
         # 可见性检查
         if package.visibility == "private":
@@ -151,6 +155,7 @@ class PackageService:
             name=name,
             scope=scope,
             type=type,
+            full_name=f"{scope}/{name}",  # SQLite 不支持 GENERATED ALWAYS AS，显式设置
             description=description,
             license=license,
             repository=repository,

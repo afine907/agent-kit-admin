@@ -125,6 +125,10 @@ describe('search command', () => {
     });
 
     const { searchCommand } = await import('../../src/commands/search');
+    // 重置 commander 残留的选项状态
+    for (const opt of searchCommand.options) {
+      searchCommand.setOptionValue(opt.attributeName(), undefined);
+    }
     await searchCommand.parseAsync(['node', 'test', 'test', '--page', '2', '--limit', '10']);
 
     expect(mockListPackages).toHaveBeenCalledWith({

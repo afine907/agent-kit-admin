@@ -13,8 +13,13 @@ import { AgentAdapter, MCPConfig, MCPEntry } from './types.js';
 export class CodexAdapter implements AgentAdapter {
   name = 'Codex';
 
-  private configDir = join(homedir(), '.codex');
-  private configPath = join(this.configDir, 'config.toml');
+  private configDir: string;
+  private configPath: string;
+
+  constructor(baseDir?: string) {
+    this.configDir = baseDir ? join(baseDir, '.codex') : join(homedir(), '.codex');
+    this.configPath = join(this.configDir, 'config.toml');
+  }
 
   async detect(): Promise<boolean> {
     // 检查 ~/.codex 目录是否存在

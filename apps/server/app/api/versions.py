@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.services.package import PackageService
 from app.services.version import VersionService
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, get_current_user_optional
 from app.models.user import User
 from app.schemas.package import VersionResponse, VersionListResponse
 
@@ -30,6 +30,29 @@ async def list_versions(
         "data": versions,
         "total": len(versions),
     }
+
+
+@router.get("/{version}", response_model=VersionResponse)
+async def get_version(
+    scope: str,
+    name: str,
+    version: str,
+    current_user: User | None = Depends(get_current_user_optional),
+    db: AsyncSession = Depends(get_db),
+):
+    """获取版本详情"""
+    package_service = PackageService(db)
+    package = await package_service.get_package(scope, name, current_user)
+
+    version_service = VersionService(db)
+    ver = await version_service.get_version(str(package.id), version)
+
+    if not ver:
+        from app.errors import AppError, ErrorCodes
+
+        raise AppError(code=ErrorCodes.VERSION_NOT_FOUND, message=f"版本 {version} 不存在", status_code=404)
+
+    return ver
 
 
 @router.post("", response_model=VersionResponse, status_code=201)

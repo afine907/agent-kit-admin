@@ -8,12 +8,17 @@ import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { loginCommand } from '../commands/login.js';
+import { logoutCommand } from '../commands/logout.js';
+import { whoamiCommand } from '../commands/whoami.js';
+import { initCommand } from '../commands/init.js';
 import { publishCommand } from '../commands/publish.js';
 import { installCommand } from '../commands/install.js';
 import { uninstallCommand } from '../commands/uninstall.js';
+import { updateCommand } from '../commands/update.js';
 import { listCommand } from '../commands/list.js';
 import { searchCommand } from '../commands/search.js';
 import { infoCommand } from '../commands/info.js';
+import { configCommand } from '../commands/config.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -34,12 +39,17 @@ const program = new Command()
 
 // 注册所有命令
 program.addCommand(loginCommand);
+program.addCommand(logoutCommand);
+program.addCommand(whoamiCommand);
+program.addCommand(initCommand);
 program.addCommand(publishCommand);
 program.addCommand(installCommand);
 program.addCommand(uninstallCommand);
+program.addCommand(updateCommand);
 program.addCommand(listCommand);
 program.addCommand(searchCommand);
 program.addCommand(infoCommand);
+program.addCommand(configCommand);
 
 // 帮助信息
 program
@@ -54,12 +64,17 @@ Agent Kit Admin CLI v${version}
 
 命令:
   login       登录到 Agent Kit Registry
+  logout      登出当前用户
+  whoami      显示当前登录用户
+  init        初始化项目
   publish     发布包到 Registry
   install     安装包到本地
   uninstall   卸载已安装的包
+  update      更新已安装的包
   list        列出已安装的包
   search      搜索 Registry 中的包
   info        查看包详情
+  config      管理配置
   help        显示帮助信息
 
 选项:
@@ -68,9 +83,11 @@ Agent Kit Admin CLI v${version}
 
 示例:
   akit login
+  akit init
   akit publish
   akit install @team/web-search
   akit search mcp
+  akit config list
     `);
   });
 

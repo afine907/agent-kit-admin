@@ -226,6 +226,11 @@ class TestPublishInstallFlow:
             "name": "error-test-mcp",
             "version": "1.0.0",
             "type": "mcp",
+            "mcp": {
+                "transport": "stdio",
+                "command": "node",
+                "args": ["index.js"],
+            },
         })
 
         publish_response = await client.post(
@@ -334,6 +339,11 @@ class TestMultiUserFlow:
             "name": "concurrent-mcp",
             "version": "1.0.0",
             "type": "mcp",
+            "mcp": {
+                "transport": "stdio",
+                "command": "node",
+                "args": ["index.js"],
+            },
         })
 
         async def publish_version(tarball_content: bytes):

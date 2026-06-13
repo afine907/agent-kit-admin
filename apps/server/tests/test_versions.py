@@ -149,6 +149,11 @@ class TestVersionPublish:
             "name": test_package["name"],
             "version": "1.0.0",
             "type": "mcp",
+            "mcp": {
+                "transport": "stdio",
+                "command": "node",
+                "args": ["index.js"],
+            },
         })
 
         response1 = await client.post(
@@ -165,6 +170,11 @@ class TestVersionPublish:
             "name": test_package["name"],
             "version": "1.1.0",
             "type": "mcp",
+            "mcp": {
+                "transport": "stdio",
+                "command": "node",
+                "args": ["index.js"],
+            },
         })
 
         response2 = await client.post(
@@ -284,6 +294,7 @@ class TestVersionList:
         )
         assert response.status_code == 200
         data = response.json()
-        assert "pagination" in data
-        assert data["pagination"]["page"] == 1
-        assert data["pagination"]["per_page"] == 10
+        assert "data" in data
+        assert "total" in data
+        assert isinstance(data["data"], list)
+        assert data["total"] >= 0

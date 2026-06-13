@@ -53,6 +53,6 @@ export const searchCommand = new Command('search')
       console.log('');
     } catch (error: any) {
       console.error(chalk.red(`\n✖ 搜索失败: ${error.message}`));
-      process.exit(1);
+      throw error;
     }
   });

@@ -12,8 +12,13 @@ import { AgentAdapter, MCPConfig, MCPEntry } from './types.js';
 export class ClaudeAdapter implements AgentAdapter {
   name = 'Claude Code';
 
-  private configDir = join(homedir(), '.claude');
-  private configPath = join(this.configDir, 'mcp.json');
+  private configDir: string;
+  private configPath: string;
+
+  constructor(baseDir?: string) {
+    this.configDir = baseDir ? join(baseDir, '.claude') : join(homedir(), '.claude');
+    this.configPath = join(this.configDir, 'mcp.json');
+  }
 
   async detect(): Promise<boolean> {
     // 检查 ~/.claude 目录是否存在

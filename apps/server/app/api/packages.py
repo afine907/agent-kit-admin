@@ -75,6 +75,31 @@ async def create_package(
     return package
 
 
+@router.delete("/{scope}/{name}")
+async def delete_package(
+    scope: str,
+    name: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """删除包 (软删除，需要认证且为 owner)"""
+    from datetime import datetime, timezone
+    from app.errors import AppError, ErrorCodes
+
+    service = PackageService(db)
+    package = await service.get_package(scope, name, current_user)
+
+    # 权限检查
+    if str(package.owner_id) != str(current_user.id):
+        raise AppError(code=ErrorCodes.AUTH_FORBIDDEN, message="只有包的所有者才能删除", status_code=403)
+
+    # 软删除
+    package.deleted_at = datetime.now(timezone.utc)  # type: ignore[assignment]
+    await db.commit()
+
+    return {"message": f"包 {scope}/{name} 已删除"}
+
+
 @router.get("/{scope}/{name}/download")
 async def download_latest(
     scope: str,

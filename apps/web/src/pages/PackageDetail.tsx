@@ -1,11 +1,22 @@
 /**
- * PackageDetail 页面 - 包详情
+ * PackageDetail 页面 - 终端风格包详情
  */
 
 import { useParams, Link } from 'react-router-dom';
 import { usePackage, useVersions } from '../hooks/usePackages';
 import { VersionList } from '../components/VersionList';
 import { InstallCommand } from '../components/InstallCommand';
+import {
+  ChevronRight,
+  ArrowLeft,
+  Download,
+  Tag,
+  Shield,
+  Calendar,
+  ExternalLink,
+  AlertCircle,
+  Loader2,
+} from 'lucide-react';
 
 export default function PackageDetail() {
   const { scope, name } = useParams<{ scope: string; name: string }>();
@@ -15,70 +26,88 @@ export default function PackageDetail() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto py-8 text-center">
-        <p className="text-muted-foreground">加载中...</p>
+      <div className="container mx-auto py-16 flex flex-col items-center justify-center">
+        <Loader2 className="w-6 h-6 text-primary animate-spin mb-3" />
+        <p className="text-sm text-muted-foreground font-mono">Loading package...</p>
       </div>
     );
   }
 
   if (error || !pkg) {
     return (
-      <div className="container mx-auto py-8 text-center">
-        <p className="text-red-500">包不存在或加载失败</p>
-        <Link to="/" className="text-primary hover:underline mt-4 block">
+      <div className="container mx-auto py-16 flex flex-col items-center justify-center animate-fade-in-up">
+        <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-destructive/10 border border-destructive/20 mb-4">
+          <AlertCircle className="w-6 h-6 text-destructive" />
+        </div>
+        <p className="text-destructive font-medium mb-1">包不存在或加载失败</p>
+        <Link
+          to="/"
+          className="flex items-center gap-1.5 mt-4 text-sm text-muted-foreground hover:text-primary transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
           返回包列表
         </Link>
       </div>
     );
   }
 
-  const typeLabel = pkg.type === 'mcp' ? 'MCP' : 'Skill';
-  const typeColor = pkg.type === 'mcp' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800';
+  const isMCP = pkg.type === 'mcp';
 
   return (
     <div className="container mx-auto py-8">
       {/* 面包屑 */}
-      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
-        <Link to="/" className="hover:text-foreground">
+      <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-8 animate-fade-in-up">
+        <Link to="/" className="hover:text-primary transition-colors">
           包列表
         </Link>
-        <span>/</span>
-        <span className="text-foreground">{pkg.full_name}</span>
+        <ChevronRight className="w-3.5 h-3.5" />
+        <span className="text-foreground font-medium">{pkg.full_name}</span>
       </div>
 
-      {/* 包信息 */}
+      {/* 主内容 */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* 左侧 - 主要信息 */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-8">
           {/* 标题 */}
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-bold">{pkg.full_name}</h1>
-              <span className={`px-2 py-0.5 text-xs rounded-full ${typeColor}`}>
-                {typeLabel}
+          <div className="animate-fade-in-up">
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-3xl font-extrabold tracking-tight">{pkg.full_name}</h1>
+              <span
+                className={`inline-flex items-center px-2.5 py-0.5 text-xs font-mono font-medium rounded-md ${
+                  isMCP
+                    ? 'bg-primary/10 text-primary border border-primary/20'
+                    : 'bg-accent/10 text-accent border border-accent/20'
+                }`}
+              >
+                {isMCP ? 'MCP' : 'SKILL'}
               </span>
             </div>
-            <p className="text-muted-foreground mt-2">
-              {pkg.description || '-'}
+            <p className="text-muted-foreground mt-2 leading-relaxed">
+              {pkg.description || '暂无描述'}
             </p>
           </div>
 
           {/* 安装命令 */}
-          <div>
-            <h2 className="text-lg font-semibold mb-2">安装</h2>
+          <div className="animate-fade-in-up" style={{ animationDelay: '100ms' }}>
+            <h2 className="text-xs font-mono font-medium text-muted-foreground uppercase tracking-wider mb-3">
+              安装
+            </h2>
             <InstallCommand scope={pkg.scope} name={pkg.name} />
           </div>
 
           {/* 标签 */}
           {pkg.tags.length > 0 && (
-            <div>
-              <h2 className="text-lg font-semibold mb-2">标签</h2>
+            <div className="animate-fade-in-up" style={{ animationDelay: '150ms' }}>
+              <h2 className="text-xs font-mono font-medium text-muted-foreground uppercase tracking-wider mb-3">
+                标签
+              </h2>
               <div className="flex flex-wrap gap-2">
                 {pkg.tags.map((tag: string) => (
                   <span
                     key={tag}
-                    className="px-3 py-1 text-sm bg-secondary rounded-full"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-mono bg-secondary/50 text-muted-foreground rounded-md border border-border/30"
                   >
+                    <Tag className="w-3 h-3" />
                     {tag}
                   </span>
                 ))}
@@ -87,59 +116,83 @@ export default function PackageDetail() {
           )}
 
           {/* 版本列表 */}
-          <div>
-            <h2 className="text-lg font-semibold mb-2">版本</h2>
+          <div className="animate-fade-in-up" style={{ animationDelay: '200ms' }}>
+            <h2 className="text-xs font-mono font-medium text-muted-foreground uppercase tracking-wider mb-3">
+              版本历史
+            </h2>
             <VersionList versions={versions?.data || []} />
           </div>
         </div>
 
         {/* 右侧 - 元信息 */}
         <div className="space-y-4">
-          <div className="p-4 border rounded-lg space-y-3">
-            <h3 className="font-semibold">信息</h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">最新版本</span>
-                <span>{pkg.latest_version || '-'}</span>
+          {/* 信息卡片 */}
+          <div className="p-5 rounded-xl bg-card border border-border/50 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
+            <h3 className="text-xs font-mono font-medium text-muted-foreground uppercase tracking-wider mb-4">
+              信息
+            </h3>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="flex items-center gap-1.5 text-muted-foreground">
+                  <Tag className="w-3.5 h-3.5" />
+                  最新版本
+                </span>
+                <span className="font-mono font-medium">{pkg.latest_version || '-'}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">下载量</span>
-                <span>{pkg.downloads_count.toLocaleString()}</span>
+              <div className="flex items-center justify-between text-sm">
+                <span className="flex items-center gap-1.5 text-muted-foreground">
+                  <Download className="w-3.5 h-3.5" />
+                  下载量
+                </span>
+                <span className="font-mono font-medium">{pkg.downloads_count.toLocaleString()}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">许可证</span>
-                <span>{pkg.license || '-'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">可见性</span>
-                <span>{pkg.visibility}</span>
+              <div className="flex items-center justify-between text-sm">
+                <span className="flex items-center gap-1.5 text-muted-foreground">
+                  <Shield className="w-3.5 h-3.5" />
+                  许可证
+                </span>
+                <span className="font-medium">{pkg.license || '-'}</span>
               </div>
               {pkg.repository && (
-                <div className="flex justify-between">
+                <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">仓库</span>
                   <a
                     href={pkg.repository}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-primary hover:underline truncate ml-2"
+                    className="flex items-center gap-1 text-primary hover:underline font-medium"
                   >
                     GitHub
+                    <ExternalLink className="w-3 h-3" />
                   </a>
                 </div>
               )}
             </div>
           </div>
 
-          <div className="p-4 border rounded-lg space-y-3">
-            <h3 className="font-semibold">时间</h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">创建时间</span>
-                <span>{new Date(pkg.created_at).toLocaleDateString('zh-CN')}</span>
+          {/* 时间卡片 */}
+          <div className="p-5 rounded-xl bg-card border border-border/50 animate-fade-in-up" style={{ animationDelay: '200ms' }}>
+            <h3 className="text-xs font-mono font-medium text-muted-foreground uppercase tracking-wider mb-4">
+              时间
+            </h3>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="flex items-center gap-1.5 text-muted-foreground">
+                  <Calendar className="w-3.5 h-3.5" />
+                  创建时间
+                </span>
+                <span className="text-xs font-mono">
+                  {new Date(pkg.created_at).toLocaleDateString('zh-CN')}
+                </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">更新时间</span>
-                <span>{new Date(pkg.updated_at).toLocaleDateString('zh-CN')}</span>
+              <div className="flex items-center justify-between text-sm">
+                <span className="flex items-center gap-1.5 text-muted-foreground">
+                  <Calendar className="w-3.5 h-3.5" />
+                  更新时间
+                </span>
+                <span className="text-xs font-mono">
+                  {new Date(pkg.updated_at).toLocaleDateString('zh-CN')}
+                </span>
               </div>
             </div>
           </div>
