@@ -7,7 +7,6 @@ globs: ["apps/server/**/*.py"]
 
 ## RESTful 设计原则
 
-### URL 命名
 ```python
 # ✅ 使用名词复数形式
 /users          # 用户列表
@@ -20,7 +19,7 @@ globs: ["apps/server/**/*.py"]
 /createUser     # 不要使用动词
 ```
 
-### HTTP 方法
+**HTTP 方法**:
 - **GET** - 获取资源
 - **POST** - 创建资源（返回 201）
 - **PUT** - 完整更新资源
@@ -29,7 +28,6 @@ globs: ["apps/server/**/*.py"]
 
 ## 响应格式
 
-### 成功响应
 ```python
 # ✅ 统一响应格式
 {
@@ -49,10 +47,7 @@ globs: ["apps/server/**/*.py"]
         "totalPages": 5
     }
 }
-```
 
-### 错误响应
-```python
 # ✅ 统一错误格式
 {
     "error": {
@@ -65,7 +60,6 @@ globs: ["apps/server/**/*.py"]
 
 ## 分页设计
 
-### 查询参数
 ```python
 @router.get('/users')
 async def list_users(
@@ -80,7 +74,6 @@ async def list_users(
 
 ## 认证和授权
 
-### API Key 认证
 ```python
 # ✅ 使用 Header 传递 API Key
 async def get_current_user(
@@ -92,10 +85,7 @@ async def get_current_user(
     if not user:
         raise HTTPException(status_code=401, detail='Invalid API Key')
     return user
-```
 
-### 权限检查
-```python
 # ✅ 使用依赖注入进行权限检查
 async def require_admin(
     current_user: User = Depends(get_current_user),
@@ -108,7 +98,6 @@ async def require_admin(
 
 ## 输入验证
 
-### 请求体验证
 ```python
 # ✅ 使用 Pydantic 进行输入验证
 from pydantic import BaseModel, Field, validator
@@ -142,7 +131,6 @@ class PackageCreate(BaseModel):
 
 ## 错误处理
 
-### 错误码规范
 ```python
 # ✅ 定义错误码枚举
 from enum import Enum
@@ -168,10 +156,7 @@ class ErrorCode(str, Enum):
     PACKAGE_NOT_FOUND = 'PACKAGE_NOT_FOUND'
     VERSION_EXISTS = 'VERSION_EXISTS'
     INVALID_MANIFEST = 'INVALID_MANIFEST'
-```
 
-### 错误响应
-```python
 # ✅ 使用统一的错误响应格式
 class ErrorResponse(BaseModel):
     """错误响应"""
@@ -187,7 +172,6 @@ class ErrorDetail(BaseModel):
 
 ## 缓存控制
 
-### 响应缓存
 ```python
 from fastapi.responses import Response
 
@@ -205,7 +189,6 @@ async def get_package(
 
 ## 文档注释
 
-### OpenAPI 文档
 ```python
 @router.get(
     '/packages/{name}',

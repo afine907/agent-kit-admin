@@ -7,7 +7,6 @@ globs: ["apps/web/**/*.tsx", "apps/web/**/*.ts"]
 
 ## 组件规范
 
-### 函数组件
 ```typescript
 // ✅ 使用函数组件和 TypeScript
 interface UserCardProps {
@@ -23,46 +22,17 @@ export function UserCard({ user, onSelect }: UserCardProps) {
     </div>
   )
 }
-```
 
-### 组件组织
-```typescript
+// ✅ 组件组织结构
 // 1. 类型定义
-interface Props {
-  title: string
-  items: Item[]
-}
-
 // 2. 组件实现
-export function ItemList({ title, items }: Props) {
-  // 3. Hooks
-  const [selectedId, setSelectedId] = useState<string | null>(null)
-
-  // 4. 事件处理
-  const handleSelect = useCallback((id: string) => {
-    setSelectedId(id)
-  }, [])
-
-  // 5. 渲染
-  return (
-    <div>
-      <h2>{title}</h2>
-      {items.map(item => (
-        <Item
-          key={item.id}
-          item={item}
-          isSelected={item.id === selectedId}
-          onSelect={handleSelect}
-        />
-      ))}
-    </div>
-  )
-}
+// 3. Hooks
+// 4. 事件处理
+// 5. 渲染
 ```
 
 ## Hooks 规范
 
-### 自定义 Hooks
 ```typescript
 // ✅ 自定义 Hook 以 use 开头
 function useUser(userId: string) {
@@ -77,10 +47,7 @@ function useUser(userId: string) {
     error,
   }
 }
-```
 
-### Hook 依赖
-```typescript
 // ✅ 正确的依赖数组
 useEffect(() => {
   fetchUser(userId)
@@ -94,7 +61,6 @@ useEffect(() => {
 
 ## 状态管理
 
-### Zustand Store
 ```typescript
 // ✅ 使用 Zustand 进行全局状态管理
 import { create } from 'zustand'
@@ -123,7 +89,6 @@ const useUserStore = create<UserStore>()(
 
 ## 数据获取
 
-### TanStack Query
 ```typescript
 // ✅ 使用 TanStack Query 进行数据获取
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -168,7 +133,6 @@ function UserList() {
 
 ## 性能优化
 
-### 代码分割
 ```typescript
 // ✅ 使用 React.lazy 进行代码分割
 const HeavyComponent = lazy(() => import('./HeavyComponent'))
@@ -180,10 +144,7 @@ function App() {
     </Suspense>
   )
 }
-```
 
-### 避免不必要的重渲染
-```typescript
 // ✅ 使用 React.memo 缓存组件
 const UserCard = React.memo(function UserCard({ user }: UserCardProps) {
   return <div>{user.name}</div>
@@ -205,7 +166,6 @@ function UserStats({ users }: { users: User[] }) {
 
 ## 样式规范
 
-### Tailwind CSS
 ```typescript
 // ✅ 使用 Tailwind CSS 工具类
 function Button({ children, variant = 'primary' }: ButtonProps) {
@@ -233,7 +193,6 @@ function cn(...inputs: ClassValue[]) {
 
 ## 错误处理
 
-### 错误边界
 ```typescript
 // ✅ 使用 ErrorBoundary 组件
 class ErrorBoundary extends React.Component<

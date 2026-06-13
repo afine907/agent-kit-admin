@@ -11,35 +11,21 @@ globs: ["apps/server/**/*.py"]
 
 ## 类型注解
 
-### 函数签名
 ```python
 # ✅ 完整类型注解
-async def get_user(
-    user_id: str,
-    *,
-    include_posts: bool = False
-) -> User | None:
+async def get_user(user_id: str, *, include_posts: bool = False) -> User | None:
     """获取用户信息"""
-    # 实现
-```
+    pass
 
-### 复杂类型
-```python
-from typing import Optional, Sequence
-from collections.abc import Awaitable
-
-# 函数类型
+# 复杂类型
+from typing import Callable, Awaitable
 AsyncUserHandler = Callable[[str], Awaitable[User]]
-
-# 容器类型
 UserList = list[User]
-UserMap = dict[str, User]
 OptionalUser = User | None
 ```
 
 ## 异步编程
 
-### 使用 async/await
 ```python
 # ✅ 正确的异步编程
 async def fetch_users() -> list[User]:
@@ -52,11 +38,8 @@ async def fetch_users() -> list[User]:
 async def fetch_users() -> list[User]:
     response = requests.get('/api/users')  # 阻塞！
     return response.json()
-```
 
-### 异步上下文管理器
-```python
-# ✅ 使用异步上下文管理器
+# ✅ 异步上下文管理器
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     async with async_session() as session:
         yield session
@@ -65,7 +48,6 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
 
 ## FastAPI 规范
 
-### 路由组织
 ```python
 # ✅ 使用 APIRouter 组织路由
 router = APIRouter(prefix='/users', tags=['users'])
@@ -78,10 +60,7 @@ async def list_users(
 ) -> list[UserResponse]:
     """获取用户列表"""
     return await UserService(db).list_users(skip, limit)
-```
 
-### Pydantic 模型
-```python
 # ✅ 使用 Pydantic v2 模型
 from pydantic import BaseModel, Field, EmailStr
 
@@ -104,7 +83,6 @@ class UserResponse(BaseModel):
 
 ## SQLAlchemy 规范
 
-### 模型定义
 ```python
 # ✅ 使用 SQLAlchemy 2.0 风格
 from sqlalchemy import String, DateTime, func
@@ -127,17 +105,11 @@ class User(Base):
         DateTime(timezone=True),
         nullable=True
     )
-```
 
-### 查询模式
-```python
 # ✅ 使用 select 语句
 from sqlalchemy import select
 
-async def get_user_by_email(
-    db: AsyncSession,
-    email: str
-) -> User | None:
+async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
     """通过邮箱获取用户"""
     stmt = select(User).where(
         User.email == email,
@@ -149,7 +121,6 @@ async def get_user_by_email(
 
 ## 错误处理
 
-### 自定义异常
 ```python
 # ✅ 层次化的异常体系
 class AppError(Exception):
@@ -168,10 +139,7 @@ class UserNotFoundError(AppError):
             message=f'User {user_id} not found',
             status_code=404
         )
-```
 
-### 全局异常处理
-```python
 # ✅ FastAPI 全局异常处理器
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -179,10 +147,7 @@ from fastapi.responses import JSONResponse
 app = FastAPI()
 
 @app.exception_handler(AppError)
-async def app_error_handler(
-    request: Request,
-    exc: AppError
-) -> JSONResponse:
+async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
     return JSONResponse(
         status_code=exc.status_code,
         content={
@@ -196,7 +161,6 @@ async def app_error_handler(
 
 ## 常见陷阱
 
-### 避免可变默认参数
 ```python
 # ❌ 使用可变默认参数
 def add_user(user: User, users: list[User] = []):
@@ -209,10 +173,7 @@ def add_user(user: User, users: list[Context] | None = None) -> list[User]:
         users = []
     users.append(user)
     return users
-```
 
-### 避免循环导入
-```python
 # ✅ 使用 TYPE_CHECKING 避免循环导入
 from __future__ import annotations
 from typing import TYPE_CHECKING
