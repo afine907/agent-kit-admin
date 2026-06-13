@@ -2,7 +2,7 @@
 
 import uuid
 from sqlalchemy import Column, String, DateTime, func, UniqueConstraint
-from sqlalchemy.dialects.postgresql import UUID
+from app.database import CompatUUID as UUID
 from app.database import Base
 
 

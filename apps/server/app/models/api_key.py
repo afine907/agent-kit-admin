@@ -2,8 +2,8 @@
 
 import uuid
 from sqlalchemy import Column, String, DateTime, func, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID, JSONB
-from app.database import Base
+from app.database import CompatUUID as UUID
+from app.database import Base, CompatJSONB
 
 
 class APIKey(Base):
@@ -16,7 +16,7 @@ class APIKey(Base):
     name = Column(String(100), nullable=False)  # 描述名称
     key_hash = Column(String(128), unique=True, nullable=False)  # SHA256 哈希
     key_prefix = Column(String(10), nullable=False)  # 前缀用于展示
-    permissions = Column(JSONB, default=["read", "write"])
+    permissions = Column(CompatJSONB, default=["read", "write"])
     last_used_at = Column(DateTime(timezone=True), nullable=True)
     expires_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

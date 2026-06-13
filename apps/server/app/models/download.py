@@ -2,8 +2,8 @@
 
 import uuid
 from sqlalchemy import Column, Text, DateTime, func, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID, INET
-from app.database import Base
+from app.database import CompatUUID as UUID
+from app.database import Base, CompatINET
 
 
 class Download(Base):
@@ -15,7 +15,7 @@ class Download(Base):
     package_id = Column(UUID(as_uuid=True), ForeignKey("packages.id", ondelete="CASCADE"), nullable=False)
     version_id = Column(UUID(as_uuid=True), ForeignKey("versions.id", ondelete="CASCADE"), nullable=False)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    ip_address = Column(INET, nullable=True)
+    ip_address = Column(CompatINET, nullable=True)
     user_agent = Column(Text, nullable=True)
     downloaded_at = Column(DateTime(timezone=True), server_default=func.now())
 

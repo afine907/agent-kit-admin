@@ -2,8 +2,8 @@
 
 import uuid
 from sqlalchemy import Column, String, Text, BigInteger, DateTime, func, UniqueConstraint
-from sqlalchemy.dialects.postgresql import UUID, JSONB
-from app.database import Base
+from app.database import CompatUUID as UUID
+from app.database import Base, CompatJSONB
 
 
 class Package(Base):
@@ -25,7 +25,7 @@ class Package(Base):
     visibility = Column(String(10), default="public")  # public / team / private
     downloads_count = Column(BigInteger, default=0)
     latest_version = Column(String(50), nullable=True)
-    tags = Column(JSONB, default=list)  # 标签数组 - 使用 list 工厂函数避免可变默认值问题
+    tags = Column(CompatJSONB, default=list)  # 标签数组 - 使用 list 工厂函数避免可变默认值问题
     deleted_at = Column(DateTime(timezone=True), nullable=True)  # 软删除
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

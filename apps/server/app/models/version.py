@@ -2,8 +2,8 @@
 
 import uuid
 from sqlalchemy import Column, String, BigInteger, Boolean, DateTime, func, UniqueConstraint, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID, JSONB
-from app.database import Base
+from app.database import CompatUUID as UUID
+from app.database import Base, CompatJSONB
 
 
 class Version(Base):
@@ -14,11 +14,11 @@ class Version(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, server_default=func.gen_random_uuid())
     package_id = Column(UUID(as_uuid=True), ForeignKey("packages.id", ondelete="CASCADE"), nullable=False)
     version = Column(String(50), nullable=False)  # semver: 1.2.3
-    manifest = Column(JSONB, nullable=False)  # akit.json 的完整内容
+    manifest = Column(CompatJSONB, nullable=False)  # akit.json 的完整内容
     tarball_hash = Column(String(64), nullable=False)  # SHA256
     tarball_size = Column(BigInteger, nullable=False)
     tarball_path = Column(String(500), nullable=False)  # MinIO 路径
-    dependencies = Column(JSONB, default={})
+    dependencies = Column(CompatJSONB, default={})
     published_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     published_at = Column(DateTime(timezone=True), server_default=func.now())
     deprecated = Column(Boolean, default=False)
