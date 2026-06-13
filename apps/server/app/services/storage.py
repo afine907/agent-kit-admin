@@ -4,6 +4,7 @@ import asyncio
 import hashlib
 import logging
 import tempfile
+import threading
 import boto3
 from botocore.config import Config
 from fastapi import UploadFile
@@ -15,16 +16,21 @@ settings = get_settings()
 
 # 模块级单例 - 复用 boto3 客户端连接
 _storage_instance: "StorageService | None" = None
+_storage_lock = threading.Lock()
 
 
 def get_storage_service() -> "StorageService":
     """获取 StorageService 单例
 
     单例模式避免每次请求都创建新的 boto3 客户端和 TCP 连接。
+    使用 threading.Lock 保护线程安全。
     """
     global _storage_instance
     if _storage_instance is None:
-        _storage_instance = StorageService()
+        with _storage_lock:
+            # Double-checked locking pattern
+            if _storage_instance is None:
+                _storage_instance = StorageService()
     return _storage_instance
 
 

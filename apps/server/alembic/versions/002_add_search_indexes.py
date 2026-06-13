@@ -27,11 +27,13 @@ def upgrade() -> None:
         ON packages USING gin (name gin_trgm_ops)
     """)
 
-    # 为包描述添加三元组 GIN 索引
+    # 为包描述添加三元组 GIN 索引（部分索引）
     # 加速 SELECT ... WHERE description ILIKE '%keyword%' 查询
+    # 只为非空描述创建索引，节省存储空间和提升性能
     op.execute("""
         CREATE INDEX idx_packages_description_trgm
         ON packages USING gin (description gin_trgm_ops)
+        WHERE description IS NOT NULL
     """)
 
 
