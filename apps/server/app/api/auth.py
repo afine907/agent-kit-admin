@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import RedirectResponse
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.services.auth import AuthService
@@ -9,6 +10,53 @@ from app.api.deps import get_current_user
 from app.models.user import User
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+class DevLoginRequest(BaseModel):
+    """开发环境登录请求"""
+    username: str
+    display_name: str | None = None
+
+
+@router.post("/dev-login")
+async def dev_login(
+    data: DevLoginRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """开发环境快速登录 - 仅用于测试"""
+    from app.config import get_settings
+    import jwt
+    from datetime import datetime, timedelta
+
+    settings = get_settings()
+    if not settings.DEBUG:
+        return {"error": "Dev login only available in DEBUG mode"}
+
+    auth_service = AuthService(db)
+    user = await auth_service.get_or_create_dev_user(
+        username=data.username,
+        display_name=data.display_name or data.username,
+    )
+
+    # 生成 JWT Token
+    token = jwt.encode(
+        {
+            "sub": str(user.id),
+            "exp": datetime.utcnow() + timedelta(hours=settings.JWT_EXPIRE_HOURS),
+        },
+        settings.JWT_SECRET,
+        algorithm=settings.JWT_ALGORITHM,
+    )
+
+    return {
+        "token": token,
+        "user": {
+            "id": str(user.id),
+            "username": user.username,
+            "display_name": user.display_name,
+            "avatar_url": user.avatar_url,
+        },
+    }
 
 
 @router.get("/oauth/{provider}")

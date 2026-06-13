@@ -1,6 +1,7 @@
 """Agent Kit Admin - FastAPI 主入口"""
 
 import logging
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
@@ -18,6 +19,24 @@ logger = logging.getLogger("akit")
 
 settings = get_settings()
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """应用生命周期 - 启动时创建数据库表"""
+    from app.database import engine, Base
+    from app.models import user, package, version, download, review  # noqa: F401
+
+    # 创建所有表
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    logger.info("Database tables created/verified")
+
+    yield
+
+    # 关闭引擎
+    await engine.dispose()
+
+
 # 创建 FastAPI 应用
 app = FastAPI(
     title=settings.APP_NAME,
@@ -25,6 +44,7 @@ app = FastAPI(
     description="Agent Kit Admin - AI Agent 包注册中心",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
 # 注册异常处理器

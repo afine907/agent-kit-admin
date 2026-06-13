@@ -20,19 +20,28 @@ class Settings(BaseSettings):
     APP_BASE_URL: str = "http://localhost:8000"  # 应用基础 URL，用于 OAuth 回调等
     DEBUG: bool = False
 
-    # 数据库
+    # 数据库 - 支持 PostgreSQL 和 SQLite
     DB_HOST: str = "localhost"
     DB_PORT: int = 5432
     DB_USER: str = "agentkit"
     DB_PASSWORD: str = "agentkit_dev_2024"
     DB_NAME: str = "agentkit"
+    DATABASE_URL: str = ""  # 可选：直接指定数据库 URL（覆盖上述字段）
 
     @property
-    def DATABASE_URL(self) -> str:
+    def DATABASE_URL_RESOLVED(self) -> str:
+        """获取实际使用的数据库 URL"""
+        if self.DATABASE_URL:
+            return self.DATABASE_URL
         return f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
 
     @property
     def DATABASE_URL_SYNC(self) -> str:
+        if self.DATABASE_URL:
+            # SQLite 同步 URL
+            if self.DATABASE_URL.startswith("sqlite"):
+                return self.DATABASE_URL.replace("+aiosqlite", "")
+            return self.DATABASE_URL.replace("+asyncpg", "")
         return f"postgresql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
 
     # MinIO

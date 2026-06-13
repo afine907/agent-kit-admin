@@ -74,14 +74,22 @@ class CompatUUID(types.TypeDecorator):
 
 settings = get_settings()
 
-# 创建异步引擎
-engine = create_async_engine(
-    settings.DATABASE_URL,
-    echo=settings.DEBUG,
-    pool_size=20,
-    max_overflow=10,
-    pool_pre_ping=True,
-)
+# 检测数据库类型
+_db_url = settings.DATABASE_URL_RESOLVED
+_is_sqlite = _db_url.startswith("sqlite")
+
+# 创建异步引擎 - SQLite 不支持连接池参数
+engine_kwargs = {
+    "echo": settings.DEBUG,
+}
+if not _is_sqlite:
+    engine_kwargs.update({
+        "pool_size": 20,
+        "max_overflow": 10,
+        "pool_pre_ping": True,
+    })
+
+engine = create_async_engine(_db_url, **engine_kwargs)
 
 # 创建异步会话工厂
 AsyncSessionLocal = async_sessionmaker(

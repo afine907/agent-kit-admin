@@ -53,6 +53,37 @@ class AuthService:
             return None
 
     # ============================================
+    # 开发环境登录
+    # ============================================
+
+    async def get_or_create_dev_user(
+        self,
+        username: str,
+        display_name: str,
+    ) -> User:
+        """开发环境快速登录 - 查找或创建用户"""
+        # 查找已有用户
+        result = await self.db.execute(
+            select(User).where(User.username == username)
+        )
+        user = result.scalar_one_or_none()
+
+        if user:
+            return user
+
+        # 创建新用户
+        user = User(
+            username=username,
+            display_name=display_name,
+            oauth_provider="dev",
+            oauth_id=f"dev_{username}",
+        )
+        self.db.add(user)
+        await self.db.commit()
+        await self.db.refresh(user)
+        return user
+
+    # ============================================
     # OAuth
     # ============================================
 
