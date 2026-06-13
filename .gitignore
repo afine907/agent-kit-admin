@@ -94,18 +94,17 @@ minio_data/
 postgres_data/
 
 # 测试包
-test-packages/*.tar.gz
+fixtures/test-packages/*.tar.gz
 
 # CLI 配置
 .akit/
 
 # 构建产物
-server/dist/
-cli/dist/
-web/dist/
+apps/server/dist/
+apps/cli/dist/
+apps/web/dist/
 
 # ============================================
-# Specs & Orchestra (本地开发文档)
+# Orchestra (本地开发文档)
 # ============================================
-specs/
 .claude/orchestra/

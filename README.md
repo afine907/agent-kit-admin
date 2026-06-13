@@ -55,7 +55,7 @@ cp skills/akit.md .claude/skills/akit.md
 ```bash
 git clone https://github.com/your-org/agent-kit-admin.git
 cd agent-kit-admin
-cp deploy/.env.example deploy/.env
+cp deploy/docker/.env.example deploy/docker/.env
 # 编辑 .env 配置
 
 docker compose up -d
@@ -74,7 +74,7 @@ docker compose up -d
 
 ## 文档
 
-详细文档见 [wiki](./wiki/) 目录。
+详细文档见 [docs](./docs/) 目录。
 
 ## License
 

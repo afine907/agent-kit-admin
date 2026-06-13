@@ -1,0 +1,6 @@
+packages:
+  - "apps/*"
+allowBuilds:
+  esbuild: true
+minimumReleaseAgeExclude:
+  - '@types/inquirer@9.0.10'

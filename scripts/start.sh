@@ -3,6 +3,8 @@
 
 set -e
 
+COMPOSE_FILE="deploy/docker/docker-compose.yml"
+
 # 颜色定义
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -67,7 +69,7 @@ fi
 
 # 启动服务
 echo -e "${GREEN}启动服务...${NC}"
-docker compose up -d
+docker compose -f $COMPOSE_FILE up -d
 
 # 等待服务就绪
 echo ""
@@ -76,7 +78,7 @@ echo -e "${YELLOW}等待服务就绪...${NC}"
 # 等待 PostgreSQL
 echo -n "  PostgreSQL: "
 for i in {1..30}; do
-    if docker compose exec -T db pg_isready -U agentkit &> /dev/null; then
+    if docker compose -f $COMPOSE_FILE exec -T db pg_isready -U agentkit &> /dev/null; then
         echo -e "${GREEN}就绪${NC}"
         break
     fi
@@ -90,7 +92,7 @@ done
 # 等待 MinIO
 echo -n "  MinIO: "
 for i in {1..30}; do
-    if docker compose exec -T minio mc ready local &> /dev/null; then
+    if docker compose -f $COMPOSE_FILE exec -T minio mc ready local &> /dev/null; then
         echo -e "${GREEN}就绪${NC}"
         break
     fi

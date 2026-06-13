@@ -1,0 +1,13 @@
+{
+  "name": "agent-kit-admin",
+  "private": true,
+  "scripts": {
+    "dev:server": "cd apps/server && python -m uvicorn app.main:app --reload",
+    "dev:cli": "cd apps/cli && pnpm dev",
+    "dev:web": "cd apps/web && pnpm dev",
+    "build:cli": "cd apps/cli && pnpm build",
+    "build:web": "cd apps/web && pnpm build",
+    "lint": "cd apps/cli && pnpm lint & cd apps/web && pnpm lint",
+    "typecheck": "cd apps/cli && pnpm typecheck & cd apps/web && pnpm typecheck"
+  }
+}

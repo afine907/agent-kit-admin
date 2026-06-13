@@ -14,17 +14,17 @@ Three components, one deployment:
 
 | Component | Stack | Directory | Purpose |
 |---|---|---|---|
-| **server** | Python 3.11+ / FastAPI / SQLAlchemy 2.0 (async) | `server/` | REST API + package registry logic (single FastAPI app) |
-| **cli** | Node.js 18+ / TypeScript / Commander.js | `cli/` | `akit` CLI — publish, install, manage packages |
-| **web** | React 18 / Vite 5 / shadcn/ui / TypeScript | `web/` | SPA admin dashboard |
+| **server** | Python 3.11+ / FastAPI / SQLAlchemy 2.0 (async) | `apps/server/` | REST API + package registry logic (single FastAPI app) |
+| **cli** | Node.js 18+ / TypeScript / Commander.js | `apps/cli/` | `akit` CLI — publish, install, manage packages |
+| **web** | React 18 / Vite 5 / shadcn/ui / TypeScript | `apps/web/` | SPA admin dashboard |
 
 Infrastructure: PostgreSQL 16 (metadata) + MinIO (package tarballs) + Caddy (gateway/TLS) — all via Docker Compose.
 
-**Key design pattern — Agent Adapters:** The CLI uses an adapter registry (`cli/src/agents/registry.ts`) to write package configs to different AI agents. Each adapter implements `AgentAdapter` interface (detect, readConfig, writeConfig, removeConfig). MVP supports Claude Code (`~/.claude/mcp.json`, JSON) and Codex (`~/.codex/config.toml`, TOML via smol-toml).
+**Key design pattern — Agent Adapters:** The CLI uses an adapter registry (`apps/cli/src/agents/registry.ts`) to write package configs to different AI agents. Each adapter implements `AgentAdapter` interface (detect, readConfig, writeConfig, removeConfig). MVP supports Claude Code (`~/.claude/mcp.json`, JSON) and Codex (`~/.codex/config.toml`, TOML via smol-toml).
 
-## Design Documents (wiki/)
+## Design Documents (docs/architecture/)
 
-All implementation specs live in `wiki/`. Read these before writing code:
+All implementation specs live in `docs/architecture/`. Read these before writing code:
 
 | Document | When to read |
 |---|---|
@@ -39,7 +39,7 @@ All implementation specs live in `wiki/`. Read these before writing code:
 | `18-manifest-schema.md` | Before implementing package validation — JSON Schema for `akit.json`, validation rules |
 | `20-frontend-types.md` | Before writing frontend — TypeScript types, TanStack Query hooks, Zustand stores |
 
-Diagrams in `wiki/diagrams/` (Mermaid format): architecture overview, data flow sequences, ER diagrams, user interaction flows.
+Diagrams in `docs/architecture/diagrams/` (Mermaid format): architecture overview, data flow sequences, ER diagrams, user interaction flows.
 
 ## Backend Layering Convention
 

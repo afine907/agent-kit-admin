@@ -3,6 +3,8 @@
 
 set -e
 
+COMPOSE_FILE="deploy/docker/docker-compose.yml"
+
 # 颜色定义
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -30,7 +32,7 @@ fi
 # 等待 PostgreSQL 就绪
 echo -e "${YELLOW}等待 PostgreSQL 就绪...${NC}"
 for i in {1..30}; do
-    if docker compose exec -T db pg_isready -U ${DB_USER:-agentkit} &> /dev/null; then
+    if docker compose -f $COMPOSE_FILE exec -T db pg_isready -U ${DB_USER:-agentkit} &> /dev/null; then
         echo -e "${GREEN}✔ PostgreSQL 已就绪${NC}"
         break
     fi
@@ -43,17 +45,17 @@ done
 
 # 执行初始化 SQL
 echo -e "${YELLOW}执行数据库初始化...${NC}"
-docker compose exec -T db psql -U ${DB_USER:-agentkit} -d ${DB_NAME:-agentkit} < scripts/init-db.sql
+docker compose -f $COMPOSE_FILE exec -T db psql -U ${DB_USER:-agentkit} -d ${DB_NAME:-agentkit} < scripts/init-db.sql
 echo -e "${GREEN}✔ 数据库初始化完成${NC}"
 
 # 运行 Alembic 迁移（如果 server 已构建）
 echo ""
 echo -e "${YELLOW}运行数据库迁移...${NC}"
-if docker compose exec -T server alembic upgrade head 2>/dev/null; then
+if docker compose -f $COMPOSE_FILE exec -T server alembic upgrade head 2>/dev/null; then
     echo -e "${GREEN}✔ 数据库迁移完成${NC}"
 else
     echo -e "${YELLOW}⚠ Server 未启动，跳过 Alembic 迁移${NC}"
-    echo "  请在 server 启动后运行: docker compose exec server alembic upgrade head"
+    echo "  请在 server 启动后运行: docker compose -f $COMPOSE_FILE exec server alembic upgrade head"
 fi
 
 echo ""
