@@ -7,10 +7,7 @@ globs: ["apps/server/**/*.py"]
 
 ## Python 版本
 
-使用 Python 3.11+，充分利用新特性:
-- `match` 语句
-- 改进的错误消息
-- 性能优化
+使用 Python 3.11+，充分利用新特性：`match` 语句、改进的错误消息、性能优化
 
 ## 类型注解
 
@@ -23,10 +20,6 @@ async def get_user(
     include_posts: bool = False
 ) -> User | None:
     """获取用户信息"""
-    # 实现
-
-# ❌ 缺少类型注解
-async def get_user(user_id, include_posts=False):
     # 实现
 ```
 
@@ -68,13 +61,6 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     async with async_session() as session:
         yield session
         await session.rollback()
-
-# 在 FastAPI 中使用
-@app.get('/users')
-async def get_users(
-    db: AsyncSession = Depends(get_db_session)
-) -> list[User]:
-    # 使用 db session
 ```
 
 ## FastAPI 规范
@@ -92,17 +78,6 @@ async def list_users(
 ) -> list[UserResponse]:
     """获取用户列表"""
     return await UserService(db).list_users(skip, limit)
-
-@router.get('/{user_id}')
-async def get_user(
-    user_id: str,
-    db: AsyncSession = Depends(get_db_session)
-) -> UserResponse:
-    """获取单个用户"""
-    user = await UserService(db).get_user(user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail='User not found')
-    return user
 ```
 
 ### Pydantic 模型
@@ -125,31 +100,6 @@ class UserResponse(BaseModel):
 
     class Config:
         from_attributes = True  # 支持 ORM 对象转换
-```
-
-### 依赖注入
-```python
-# ✅ 使用 FastAPI 依赖注入
-async def get_current_user(
-    token: str = Depends(oauth2_scheme),
-    db: AsyncSession = Depends(get_db_session)
-) -> User:
-    """获取当前认证用户"""
-    try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
-        user = await UserService(db).get_user(payload['sub'])
-        if not user:
-            raise HTTPException(status_code=401, detail='User not found')
-        return user
-    except jwt.JWTError:
-        raise HTTPException(status_code=401, detail='Invalid token')
-
-# 在路由中使用
-@router.get('/me')
-async def get_me(
-    current_user: User = Depends(get_current_user)
-) -> UserResponse:
-    return current_user
 ```
 
 ## SQLAlchemy 规范
@@ -195,10 +145,6 @@ async def get_user_by_email(
     )
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
-
-# ❌ 使用旧版 query API
-async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
-    return await db.query(User).filter(User.email == email).first()
 ```
 
 ## 错误处理
@@ -221,15 +167,6 @@ class UserNotFoundError(AppError):
             code='USER_NOT_FOUND',
             message=f'User {user_id} not found',
             status_code=404
-        )
-
-class DuplicateEmailError(AppError):
-    """邮箱重复"""
-    def __init__(self, email: str):
-        super().__init__(
-            code='DUPLICATE_EMAIL',
-            message=f'Email {email} already exists',
-            status_code=409
         )
 ```
 
@@ -257,37 +194,6 @@ async def app_error_handler(
     )
 ```
 
-## 代码组织
-
-### 模块结构
-```python
-# 1. 标准库导入
-import os
-from datetime import datetime
-
-# 2. 第三方库导入
-from fastapi import APIRouter
-from sqlalchemy.ext.asyncio import AsyncSession
-
-# 3. 项目内部导入
-from app.core.config import settings
-from app.models.user import User
-from app.services.user import UserService
-
-# 4. 模块级常量
-MAX_RESULTS = 100
-
-# 5. 模块级函数
-def validate_input(data: dict) -> bool:
-    # 实现
-    pass
-
-# 6. 类定义
-class UserController:
-    # 实现
-    pass
-```
-
 ## 常见陷阱
 
 ### 避免可变默认参数
@@ -307,13 +213,6 @@ def add_user(user: User, users: list[Context] | None = None) -> list[User]:
 
 ### 避免循环导入
 ```python
-# ❌ 循环导入
-# module_a.py
-from module_b import function_b
-
-# module_b.py
-from module_a import function_a
-
 # ✅ 使用 TYPE_CHECKING 避免循环导入
 from __future__ import annotations
 from typing import TYPE_CHECKING

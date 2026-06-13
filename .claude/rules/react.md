@@ -23,13 +23,6 @@ export function UserCard({ user, onSelect }: UserCardProps) {
     </div>
   )
 }
-
-// ❌ 使用类组件
-export class UserCard extends React.Component {
-  render() {
-    return <div>{this.props.user.name}</div>
-  }
-}
 ```
 
 ### 组件组织
@@ -84,16 +77,6 @@ function useUser(userId: string) {
     error,
   }
 }
-
-// 使用
-function UserProfile({ userId }: { userId: string }) {
-  const { user, isLoading } = useUser(userId)
-
-  if (isLoading) return <Loading />
-  if (!user) return <NotFound />
-
-  return <div>{user.name}</div>
-}
 ```
 
 ### Hook 依赖
@@ -107,11 +90,6 @@ useEffect(() => {
 useEffect(() => {
   fetchUser(userId)
 }, [])  // userId 变化时不会重新执行
-
-// ❌ 多余的依赖
-useEffect(() => {
-  fetchUser(userId)
-}, [userId, fetchUser])  // fetchUser 应该被 memoize
 ```
 
 ## 状态管理
@@ -141,51 +119,6 @@ const useUserStore = create<UserStore>()(
     { name: 'user-store' }
   )
 )
-
-// 使用
-function UserList() {
-  const { users, selectUser } = useUserStore()
-
-  return (
-    <ul>
-      {users.map(user => (
-        <li key={user.id} onClick={() => selectUser(user)}>
-          {user.name}
-        </li>
-      ))}
-    </ul>
-  )
-}
-```
-
-### 本地状态
-```typescript
-// ✅ 使用 useState 管理本地状态
-function SearchInput() {
-  const [query, setQuery] = useState('')
-  const [results, setResults] = useState<Result[]>([])
-
-  // ✅ 使用 useCallback 缓存事件处理
-  const handleChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      setQuery(e.target.value)
-    },
-    []
-  )
-
-  // ✅ 使用 useMemo 缓存计算结果
-  const filteredResults = useMemo(
-    () => results.filter(r => r.name.includes(query)),
-    [query, results]
-  )
-
-  return (
-    <div>
-      <input value={query} onChange={handleChange} />
-      <Results items={filteredResults} />
-    </div>
-  )
-}
 ```
 
 ## 数据获取
@@ -268,26 +201,6 @@ function UserStats({ users }: { users: User[] }) {
 
   return <div>Total: {stats.total}, Active: {stats.active}</div>
 }
-
-// ✅ 使用 useCallback 缓存事件处理
-function UserList({ onSelect }: { onSelect: (id: string) => void }) {
-  const handleClick = useCallback(
-    (id: string) => {
-      onSelect(id)
-    },
-    [onSelect]
-  )
-
-  return (
-    <ul>
-      {users.map(user => (
-        <li key={user.id} onClick={() => handleClick(user.id)}>
-          {user.name}
-        </li>
-      ))}
-    </ul>
-  )
-}
 ```
 
 ## 样式规范
@@ -343,14 +256,5 @@ class ErrorBoundary extends React.Component<
     }
     return this.props.children
   }
-}
-
-// 使用
-function App() {
-  return (
-    <ErrorBoundary>
-      <MainContent />
-    </ErrorBoundary>
-  )
 }
 ```
