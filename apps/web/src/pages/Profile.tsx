@@ -29,7 +29,7 @@ export default function Profile() {
     try {
       const keys = await api.listAPIKeys();
       setApiKeys(keys);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('加载 API Key 失败:', err);
     }
   };
@@ -55,8 +55,8 @@ export default function Profile() {
       setCreatedKey(result.key || null);
       setNewKeyName('');
       await loadAPIKeys();
-    } catch (err: any) {
-      setKeyError(err.message || '创建失败');
+    } catch (err: unknown) {
+      setKeyError(err instanceof Error ? err.message : '创建失败');
     }
   };
 
@@ -68,8 +68,8 @@ export default function Profile() {
     try {
       await api.deleteAPIKey(keyId);
       await loadAPIKeys();
-    } catch (err: any) {
-      alert('删除失败: ' + err.message);
+    } catch (err: unknown) {
+      alert('删除失败: ' + (err instanceof Error ? err.message : '未知错误'));
     }
   };
 

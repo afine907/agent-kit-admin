@@ -51,8 +51,8 @@ export const searchCommand = new Command('search')
       const totalPages = Math.ceil(result.total / result.per_page);
       console.log(chalk.gray(`\nPage ${result.page}/${totalPages} (${result.total} results)`));
       console.log('');
-    } catch (error: any) {
-      console.error(chalk.red(`\n✖ 搜索失败: ${error.message}`));
+    } catch (error: unknown) {
+      console.error(chalk.red(`\n✖ 搜索失败: ${error instanceof Error ? error.message : String(error)}`));
       throw error;
     }
   });

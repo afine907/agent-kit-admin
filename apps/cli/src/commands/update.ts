@@ -86,8 +86,8 @@ export const updateCommand = new Command('update')
 
           spinner.succeed(`${pkg.full_name} - 更新成功 (${pkg.version} → ${remotePkg.latest_version})`);
           updated++;
-        } catch (error: any) {
-          spinner.fail(`${pkg.full_name} - 更新失败: ${error.message}`);
+        } catch (error: unknown) {
+          spinner.fail(`${pkg.full_name} - 更新失败: ${error instanceof Error ? error.message : String(error)}`);
           failed++;
         }
       }
@@ -104,8 +104,8 @@ export const updateCommand = new Command('update')
         console.log(chalk.gray('  所有包已是最新版本'));
       }
       console.log('');
-    } catch (error: any) {
-      console.error(chalk.red(`\n✖ 更新失败: ${error.message}`));
+    } catch (error: unknown) {
+      console.error(chalk.red(`\n✖ 更新失败: ${error instanceof Error ? error.message : String(error)}`));
       process.exit(1);
     }
   });

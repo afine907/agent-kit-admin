@@ -7,7 +7,12 @@
     "dev:web": "cd apps/web && pnpm dev",
     "build:cli": "cd apps/cli && pnpm build",
     "build:web": "cd apps/web && pnpm build",
-    "lint": "cd apps/cli && pnpm lint & cd apps/web && pnpm lint",
+    "lint": "pnpm lint:web && pnpm lint:cli",
+    "lint:web": "oxlint apps/web",
+    "lint:cli": "oxlint apps/cli",
     "typecheck": "cd apps/cli && pnpm typecheck & cd apps/web && pnpm typecheck"
+  },
+  "devDependencies": {
+    "oxlint": "^1.69.0"
   }
 }

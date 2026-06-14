@@ -59,8 +59,8 @@ export default function Login() {
       const data = await api.login(email, password);
       setAuth(data.token, data.user, data.refresh_token);
       navigate('/');
-    } catch (err: any) {
-      setError(err.message || '登录失败');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : '登录失败');
     } finally {
       setLoading(false);
     }
@@ -75,8 +75,8 @@ export default function Login() {
       const data = await api.register(username, email, password, displayName || undefined);
       setAuth(data.token, data.user, data.refresh_token);
       navigate('/');
-    } catch (err: any) {
-      setError(err.message || '注册失败');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : '注册失败');
     } finally {
       setLoading(false);
     }

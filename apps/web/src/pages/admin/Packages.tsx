@@ -2,7 +2,7 @@
  * 管理后台 - 包管理
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../lib/api';
 import { ArrowLeft, Trash2, Pause, Play } from 'lucide-react';
@@ -32,11 +32,7 @@ export default function AdminPackages() {
   const [typeFilter, setTypeFilter] = useState('');
   const [includeDeleted, setIncludeDeleted] = useState(false);
 
-  useEffect(() => {
-    loadPackages();
-  }, [pagination.page, typeFilter, includeDeleted]);
-
-  const loadPackages = async () => {
+  const loadPackages = useCallback(async () => {
     try {
       setLoading(true);
       const data = await api.admin.listPackages({
@@ -47,12 +43,16 @@ export default function AdminPackages() {
       });
       setPackages(data.data);
       setPagination(data.pagination);
-    } catch (err: any) {
-      setError(err.message || '加载失败');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : '加载失败');
     } finally {
       setLoading(false);
     }
-  };
+  }, [pagination.page, pagination.per_page, typeFilter, includeDeleted]);
+
+  useEffect(() => {
+    loadPackages();
+  }, [loadPackages]);
 
   const handleStatusChange = async (packageId: string, newStatus: string) => {
     const reason = newStatus === 'suspended' ? prompt('请输入下架原因（可选）') : undefined;
@@ -60,8 +60,8 @@ export default function AdminPackages() {
     try {
       await api.admin.updatePackageStatus(packageId, newStatus, reason || undefined);
       loadPackages();
-    } catch (err: any) {
-      alert(err.message || '操作失败');
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : '操作失败');
     }
   };
 
@@ -71,8 +71,8 @@ export default function AdminPackages() {
     try {
       await api.admin.deletePackage(packageId);
       loadPackages();
-    } catch (err: any) {
-      alert(err.message || '操作失败');
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : '操作失败');
     }
   };
 

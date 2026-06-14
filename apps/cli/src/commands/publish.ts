@@ -36,9 +36,9 @@ export const publishCommand = new Command('publish')
       try {
         manifest = readManifest(process.cwd());
         spinner1.succeed('读取 akit.json 成功');
-      } catch (error: any) {
+      } catch (error: unknown) {
         spinner1.fail('读取 akit.json 失败');
-        console.error(chalk.red(`\n✖ ${error.message}`));
+        console.error(chalk.red(`\n✖ ${error instanceof Error ? error.message : String(error)}`));
         process.exit(1);
       }
 
@@ -73,9 +73,9 @@ export const publishCommand = new Command('publish')
       try {
         const { size } = await createTarball(process.cwd(), tarballPath, manifest.name);
         spinner3.succeed(`创建 tarball 成功 (${formatSize(size)})`);
-      } catch (error: any) {
+      } catch (error: unknown) {
         spinner3.fail('创建 tarball 失败');
-        console.error(chalk.red(`\n✖ ${error.message}`));
+        console.error(chalk.red(`\n✖ ${error instanceof Error ? error.message : String(error)}`));
         process.exit(1);
       }
 
@@ -92,12 +92,13 @@ export const publishCommand = new Command('publish')
           license: manifest.license,
         });
         spinner4.succeed('包记录创建成功');
-      } catch (error: any) {
-        if (error.message.includes('409')) {
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        if (errorMessage.includes('409')) {
           spinner4.info('包已存在，跳过创建');
         } else {
           spinner4.fail('创建包记录失败');
-          console.error(chalk.red(`\n✖ ${error.message}`));
+          console.error(chalk.red(`\n✖ ${errorMessage}`));
           process.exit(1);
         }
       }
@@ -116,9 +117,9 @@ export const publishCommand = new Command('publish')
 
         await apiClient.publishVersion(scope, manifest.name, formData);
         spinner5.succeed('版本上传成功');
-      } catch (error: any) {
+      } catch (error: unknown) {
         spinner5.fail('版本上传失败');
-        console.error(chalk.red(`\n✖ ${error.message}`));
+        console.error(chalk.red(`\n✖ ${error instanceof Error ? error.message : String(error)}`));
         process.exit(1);
       }
 
@@ -132,8 +133,8 @@ export const publishCommand = new Command('publish')
       }
       console.log(chalk.gray(`  Install: akit install ${scope}/${manifest.name}`));
       console.log('');
-    } catch (error: any) {
-      console.error(chalk.red(`\n✖ 发布失败: ${error.message}`));
+    } catch (error: unknown) {
+      console.error(chalk.red(`\n✖ 发布失败: ${error instanceof Error ? error.message : String(error)}`));
       process.exit(1);
     }
   });

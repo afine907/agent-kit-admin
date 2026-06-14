@@ -87,8 +87,8 @@ export const uninstallCommand = new Command('uninstall')
         console.log(chalk.gray(`  已从 ${adapter?.name} 移除配置`));
       }
       console.log('');
-    } catch (error: any) {
-      console.error(chalk.red(`\n✖ 卸载失败: ${error.message}`));
+    } catch (error: unknown) {
+      console.error(chalk.red(`\n✖ 卸载失败: ${error instanceof Error ? error.message : String(error)}`));
       process.exit(1);
     }
   });

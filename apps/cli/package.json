@@ -13,7 +13,7 @@
     "start": "node dist/bin/akit.js",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "eslint src --ext .ts",
+    "lint": "oxlint src",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -33,9 +33,6 @@
     "@types/inquirer": "^9.0.10",
     "@types/node": "^20.0.0",
     "@types/tar": "^6.1.0",
-    "@typescript-eslint/eslint-plugin": "^8.61.0",
-    "@typescript-eslint/parser": "^8.61.0",
-    "eslint": "^8.50.0",
     "tsx": "^4.0.0",
     "typescript": "^5.3.0",
     "vitest": "^1.0.0"

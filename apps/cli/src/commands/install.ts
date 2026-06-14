@@ -36,9 +36,9 @@ export const installCommand = new Command('install')
       try {
         pkg = await apiClient.getPackage(scope, name);
         spinner1.succeed(`找到包: ${fullName}`);
-      } catch (error: any) {
+      } catch (error: unknown) {
         spinner1.fail('获取包信息失败');
-        console.error(chalk.red(`\n✖ ${error.message}`));
+        console.error(chalk.red(`\n✖ ${error instanceof Error ? error.message : String(error)}`));
         process.exit(1);
       }
 
@@ -48,9 +48,9 @@ export const installCommand = new Command('install')
       try {
         downloadUrl = await apiClient.getDownloadUrl(scope, name, options.tag === 'latest' ? undefined : options.tag);
         spinner2.succeed('获取下载链接成功');
-      } catch (error: any) {
+      } catch (error: unknown) {
         spinner2.fail('获取下载链接失败');
-        console.error(chalk.red(`\n✖ ${error.message}`));
+        console.error(chalk.red(`\n✖ ${error instanceof Error ? error.message : String(error)}`));
         process.exit(1);
       }
 
@@ -74,9 +74,9 @@ export const installCommand = new Command('install')
         fs.writeFileSync(tarPath, buffer);
 
         spinner3.succeed(`下载完成`);
-      } catch (error: any) {
+      } catch (error: unknown) {
         spinner3.fail('下载失败');
-        console.error(chalk.red(`\n✖ ${error.message}`));
+        console.error(chalk.red(`\n✖ ${error instanceof Error ? error.message : String(error)}`));
         process.exit(1);
       }
 
@@ -140,8 +140,8 @@ export const installCommand = new Command('install')
       console.log(chalk.gray(`  Agent: ${adapter.name}`));
       console.log(chalk.gray(`  Config: ${adapter.getConfigPath()} 已更新`));
       console.log('');
-    } catch (error: any) {
-      console.error(chalk.red(`\n✖ 安装失败: ${error.message}`));
+    } catch (error: unknown) {
+      console.error(chalk.red(`\n✖ 安装失败: ${error instanceof Error ? error.message : String(error)}`));
       process.exit(1);
     }
   });

@@ -8,6 +8,7 @@ import inquirer from 'inquirer';
 import ora from 'ora';
 import express from 'express';
 import open from 'open';
+import type { Server } from 'http';
 import { configManager } from '../config/manager.js';
 import { apiClient } from '../api/client.js';
 
@@ -62,13 +63,22 @@ export const loginCommand = new Command('login')
         // OAuth 登录
         await oauthLogin(options);
       }
-    } catch (error: any) {
-      console.error(chalk.red(`\n✖ 登录失败: ${error.message}`));
+    } catch (error: unknown) {
+      console.error(chalk.red(`\n✖ 登录失败: ${error instanceof Error ? error.message : String(error)}`));
       process.exit(1);
     }
   });
 
-async function localLogin(options: any) {
+interface LocalLoginOptions {
+  email?: string;
+  password?: string;
+}
+
+interface OAuthLoginOptions {
+  provider?: string;
+}
+
+async function localLogin(options: LocalLoginOptions) {
   let email = options.email;
   let password = options.password;
 
@@ -118,13 +128,13 @@ async function localLogin(options: any) {
     console.log(chalk.gray(`  角色: ${result.user.role || 'member'}`));
     console.log(chalk.gray(`  Token 已保存到: ${configManager.getConfigPath()}`));
     console.log('');
-  } catch (error: any) {
+  } catch (error: unknown) {
     spinner.fail('登录失败');
     throw error;
   }
 }
 
-async function oauthLogin(options: any) {
+async function oauthLogin(options: OAuthLoginOptions) {
   // 选择 OAuth Provider
   let provider = options.provider;
   if (!provider) {
@@ -154,16 +164,16 @@ async function oauthLogin(options: any) {
   try {
     authUrl = await apiClient.getOAuthUrl(provider);
     spinner.succeed('已获取授权 URL');
-  } catch (error: any) {
+  } catch (error: unknown) {
     spinner.fail('获取授权 URL 失败');
-    console.error(chalk.red(`\n✖ ${error.message}`));
+    console.error(chalk.red(`\n✖ ${error instanceof Error ? error.message : String(error)}`));
     process.exit(1);
   }
 
   // 启动本地回调服务器
   const tokenPromise = new Promise<string>((resolve, reject) => {
     const app = express();
-    let server: any;
+    let server: Server | undefined;
 
     // 超时处理
     const timeout = setTimeout(() => {
@@ -185,7 +195,7 @@ async function oauthLogin(options: any) {
             </body>
           </html>
         `);
-        server.close();
+        server?.close();
         resolve(token);
       } else {
         res.status(400).send('缺少 token 参数');
@@ -197,7 +207,7 @@ async function oauthLogin(options: any) {
       console.log(chalk.gray(`\n  本地回调服务器已启动 (端口: ${CALLBACK_PORT})`));
     });
 
-    server.on('error', (err: any) => {
+    server.on('error', (err: NodeJS.ErrnoException) => {
       if (err.code === 'EADDRINUSE') {
         reject(new Error(`端口 ${CALLBACK_PORT} 已被占用，请关闭占用该端口的程序`));
       } else {
@@ -225,9 +235,9 @@ async function oauthLogin(options: any) {
   try {
     token = await tokenPromise;
     spinner2.succeed('授权成功');
-  } catch (error: any) {
+  } catch (error: unknown) {
     spinner2.fail('授权失败');
-    console.error(chalk.red(`\n✖ ${error.message}`));
+    console.error(chalk.red(`\n✖ ${error instanceof Error ? error.message : String(error)}`));
     process.exit(1);
   }
 

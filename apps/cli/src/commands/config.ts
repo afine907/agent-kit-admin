@@ -43,8 +43,8 @@ export const configCommand = new Command('config')
 
           console.log(chalk.gray(`  配置文件: ${configManager.getConfigPath()}`));
           console.log('');
-        } catch (error: any) {
-          console.error(chalk.red(`\n✖ 获取配置失败: ${error.message}`));
+        } catch (error: unknown) {
+          console.error(chalk.red(`\n✖ 获取配置失败: ${error instanceof Error ? error.message : String(error)}`));
           process.exit(1);
         }
       })
@@ -66,8 +66,8 @@ export const configCommand = new Command('config')
               console.log(chalk.gray('  支持的配置项: registry'));
               process.exit(1);
           }
-        } catch (error: any) {
-          console.error(chalk.red(`\n✖ 设置配置失败: ${error.message}`));
+        } catch (error: unknown) {
+          console.error(chalk.red(`\n✖ 设置配置失败: ${error instanceof Error ? error.message : String(error)}`));
           process.exit(1);
         }
       })
@@ -97,8 +97,8 @@ export const configCommand = new Command('config')
 
           configManager.reset();
           console.log(chalk.green('\n✔ 配置已重置\n'));
-        } catch (error: any) {
-          console.error(chalk.red(`\n✖ 重置配置失败: ${error.message}`));
+        } catch (error: unknown) {
+          console.error(chalk.red(`\n✖ 重置配置失败: ${error instanceof Error ? error.message : String(error)}`));
           process.exit(1);
         }
       })

@@ -64,8 +64,8 @@ export const infoCommand = new Command('info')
       console.log(chalk.bold('\n  Install:'));
       console.log(`    akit install ${fullName}`);
       console.log('');
-    } catch (error: any) {
-      console.error(chalk.red(`\n✖ ${error.message}`));
+    } catch (error: unknown) {
+      console.error(chalk.red(`\n✖ ${error instanceof Error ? error.message : String(error)}`));
       throw error;
     }
   });

@@ -7,7 +7,7 @@ import chalk from 'chalk';
 import inquirer from 'inquirer';
 import fs from 'fs';
 import path from 'path';
-import { configManager } from '../config/manager.js';
+
 
 // 包类型选项
 const PACKAGE_TYPES = [
@@ -84,7 +84,7 @@ export const initCommand = new Command('init')
       type = type || 'mcp';
 
       // 构建 manifest
-      const manifest: any = {
+      const manifest: Record<string, unknown> = {
         name,
         version: '0.1.0',
         type,
@@ -161,8 +161,8 @@ export const initCommand = new Command('init')
       console.log(chalk.gray('  下一步:'));
       console.log(chalk.cyan('    akit publish    # 发布到 Registry'));
       console.log('');
-    } catch (error: any) {
-      console.error(chalk.red(`\n✖ 初始化失败: ${error.message}`));
+    } catch (error: unknown) {
+      console.error(chalk.red(`\n✖ 初始化失败: ${error instanceof Error ? error.message : String(error)}`));
       process.exit(1);
     }
   });

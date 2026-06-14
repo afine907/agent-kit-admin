@@ -90,12 +90,12 @@ export const registerCommand = new Command('register')
         console.log(chalk.gray(`  邮箱: ${result.user.email || '-'}`));
         console.log(chalk.gray(`  Token 已保存到: ${configManager.getConfigPath()}`));
         console.log('');
-      } catch (error: any) {
+      } catch (error: unknown) {
         spinner.fail('注册失败');
         throw error;
       }
-    } catch (error: any) {
-      console.error(chalk.red(`\n✖ 注册失败: ${error.message}`));
+    } catch (error: unknown) {
+      console.error(chalk.red(`\n✖ 注册失败: ${error instanceof Error ? error.message : String(error)}`));
       process.exit(1);
     }
   });

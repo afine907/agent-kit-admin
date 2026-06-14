@@ -44,8 +44,8 @@ export const whoamiCommand = new Command('whoami')
       const registry = configManager.getRegistry();
       console.log(chalk.gray(`  Registry: ${registry}`));
       console.log('');
-    } catch (error: any) {
-      console.error(chalk.red(`\n✖ 获取用户信息失败: ${error.message}`));
+    } catch (error: unknown) {
+      console.error(chalk.red(`\n✖ 获取用户信息失败: ${error instanceof Error ? error.message : String(error)}`));
       process.exit(1);
     }
   });

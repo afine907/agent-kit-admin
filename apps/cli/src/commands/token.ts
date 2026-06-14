@@ -42,8 +42,8 @@ tokenCommand
       console.log(chalk.dim('  使用方式：'));
       console.log(chalk.dim('    export AGENT_KIT_TOKEN=' + result.key));
       console.log(chalk.dim('    akit --token $AGENT_KIT_TOKEN install @scope/package'));
-    } catch (error: any) {
-      console.error(chalk.red('创建失败: ' + error.message));
+    } catch (error: unknown) {
+      console.error(chalk.red('创建失败: ' + (error instanceof Error ? error.message : String(error))));
       process.exit(1);
     }
   });
@@ -86,8 +86,8 @@ tokenCommand
         console.log(chalk.dim(`    创建时间: ${created}`));
         console.log('');
       }
-    } catch (error: any) {
-      console.error(chalk.red('获取列表失败: ' + error.message));
+    } catch (error: unknown) {
+      console.error(chalk.red('获取列表失败: ' + (error instanceof Error ? error.message : String(error))));
       process.exit(1);
     }
   });
@@ -108,8 +108,8 @@ tokenCommand
     try {
       await apiClient.deleteAPIKey(id);
       console.log(chalk.green('✓ API Key 已删除'));
-    } catch (error: any) {
-      console.error(chalk.red('删除失败: ' + error.message));
+    } catch (error: unknown) {
+      console.error(chalk.red('删除失败: ' + (error instanceof Error ? error.message : String(error))));
       process.exit(1);
     }
   });

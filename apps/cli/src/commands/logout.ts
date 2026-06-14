@@ -26,8 +26,8 @@ export const logoutCommand = new Command('logout')
         console.log(chalk.gray(`  用户 ${user.username} 已登出`));
       }
       console.log('');
-    } catch (error: any) {
-      console.error(chalk.red(`\n✖ 登出失败: ${error.message}`));
+    } catch (error: unknown) {
+      console.error(chalk.red(`\n✖ 登出失败: ${error instanceof Error ? error.message : String(error)}`));
       process.exit(1);
     }
   });

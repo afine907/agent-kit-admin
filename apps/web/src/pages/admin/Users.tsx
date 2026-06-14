@@ -2,7 +2,7 @@
  * 管理后台 - 用户管理
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { api, AdminUserResponse } from '../../lib/api';
 import { ArrowLeft, Search, Shield, UserCheck, UserX, Ban } from 'lucide-react';
@@ -18,11 +18,7 @@ export default function AdminUsers() {
   const [statusFilter, setStatusFilter] = useState('');
   const [keyword, setKeyword] = useState('');
 
-  useEffect(() => {
-    loadUsers();
-  }, [pagination.page, roleFilter, statusFilter]);
-
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     try {
       setLoading(true);
       const data = await api.admin.listUsers({
@@ -34,12 +30,16 @@ export default function AdminUsers() {
       });
       setUsers(data.data);
       setPagination(data.pagination);
-    } catch (err: any) {
-      setError(err.message || '加载失败');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : '加载失败');
     } finally {
       setLoading(false);
     }
-  };
+  }, [pagination.page, pagination.per_page, roleFilter, statusFilter, keyword]);
+
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
 
   const handleSearch = () => {
     setPagination(prev => ({ ...prev, page: 1 }));
@@ -52,8 +52,8 @@ export default function AdminUsers() {
     try {
       await api.admin.updateUserStatus(userId, newStatus);
       loadUsers();
-    } catch (err: any) {
-      alert(err.message || '操作失败');
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : '操作失败');
     }
   };
 
@@ -63,8 +63,8 @@ export default function AdminUsers() {
     try {
       await api.admin.updateUserRole(userId, newRole);
       loadUsers();
-    } catch (err: any) {
-      alert(err.message || '操作失败');
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : '操作失败');
     }
   };
 
@@ -74,8 +74,8 @@ export default function AdminUsers() {
     try {
       await api.admin.deleteUser(userId);
       loadUsers();
-    } catch (err: any) {
-      alert(err.message || '操作失败');
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : '操作失败');
     }
   };
 

@@ -94,8 +94,8 @@ export const listCommand = new Command('list')
       console.log(formatTable(rows));
       console.log(chalk.gray('\n使用 `akit info <package>` 查看详情'));
       console.log('');
-    } catch (error: any) {
-      console.error(chalk.red(`\n✖ ${error.message}`));
+    } catch (error: unknown) {
+      console.error(chalk.red(`\n✖ ${error instanceof Error ? error.message : String(error)}`));
       process.exit(1);
     }
   });
