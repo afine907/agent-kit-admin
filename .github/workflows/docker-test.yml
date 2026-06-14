@@ -1,0 +1,147 @@
+name: Docker 部署测试
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'apps/server/**'
+      - 'apps/web/**'
+      - 'deploy/docker/**'
+      - 'scripts/init-db.sql'
+  pull_request:
+    branches: [master]
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  docker-build-test:
+    name: Docker 构建测试
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 构建 Server 镜像
+        uses: docker/build-push-action@v5
+        with:
+          context: ./apps/server
+          push: false
+          tags: akit-server:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: 构建 Web 镜像
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./apps/web/Dockerfile
+          push: false
+          tags: akit-web:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # docker-integration-test 已合并到 docker-compose-test
+
+  docker-compose-test:
+    name: Docker Compose 完整部署测试
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: docker-build-test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: 创建环境配置
+        run: |
+          cat > deploy/docker/.env << EOF
+          DB_USER=agentkit
+          DB_PASSWORD=test_password
+          DB_NAME=agentkit
+          DB_PORT=5432
+          MINIO_ROOT_USER=minioadmin
+          MINIO_ROOT_PASSWORD=minioadmin_test
+          MINIO_PORT=9000
+          MINIO_CONSOLE_PORT=9001
+          JWT_SECRET=test_jwt_secret_at_least_32_chars_for_compose
+          DEBUG=true
+          EOF
+
+      - name: 启动基础设施服务
+        run: |
+          cd deploy/docker
+          docker compose up -d db minio minio-init
+
+      - name: 等待基础设施就绪
+        run: |
+          cd deploy/docker
+          echo "等待 PostgreSQL 和 MinIO 就绪..."
+          docker compose ps
+          sleep 10
+
+      - name: 验证数据库初始化
+        run: |
+          cd deploy/docker
+          docker compose exec -T db psql -U agentkit -d agentkit -c "\dt"
+
+      - name: 构建应用镜像
+        run: |
+          cd deploy/docker
+          docker compose build server web
+
+      - name: 启动完整服务
+        run: |
+          cd deploy/docker
+          docker compose --profile prod up -d
+
+      - name: 等待服务就绪
+        run: |
+          cd deploy/docker
+          echo "等待所有服务启动..."
+          sleep 15
+          docker compose ps
+
+      - name: 验证服务可访问性
+        run: |
+          cd deploy/docker
+
+          # 验证 Server
+          echo "=== 验证 Server API ==="
+          docker compose exec -T server python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')" || {
+            echo "Server 健康检查失败"
+            docker compose logs server
+            exit 1
+          }
+
+          # 验证 Caddy
+          echo "=== 验证 Caddy 网关 ==="
+          wget -q -O /dev/null http://localhost/api/health || {
+            echo "Caddy 代理失败"
+            docker compose logs caddy
+            exit 1
+          }
+
+      - name: 查看服务状态
+        run: |
+          cd deploy/docker
+          echo "=== 服务状态 ==="
+          docker compose ps
+          echo ""
+          echo "=== 资源使用 ==="
+          docker stats --no-stream
+
+      - name: 查看日志
+        if: failure()
+        run: |
+          cd deploy/docker
+          docker compose logs --tail 100
+
+      - name: 清理
+        if: always()
+        run: |
+          cd deploy/docker
+          docker compose down -v

@@ -1,27 +1,34 @@
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# 复制依赖文件
-COPY package.json package-lock.json* ./
+# 安装 pnpm（使用与项目兼容的版本）
+RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
 
-# 安装依赖
-RUN npm ci
+# 复制根目录的 package.json、pnpm-lock.yaml 和 workspace 配置
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
-# 复制源代码
-COPY . .
+# 复制 web 目录的 package.json
+COPY apps/web/package.json ./apps/web/
 
-# 构建
-RUN npm run build
+# 安装依赖（包括 devDependencies）
+RUN pnpm install --frozen-lockfile
+
+# 复制 web 源代码
+COPY apps/web ./apps/web
+
+# 进入 web 目录并构建
+WORKDIR /app/apps/web
+RUN pnpm exec tsc && pnpm exec vite build
 
 # 生产阶段
 FROM nginx:alpine
 
 # 复制构建产物
-COPY --from=builder /app/dist /usr/share/nginx/html
+COPY --from=builder /app/apps/web/dist /usr/share/nginx/html
 
 # 复制 nginx 配置
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
 
 # 暴露端口
 EXPOSE 80

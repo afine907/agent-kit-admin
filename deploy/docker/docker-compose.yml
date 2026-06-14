@@ -99,8 +99,8 @@ services:
   web:
     profiles: ["prod"]
     build:
-      context: ../../apps/web
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: apps/web/Dockerfile
     container_name: akit-web
     restart: unless-stopped
     depends_on:
