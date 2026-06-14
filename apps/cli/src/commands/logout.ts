@@ -4,30 +4,32 @@
 
 import { Command } from 'commander';
 import chalk from 'chalk';
+import { i18n } from '../i18n.js';
 import { configManager } from '../config/manager.js';
 
+const t = (key: string, options?: Record<string, unknown>): string => i18n.t(key, options) as string;
+
 export const logoutCommand = new Command('logout')
-  .description('登出当前用户')
+  .description(t('commands:logout.description'))
   .action(async () => {
     try {
       const user = configManager.getUser();
 
       if (!user && !configManager.getToken()) {
-        console.log(chalk.yellow('\n⚠ 当前未登录\n'));
+        console.log(chalk.yellow(`\n⚠ ${t('commands:logout.notLoggedIn')}\n`));
         return;
       }
 
-      // 清除 token 和用户信息
       configManager.setToken('');
       configManager.setUser(null);
 
-      console.log(chalk.green('\n✔ 已登出\n'));
+      console.log(chalk.green(`\n✔ ${t('commands:logout.logoutSuccess')}\n`));
       if (user) {
-        console.log(chalk.gray(`  用户 ${user.username} 已登出`));
+        console.log(chalk.gray(`  ${t('commands:login.user')} ${user.username} ${t('commands:logout.logoutSuccess')}`));
       }
       console.log('');
     } catch (error: unknown) {
-      console.error(chalk.red(`\n✖ 登出失败: ${error instanceof Error ? error.message : String(error)}`));
+      console.error(chalk.red(`\n✖ ${t('commands:logout.logoutFailed')}: ${error instanceof Error ? error.message : String(error)}`));
       process.exit(1);
     }
   });

@@ -1,0 +1,135 @@
+{
+  "login": {
+    "description": "登录到 Agent Kit Registry",
+    "title": "🔐 Agent Kit Admin - 登录",
+    "selectMethod": "选择登录方式:",
+    "localLogin": "邮箱密码登录",
+    "oauthLogin": "OAuth 登录 (企业微信/飞书/钉钉)",
+    "email": "邮箱:",
+    "password": "密码:",
+    "emailValidation": "请输入有效的邮箱",
+    "passwordValidation": "密码至少 8 位",
+    "loggingIn": "正在登录...",
+    "loginSuccess": "登录成功",
+    "loginFailed": "登录失败",
+    "loginSuccessTitle": "登录成功!",
+    "user": "用户",
+    "role": "角色",
+    "tokenSaved": "Token 已保存到",
+    "selectProvider": "选择 OAuth Provider:",
+    "unsupportedProvider": "不支持的 Provider",
+    "supportedProviders": "支持的 Provider",
+    "fetchingOAuthUrl": "正在获取 OAuth 授权 URL...",
+    "oauthUrlFetched": "已获取授权 URL",
+    "oauthUrlFailed": "获取授权 URL 失败",
+    "callbackServerStarted": "本地回调服务器已启动 (端口",
+    "openingBrowser": "正在打开浏览器进行授权...",
+    "manualVisit": "如果浏览器没有自动打开，请访问:",
+    "browserOpenFailed": "无法自动打开浏览器，请手动访问上述 URL",
+    "waitingAuth": "等待授权完成...",
+    "authSuccess": "授权成功",
+    "authFailed": "授权失败",
+    "loginTimeout": "登录超时 (5 分钟)",
+    "fetchingUserInfo": "正在获取用户信息...",
+    "userInfoFetched": "用户信息已获取",
+    "userInfoFailed": "无法获取用户信息，但 token 已保存",
+    "portInUse": "端口 {{port}} 已被占用，请关闭占用该端口的程序"
+  },
+  "register": {
+    "description": "注册新账号",
+    "title": "📝 Agent Kit Admin - 注册新账号",
+    "username": "用户名:",
+    "email": "邮箱:",
+    "password": "密码:",
+    "displayName": "显示名称 (可选):",
+    "usernameMinLength": "用户名至少 3 个字符",
+    "usernamePattern": "用户名只能包含字母、数字、下划线和连字符",
+    "emailValidation": "请输入有效的邮箱",
+    "passwordValidation": "密码至少 8 位",
+    "registering": "正在注册...",
+    "registerSuccess": "注册成功",
+    "registerFailed": "注册失败",
+    "user": "用户",
+    "tokenSaved": "Token 已保存到"
+  },
+  "logout": {
+    "description": "登出当前用户",
+    "loggingOut": "正在登出...",
+    "logoutSuccess": "已登出",
+    "notLoggedIn": "未登录",
+    "logoutFailed": "登出失败"
+  },
+  "whoami": {
+    "description": "显示当前登录用户",
+    "notLoggedIn": "未登录，请先运行 akit login",
+    "fetchingUser": "正在获取用户信息...",
+    "fetchFailed": "获取用户信息失败"
+  },
+  "init": {
+    "description": "初始化项目",
+    "title": "📦 Agent Kit Admin - 初始化项目",
+    "selectType": "选择包类型:",
+    "mcpServer": "MCP Server (模型上下文协议服务器)",
+    "agentSkill": "Agent Skill (Agent 技能包)",
+    "packageName": "包名 (例如: @scope/my-package):",
+    "packageDescription": "描述 (可选):",
+    "initializing": "正在初始化项目...",
+    "initSuccess": "项目初始化成功!",
+    "initFailed": "初始化失败"
+  },
+  "publish": {
+    "description": "发布包到 Registry",
+    "publishing": "📦 发布包...",
+    "readingManifest": "读取 akit.json...",
+    "validatingManifest": "验证 manifest...",
+    "creatingTarball": "创建 tarball...",
+    "packageExists": "包已存在，跳过创建",
+    "publishSuccess": "发布成功",
+    "publishFailed": "发布失败"
+  },
+  "install": {
+    "description": "安装包到本地",
+    "installing": "📥 安装包...",
+    "fetchingInfo": "获取包信息...",
+    "fetchingDownloadUrl": "获取下载链接...",
+    "downloading": "下载中...",
+    "configuringAgent": "配置 Agent...",
+    "noAgentDetected": "未检测到已安装的 Agent",
+    "installAgentHint": "请安装 Claude Code 或 Codex",
+    "installSuccess": "安装成功",
+    "installFailed": "安装失败"
+  },
+  "uninstall": {
+    "description": "卸载已安装的包",
+    "uninstalling": "🗑️ 卸载包...",
+    "uninstallSuccess": "卸载成功",
+    "uninstallFailed": "卸载失败"
+  },
+  "update": {
+    "description": "更新已安装的包",
+    "updating": "🔄 更新包...",
+    "updateSuccess": "更新成功",
+    "updateFailed": "更新失败"
+  },
+  "list": {
+    "description": "列出已安装的包",
+    "noPackages": "暂无已安装的包"
+  },
+  "search": {
+    "description": "搜索 Registry 中的包",
+    "searching": "搜索中...",
+    "noResults": "未找到匹配的包",
+    "searchFailed": "搜索失败"
+  },
+  "info": {
+    "description": "查看包详情",
+    "fetchingInfo": "获取包信息...",
+    "fetchFailed": "获取包信息失败"
+  },
+  "config": {
+    "description": "管理配置"
+  },
+  "token": {
+    "description": "管理认证 Token"
+  }
+}

@@ -3,6 +3,7 @@
  */
 
 import { useParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { usePackage, useVersions } from '../hooks/usePackages';
 import { VersionList } from '../components/VersionList';
 import { InstallCommand } from '../components/InstallCommand';
@@ -19,16 +20,19 @@ import {
 } from 'lucide-react';
 
 export default function PackageDetail() {
+  const { t, i18n } = useTranslation('pages');
   const { scope, name } = useParams<{ scope: string; name: string }>();
 
   const { data: pkg, isLoading, error } = usePackage(scope || '', name || '');
   const { data: versions } = useVersions(scope || '', name || '');
 
+  const locale = i18n.language === 'zh' ? 'zh-CN' : 'en-US';
+
   if (isLoading) {
     return (
       <div className="container mx-auto py-16 flex flex-col items-center justify-center">
         <Loader2 className="w-6 h-6 text-primary animate-spin mb-3" />
-        <p className="text-sm text-muted-foreground font-mono">正在加载…</p>
+        <p className="text-sm text-muted-foreground font-mono">{t('packageDetail.loading')}</p>
       </div>
     );
   }
@@ -39,13 +43,13 @@ export default function PackageDetail() {
         <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-destructive/10 border border-destructive/20 mb-4">
           <AlertCircle className="w-6 h-6 text-destructive" />
         </div>
-        <p className="text-destructive font-medium mb-1">包不存在或加载失败</p>
+        <p className="text-destructive font-medium mb-1">{t('packageDetail.notFound')}</p>
         <Link
           to="/"
           className="flex items-center gap-1.5 mt-4 text-sm text-muted-foreground hover:text-primary transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          返回包列表
+          {t('packageDetail.backToList')}
         </Link>
       </div>
     );
@@ -58,7 +62,7 @@ export default function PackageDetail() {
       {/* 面包屑 */}
       <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-8 animate-fade-in-up">
         <Link to="/" className="hover:text-primary transition-colors">
-          包列表
+          {t('packageDetail.breadcrumb')}
         </Link>
         <ChevronRight className="w-3.5 h-3.5" />
         <span className="text-foreground font-medium">{pkg.full_name}</span>
@@ -83,14 +87,14 @@ export default function PackageDetail() {
               </span>
             </div>
             <p className="text-muted-foreground mt-2 leading-relaxed">
-              {pkg.description || '暂无描述'}
+              {pkg.description || t('empty.noDescription')}
             </p>
           </div>
 
           {/* 安装命令 */}
           <div className="animate-fade-in-up" style={{ animationDelay: '100ms' }}>
             <h2 className="text-xs font-mono font-medium text-muted-foreground uppercase tracking-wider mb-3">
-              安装
+              {t('packageDetail.install')}
             </h2>
             <InstallCommand scope={pkg.scope} name={pkg.name} />
           </div>
@@ -99,7 +103,7 @@ export default function PackageDetail() {
           {pkg.tags.length > 0 && (
             <div className="animate-fade-in-up" style={{ animationDelay: '150ms' }}>
               <h2 className="text-xs font-mono font-medium text-muted-foreground uppercase tracking-wider mb-3">
-                标签
+                {t('packageDetail.tags')}
               </h2>
               <div className="flex flex-wrap gap-2">
                 {pkg.tags.map((tag: string) => (
@@ -118,7 +122,7 @@ export default function PackageDetail() {
           {/* 版本列表 */}
           <div className="animate-fade-in-up" style={{ animationDelay: '200ms' }}>
             <h2 className="text-xs font-mono font-medium text-muted-foreground uppercase tracking-wider mb-3">
-              版本历史
+              {t('packageDetail.versionHistory')}
             </h2>
             <VersionList versions={versions?.data || []} />
           </div>
@@ -129,33 +133,33 @@ export default function PackageDetail() {
           {/* 信息卡片 */}
           <div className="p-5 rounded-xl bg-card border border-border/50 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
             <h3 className="text-xs font-mono font-medium text-muted-foreground uppercase tracking-wider mb-4">
-              信息
+              {t('packageDetail.info')}
             </h3>
             <div className="space-y-3">
               <div className="flex items-center justify-between text-sm">
                 <span className="flex items-center gap-1.5 text-muted-foreground">
                   <Tag className="w-3.5 h-3.5" />
-                  最新版本
+                  {t('packageDetail.latestVersion')}
                 </span>
                 <span className="font-mono font-medium">{pkg.latest_version || '-'}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="flex items-center gap-1.5 text-muted-foreground">
                   <Download className="w-3.5 h-3.5" />
-                  下载量
+                  {t('packageDetail.downloads')}
                 </span>
                 <span className="font-mono font-medium">{pkg.downloads_count.toLocaleString()}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="flex items-center gap-1.5 text-muted-foreground">
                   <Shield className="w-3.5 h-3.5" />
-                  许可证
+                  {t('packageDetail.license')}
                 </span>
                 <span className="font-medium">{pkg.license || '-'}</span>
               </div>
               {pkg.repository && (
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">仓库</span>
+                  <span className="text-muted-foreground">{t('packageDetail.repository')}</span>
                   <a
                     href={pkg.repository}
                     target="_blank"
@@ -173,25 +177,25 @@ export default function PackageDetail() {
           {/* 时间卡片 */}
           <div className="p-5 rounded-xl bg-card border border-border/50 animate-fade-in-up" style={{ animationDelay: '200ms' }}>
             <h3 className="text-xs font-mono font-medium text-muted-foreground uppercase tracking-wider mb-4">
-              时间
+              {t('packageDetail.time')}
             </h3>
             <div className="space-y-3">
               <div className="flex items-center justify-between text-sm">
                 <span className="flex items-center gap-1.5 text-muted-foreground">
                   <Calendar className="w-3.5 h-3.5" />
-                  创建时间
+                  {t('packageDetail.createdAt')}
                 </span>
                 <span className="text-xs font-mono">
-                  {new Date(pkg.created_at).toLocaleDateString('zh-CN')}
+                  {new Date(pkg.created_at).toLocaleDateString(locale)}
                 </span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="flex items-center gap-1.5 text-muted-foreground">
                   <Calendar className="w-3.5 h-3.5" />
-                  更新时间
+                  {t('packageDetail.updatedAt')}
                 </span>
                 <span className="text-xs font-mono">
-                  {new Date(pkg.updated_at).toLocaleDateString('zh-CN')}
+                  {new Date(pkg.updated_at).toLocaleDateString(locale)}
                 </span>
               </div>
             </div>

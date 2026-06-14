@@ -1,0 +1,55 @@
+{
+  "nav": {
+    "packages": "Packages",
+    "admin": "Admin",
+    "myPackages": "My Packages",
+    "logout": "Logout",
+    "login": "Login"
+  },
+  "actions": {
+    "save": "Save",
+    "saving": "Saving…",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete",
+    "confirm": "Confirm",
+    "back": "Back",
+    "copy": "Copy",
+    "copied": "Copied",
+    "search": "Search",
+    "clearSearch": "Clear search",
+    "loading": "Loading…",
+    "submit": "Submit",
+    "close": "Close"
+  },
+  "pagination": {
+    "prev": "Previous",
+    "next": "Next",
+    "pageInfo": "{{page}} / {{total}}"
+  },
+  "status": {
+    "active": "Active",
+    "suspended": "Suspended",
+    "banned": "Banned",
+    "deleted": "Deleted"
+  },
+  "roles": {
+    "super_admin": "Super Admin",
+    "admin": "Admin",
+    "member": "Member"
+  },
+  "empty": {
+    "noData": "No data",
+    "noDescription": "No description"
+  },
+  "error": {
+    "loadFailed": "Failed to load",
+    "operationFailed": "Operation failed",
+    "unknownError": "Unknown error"
+  },
+  "language": {
+    "label": "Language",
+    "zh": "中文",
+    "en": "English"
+  }
+}

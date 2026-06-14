@@ -1,0 +1,22 @@
+{
+  "cli": {
+    "description": "Agent Kit Admin CLI - AI Agent Package Management Tool",
+    "usage": "Usage:",
+    "commands": "Commands:",
+    "options": "Options:",
+    "examples": "Examples:",
+    "version": "Show version number",
+    "help": "Show help information",
+    "langOption": "Language (zh/en)"
+  },
+  "common": {
+    "success": "Success",
+    "failed": "Failed",
+    "loading": "Loading...",
+    "processing": "Processing...",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "yes": "Yes",
+    "no": "No"
+  }
+}

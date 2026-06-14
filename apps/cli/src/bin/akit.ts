@@ -7,6 +7,7 @@ import { Command } from 'commander';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { initI18n, i18n } from '../i18n.js';
 import { loginCommand } from '../commands/login.js';
 import { registerCommand } from '../commands/register.js';
 import { logoutCommand } from '../commands/logout.js';
@@ -34,59 +35,67 @@ try {
   // 使用默认版本
 }
 
-const program = new Command()
-  .name('akit')
-  .description('Agent Kit Admin CLI - AI Agent 包管理工具')
-  .version(version);
+async function main() {
+  // 初始化 i18n（在注册命令之前）
+  await initI18n();
 
-// 注册所有命令
-program.addCommand(loginCommand);
-program.addCommand(registerCommand);
-program.addCommand(logoutCommand);
-program.addCommand(whoamiCommand);
-program.addCommand(initCommand);
-program.addCommand(publishCommand);
-program.addCommand(installCommand);
-program.addCommand(uninstallCommand);
-program.addCommand(updateCommand);
-program.addCommand(tokenCommand);
-program.addCommand(listCommand);
-program.addCommand(searchCommand);
-program.addCommand(infoCommand);
-program.addCommand(configCommand);
+  const t = i18n.t.bind(i18n);
 
-// 帮助信息
-program
-  .command('help')
-  .description('显示帮助信息')
-  .action(() => {
-    console.log(`
+  const program = new Command()
+    .name('akit')
+    .description(t('cli.description'))
+    .version(version)
+    .option('--lang <lang>', t('cli.langOption', 'Language (zh/en)'));
+
+  // 注册所有命令
+  program.addCommand(loginCommand);
+  program.addCommand(registerCommand);
+  program.addCommand(logoutCommand);
+  program.addCommand(whoamiCommand);
+  program.addCommand(initCommand);
+  program.addCommand(publishCommand);
+  program.addCommand(installCommand);
+  program.addCommand(uninstallCommand);
+  program.addCommand(updateCommand);
+  program.addCommand(tokenCommand);
+  program.addCommand(listCommand);
+  program.addCommand(searchCommand);
+  program.addCommand(infoCommand);
+  program.addCommand(configCommand);
+
+  // 帮助信息
+  program
+    .command('help')
+    .description(t('cli.help'))
+    .action(() => {
+      console.log(`
 Agent Kit Admin CLI v${version}
 
-用法:
+${t('cli.usage')}
   akit <command> [options]
 
-命令:
-  login       登录到 Agent Kit Registry
-  register    注册新账号
-  logout      登出当前用户
-  whoami      显示当前登录用户
-  init        初始化项目
-  publish     发布包到 Registry
-  install     安装包到本地
-  uninstall   卸载已安装的包
-  update      更新已安装的包
-  list        列出已安装的包
-  search      搜索 Registry 中的包
-  info        查看包详情
-  config      管理配置
-  help        显示帮助信息
+${t('cli.commands')}
+  login       ${t('commands:login.description')}
+  register    ${t('commands:register.description')}
+  logout      ${t('commands:logout.description')}
+  whoami      ${t('commands:whoami.description')}
+  init        ${t('commands:init.description')}
+  publish     ${t('commands:publish.description')}
+  install     ${t('commands:install.description')}
+  uninstall   ${t('commands:uninstall.description')}
+  update      ${t('commands:update.description')}
+  list        ${t('commands:list.description')}
+  search      ${t('commands:search.description')}
+  info        ${t('commands:info.description')}
+  config      ${t('commands:config.description')}
+  help        ${t('cli.help')}
 
-选项:
-  -V, --version  显示版本号
-  -h, --help     显示帮助信息
+${t('cli.options')}
+  -V, --version  ${t('cli.version')}
+  -h, --help     ${t('cli.help')}
+      --lang     Language (zh/en)
 
-示例:
+${t('cli.examples')}
   akit register
   akit login
   akit login --email user@example.com --password pass123
@@ -96,6 +105,9 @@ Agent Kit Admin CLI v${version}
   akit search mcp
   akit config list
     `);
-  });
+    });
 
-program.parse();
+  program.parse();
+}
+
+main();

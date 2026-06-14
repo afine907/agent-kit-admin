@@ -4,37 +4,39 @@
 
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { api, AdminStatsResponse, DownloadTrend } from '../../lib/api';
 import { Users, Package, Activity, ArrowRight, Download } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function AdminDashboard() {
+  const { t, i18n } = useTranslation('admin');
   const [stats, setStats] = useState<AdminStatsResponse | null>(null);
   const [downloadTrends, setDownloadTrends] = useState<DownloadTrend[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const locale = i18n.language === 'zh' ? 'zh-CN' : 'en-US';
+
   useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        const [statsData, trendsData] = await Promise.all([
+          api.admin.getStats(),
+          api.admin.getDownloadTrends(30),
+        ]);
+        setStats(statsData);
+        setDownloadTrends(trendsData.trends);
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : t('common:error.loadFailed'));
+      } finally {
+        setLoading(false);
+      }
+    };
     loadData();
-  }, []);
+  }, [t]);
 
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const [statsData, trendsData] = await Promise.all([
-        api.admin.getStats(),
-        api.admin.getDownloadTrends(30),
-      ]);
-      setStats(statsData);
-      setDownloadTrends(trendsData.trends);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : '加载失败');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // 计算总下载量
   const totalDownloads = downloadTrends.reduce((sum, item) => sum + item.downloads, 0);
 
   if (loading) {
@@ -60,8 +62,8 @@ export default function AdminDashboard() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold">管理后台</h1>
-        <p className="text-muted-foreground mt-2">系统概览和管理功能</p>
+        <h1 className="text-3xl font-bold">{t('dashboard.title')}</h1>
+        <p className="text-muted-foreground mt-2">{t('dashboard.subtitle')}</p>
       </div>
 
       {/* 统计卡片 */}
@@ -72,7 +74,7 @@ export default function AdminDashboard() {
               <Users className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">总用户数</p>
+              <p className="text-sm text-muted-foreground">{t('dashboard.totalUsers')}</p>
               <p className="text-3xl font-bold">{stats?.total_users || 0}</p>
             </div>
           </div>
@@ -84,7 +86,7 @@ export default function AdminDashboard() {
               <Activity className="w-6 h-6 text-green-500" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">活跃用户</p>
+              <p className="text-sm text-muted-foreground">{t('dashboard.activeUsers')}</p>
               <p className="text-3xl font-bold">{stats?.active_users || 0}</p>
             </div>
           </div>
@@ -96,7 +98,7 @@ export default function AdminDashboard() {
               <Package className="w-6 h-6 text-blue-500" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">总包数</p>
+              <p className="text-sm text-muted-foreground">{t('dashboard.totalPackages')}</p>
               <p className="text-3xl font-bold">{stats?.total_packages || 0}</p>
             </div>
           </div>
@@ -108,7 +110,7 @@ export default function AdminDashboard() {
               <Download className="w-6 h-6 text-orange-500" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">近 30 天下载</p>
+              <p className="text-sm text-muted-foreground">{t('dashboard.recentDownloads')}</p>
               <p className="text-3xl font-bold">{totalDownloads}</p>
             </div>
           </div>
@@ -117,7 +119,7 @@ export default function AdminDashboard() {
 
       {/* 下载趋势图 */}
       <div className="mb-8 p-6 rounded-xl bg-card border border-border">
-        <h2 className="text-lg font-semibold mb-4">下载趋势（近 30 天）</h2>
+        <h2 className="text-lg font-semibold mb-4">{t('dashboard.downloadTrend')}</h2>
         <div className="h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={downloadTrends}>
@@ -134,13 +136,13 @@ export default function AdminDashboard() {
               <Tooltip
                 labelFormatter={(value) => {
                   const date = new Date(value);
-                  return date.toLocaleDateString('zh-CN', {
+                  return date.toLocaleDateString(locale, {
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric',
                   });
                 }}
-                formatter={(value) => [value, '下载量']}
+                formatter={(value) => [value, t('dashboard.downloads')]}
               />
               <Line
                 type="monotone"
@@ -163,8 +165,8 @@ export default function AdminDashboard() {
         >
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-semibold">用户管理</h3>
-              <p className="text-sm text-muted-foreground mt-1">查看和管理所有用户账号</p>
+              <h3 className="text-lg font-semibold">{t('dashboard.userManagement')}</h3>
+              <p className="text-sm text-muted-foreground mt-1">{t('dashboard.userManagementDesc')}</p>
             </div>
             <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
           </div>
@@ -176,8 +178,8 @@ export default function AdminDashboard() {
         >
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-semibold">包管理</h3>
-              <p className="text-sm text-muted-foreground mt-1">管理所有发布的包</p>
+              <h3 className="text-lg font-semibold">{t('dashboard.packageManagement')}</h3>
+              <p className="text-sm text-muted-foreground mt-1">{t('dashboard.packageManagementDesc')}</p>
             </div>
             <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
           </div>

@@ -1,0 +1,76 @@
+{
+  "dashboard": {
+    "title": "管理后台",
+    "subtitle": "系统概览和管理功能",
+    "totalUsers": "总用户数",
+    "activeUsers": "活跃用户",
+    "totalPackages": "总包数",
+    "recentDownloads": "近 30 天下载",
+    "downloadTrend": "下载趋势（近 30 天）",
+    "downloads": "下载量",
+    "userManagement": "用户管理",
+    "userManagementDesc": "查看和管理所有用户账号",
+    "packageManagement": "包管理",
+    "packageManagementDesc": "管理所有发布的包"
+  },
+  "users": {
+    "title": "用户管理",
+    "totalUsers": "共 {{count}} 个用户",
+    "searchPlaceholder": "搜索用户名/邮箱…",
+    "allRoles": "所有角色",
+    "allStatuses": "所有状态",
+    "table": {
+      "user": "用户",
+      "role": "角色",
+      "status": "状态",
+      "loginMethod": "登录方式",
+      "registeredAt": "注册时间",
+      "actions": "操作"
+    },
+    "local": "本地",
+    "loading": "加载中…",
+    "actions": {
+      "suspend": "停用",
+      "activate": "启用",
+      "setAdmin": "设为管理员",
+      "removeAdmin": "取消管理员",
+      "delete": "删除"
+    },
+    "confirm": {
+      "suspend": "确定要停用该用户吗？",
+      "activate": "确定要启用该用户吗？",
+      "changeRole": "确定要将该用户角色修改为 {{role}} 吗？",
+      "delete": "确定要删除该用户吗？此操作不可恢复。"
+    }
+  },
+  "packages": {
+    "title": "包管理",
+    "totalPackages": "共 {{count}} 个包",
+    "allTypes": "所有类型",
+    "showDeleted": "显示已删除",
+    "table": {
+      "name": "包名",
+      "type": "类型",
+      "status": "状态",
+      "version": "版本",
+      "downloads": "下载量",
+      "createdAt": "创建时间",
+      "actions": "操作"
+    },
+    "loading": "加载中…",
+    "status": {
+      "deleted": "已删除",
+      "suspended": "已下架",
+      "active": "正常"
+    },
+    "actions": {
+      "suspend": "下架",
+      "restore": "恢复",
+      "permanentDelete": "永久删除"
+    },
+    "confirm": {
+      "delete": "确定要永久删除该包吗？此操作不可恢复。",
+      "suspendPrompt": "请输入下架原因（可选）"
+    }
+  }
+}

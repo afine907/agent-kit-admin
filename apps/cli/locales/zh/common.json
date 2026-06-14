@@ -1,0 +1,22 @@
+{
+  "cli": {
+    "description": "Agent Kit Admin CLI - AI Agent 包管理工具",
+    "usage": "用法:",
+    "commands": "命令:",
+    "options": "选项:",
+    "examples": "示例:",
+    "version": "显示版本号",
+    "help": "显示帮助信息",
+    "langOption": "语言 (zh/en)"
+  },
+  "common": {
+    "success": "成功",
+    "failed": "失败",
+    "loading": "加载中...",
+    "processing": "处理中...",
+    "confirm": "确认",
+    "cancel": "取消",
+    "yes": "是",
+    "no": "否"
+  }
+}

@@ -3,23 +3,26 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../stores/authStore';
 import { api, APIKeyResponse } from '../lib/api';
 import { User, Mail, Shield, Key, Plus, Trash2, Copy, Check, AlertCircle } from 'lucide-react';
 
 export default function Profile() {
+  const { t, i18n } = useTranslation(['pages', 'common']);
   const { user } = useAuthStore();
   const [isEditing, setIsEditing] = useState(false);
   const [displayName, setDisplayName] = useState(user?.display_name || '');
   const [saving, setSaving] = useState(false);
 
-  // API Key 状态
   const [apiKeys, setApiKeys] = useState<APIKeyResponse[]>([]);
   const [showCreateKey, setShowCreateKey] = useState(false);
   const [newKeyName, setNewKeyName] = useState('');
   const [createdKey, setCreatedKey] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState(false);
   const [keyError, setKeyError] = useState<string | null>(null);
+
+  const locale = i18n.language === 'zh' ? 'zh-CN' : 'en-US';
 
   useEffect(() => {
     loadAPIKeys();
@@ -30,12 +33,11 @@ export default function Profile() {
       const keys = await api.listAPIKeys();
       setApiKeys(keys);
     } catch (err: unknown) {
-      console.error('加载 API Key 失败:', err);
+      console.error('Failed to load API keys:', err);
     }
   };
 
   const handleSaveProfile = async () => {
-    // TODO: 调用更新用户信息 API
     setSaving(true);
     setTimeout(() => {
       setIsEditing(false);
@@ -45,7 +47,7 @@ export default function Profile() {
 
   const handleCreateKey = async () => {
     if (!newKeyName.trim()) {
-      setKeyError('请输入 API Key 名称');
+      setKeyError(t('profile.apiKey.nameRequired'));
       return;
     }
 
@@ -56,12 +58,12 @@ export default function Profile() {
       setNewKeyName('');
       await loadAPIKeys();
     } catch (err: unknown) {
-      setKeyError(err instanceof Error ? err.message : '创建失败');
+      setKeyError(err instanceof Error ? err.message : t('profile.apiKey.createFailed'));
     }
   };
 
   const handleDeleteKey = async (keyId: string) => {
-    if (!confirm('确定要删除此 API Key 吗？删除后无法恢复。')) {
+    if (!confirm(t('profile.apiKey.deleteConfirm'))) {
       return;
     }
 
@@ -69,7 +71,7 @@ export default function Profile() {
       await api.deleteAPIKey(keyId);
       await loadAPIKeys();
     } catch (err: unknown) {
-      alert('删除失败: ' + (err instanceof Error ? err.message : '未知错误'));
+      alert(t('profile.apiKey.deleteFailed') + ': ' + (err instanceof Error ? err.message : t('error.unknownError')));
     }
   };
 
@@ -81,28 +83,37 @@ export default function Profile() {
     }
   };
 
+  const getRoleLabel = (role?: string) => {
+    const roles: Record<string, string> = {
+      super_admin: t('common:roles.super_admin'),
+      admin: t('common:roles.admin'),
+      member: t('common:roles.member'),
+    };
+    return roles[role || ''] || role || '-';
+  };
+
   if (!user) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center text-muted-foreground">请先登录</div>
+        <div className="text-center text-muted-foreground">{t('profile.pleaseLogin')}</div>
       </div>
     );
   }
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <h1 className="text-3xl font-bold mb-8">个人资料</h1>
+      <h1 className="text-3xl font-bold mb-8">{t('profile.title')}</h1>
 
       {/* 基本信息 */}
       <div className="bg-card rounded-xl border border-border p-6 mb-6">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold">基本信息</h2>
+          <h2 className="text-xl font-semibold">{t('profile.basicInfo')}</h2>
           {!isEditing && (
             <button
               onClick={() => setIsEditing(true)}
               className="text-sm text-primary hover:underline focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:outline-none"
             >
-              编辑
+              {t('common:actions.edit')}
             </button>
           )}
         </div>
@@ -126,12 +137,12 @@ export default function Profile() {
           {/* 信息 */}
           <div className="flex-1 space-y-4">
             <div>
-              <span className="text-sm text-muted-foreground">用户名</span>
+              <span className="text-sm text-muted-foreground">{t('profile.username')}</span>
               <p className="font-medium">{user.username}</p>
             </div>
 
             <div>
-              <label htmlFor="displayName" className="text-sm text-muted-foreground">显示名称</label>
+              <label htmlFor="displayName" className="text-sm text-muted-foreground">{t('profile.displayName')}</label>
               {isEditing ? (
                 <div className="flex items-center gap-2 mt-1">
                   <input
@@ -148,7 +159,7 @@ export default function Profile() {
                     disabled={saving}
                     className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary/20"
                   >
-                    {saving ? '保存中…' : '保存'}
+                    {saving ? t('common:actions.saving') : t('common:actions.save')}
                   </button>
                   <button
                     onClick={() => {
@@ -157,7 +168,7 @@ export default function Profile() {
                     }}
                     className="px-4 py-2 border border-border rounded-lg hover:bg-muted focus-visible:ring-2 focus-visible:ring-primary/20"
                   >
-                    取消
+                    {t('common:actions.cancel')}
                   </button>
                 </div>
               ) : (
@@ -174,7 +185,7 @@ export default function Profile() {
               )}
               <div className="flex items-center gap-1">
                 <Shield className="w-4 h-4" />
-                <span>角色: {user.role === 'super_admin' ? '超级管理员' : user.role === 'admin' ? '管理员' : '普通用户'}</span>
+                <span>{t('profile.role', 'Role')}: {getRoleLabel(user.role)}</span>
               </div>
             </div>
           </div>
@@ -185,9 +196,9 @@ export default function Profile() {
       <div className="bg-card rounded-xl border border-border p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-xl font-semibold">API Key</h2>
+            <h2 className="text-xl font-semibold">{t('profile.apiKey.title')}</h2>
             <p className="text-sm text-muted-foreground mt-1">
-              用于 CI/CD 和自动化工具的身份验证
+              {t('profile.apiKey.description')}
             </p>
           </div>
           <button
@@ -199,7 +210,7 @@ export default function Profile() {
             className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
           >
             <Plus className="w-4 h-4" />
-            创建 Key
+            {t('profile.apiKey.createBtn')}
           </button>
         </div>
 
@@ -211,10 +222,10 @@ export default function Profile() {
                 id="keyName"
                 name="keyName"
                 type="text"
-                aria-label="API Key 名称"
+                aria-label={t('profile.apiKey.title')}
                 value={newKeyName}
                 onChange={(e) => setNewKeyName(e.target.value)}
-                placeholder="输入 API Key 名称（例如：CI/CD Token）…"
+                placeholder={t('profile.apiKey.namePlaceholder')}
                 className="flex-1 px-3 py-2 bg-background border border-border rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                 onKeyDown={(e) => e.key === 'Enter' && handleCreateKey()}
               />
@@ -222,7 +233,7 @@ export default function Profile() {
                 onClick={handleCreateKey}
                 className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
               >
-                创建
+                {t('profile.apiKey.create')}
               </button>
               <button
                 onClick={() => {
@@ -232,7 +243,7 @@ export default function Profile() {
                 }}
                 className="px-4 py-2 border border-border rounded-lg hover:bg-muted"
               >
-                取消
+                {t('common:actions.cancel')}
               </button>
             </div>
 
@@ -247,7 +258,7 @@ export default function Profile() {
               <div className="mt-4 p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
                   <Check className="w-4 h-4 text-green-500" />
-                  <span className="font-medium text-green-500">API Key 创建成功</span>
+                  <span className="font-medium text-green-500">{t('profile.apiKey.createSuccess')}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <code className="flex-1 p-2 bg-background rounded text-sm font-mono break-all">
@@ -255,9 +266,9 @@ export default function Profile() {
                   </code>
                   <button
                     onClick={handleCopyKey}
-                    aria-label="复制 API Key"
+                    aria-label={t('common:actions.copy')}
                     className="p-2 hover:bg-muted rounded-lg focus-visible:ring-2 focus-visible:ring-primary/20"
-                    title="复制"
+                    title={t('common:actions.copy')}
                   >
                     {copiedKey ? (
                       <Check className="w-4 h-4 text-green-500" />
@@ -267,7 +278,7 @@ export default function Profile() {
                   </button>
                 </div>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  ⚠ 请立即保存此 Key，关闭后将无法再次查看完整 Key。
+                  {t('profile.apiKey.saveWarning')}
                 </p>
               </div>
             )}
@@ -278,8 +289,8 @@ export default function Profile() {
         {apiKeys.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <Key className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <p>暂无 API Key</p>
-            <p className="text-sm">点击上方按钮创建</p>
+            <p>{t('profile.apiKey.empty')}</p>
+            <p className="text-sm">{t('profile.apiKey.emptyHint')}</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -296,22 +307,22 @@ export default function Profile() {
                   <div className="mt-1 flex items-center gap-4 text-sm text-muted-foreground">
                     <code className="font-mono">{key.key_prefix}</code>
                     <span>•</span>
-                    <span>权限: {key.permissions.join(', ')}</span>
+                    <span>{t('profile.apiKey.permissions')}: {key.permissions.join(', ')}</span>
                     {key.last_used_at && (
                       <>
                         <span>•</span>
-                        <span>最后使用: {new Date(key.last_used_at).toLocaleDateString('zh-CN')}</span>
+                        <span>{t('profile.apiKey.lastUsed')}: {new Date(key.last_used_at).toLocaleDateString(locale)}</span>
                       </>
                     )}
                     <span>•</span>
-                    <span>创建: {new Date(key.created_at).toLocaleDateString('zh-CN')}</span>
+                    <span>{t('profile.apiKey.createdAt')}: {new Date(key.created_at).toLocaleDateString(locale)}</span>
                   </div>
                 </div>
                 <button
                   onClick={() => handleDeleteKey(key.id)}
-                  aria-label="删除 API Key"
+                  aria-label={t('common:actions.delete')}
                   className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-primary/20"
-                  title="删除"
+                  title={t('common:actions.delete')}
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>

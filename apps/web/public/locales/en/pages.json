@@ -1,0 +1,94 @@
+{
+  "login": {
+    "title": "Agent Kit",
+    "subtitle": {
+      "login": "Sign in to Package Registry",
+      "register": "Create a new account"
+    },
+    "username": "Username",
+    "usernamePlaceholder": "Username…",
+    "displayName": "Display Name",
+    "displayNamePlaceholder": "Display Name (optional)…",
+    "email": "Email",
+    "emailPlaceholder": "Email…",
+    "password": "Password",
+    "passwordPlaceholder": "Password…",
+    "processing": "Processing…",
+    "loginBtn": "Sign In",
+    "registerBtn": "Sign Up",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "or": "or",
+    "oauthLogin": "Sign in with {{provider}}",
+    "loginFailed": "Login failed",
+    "registerFailed": "Registration failed",
+    "footer": "By signing in, you agree to our Terms of Service and Privacy Policy",
+    "providers": {
+      "wechat_work": "WeChat Work",
+      "feishu": "Feishu",
+      "dingtalk": "DingTalk"
+    }
+  },
+  "home": {
+    "title": "Agent Kit Registry",
+    "subtitle": "Search and install AI Agent packages — MCP Servers and Agent Skills",
+    "searchPlaceholder": "Search packages…",
+    "filterAll": "All",
+    "noResults": "No matching packages found"
+  },
+  "packageDetail": {
+    "loading": "Loading…",
+    "notFound": "Package not found or failed to load",
+    "backToList": "Back to packages",
+    "breadcrumb": "Packages",
+    "install": "Install",
+    "tags": "Tags",
+    "versionHistory": "Version History",
+    "noVersions": "No versions published yet",
+    "info": "Info",
+    "latestVersion": "Latest Version",
+    "downloads": "Downloads",
+    "license": "License",
+    "repository": "Repository",
+    "time": "Time",
+    "createdAt": "Created",
+    "updatedAt": "Updated",
+    "copyInstall": "Copy install command"
+  },
+  "profile": {
+    "pleaseLogin": "Please sign in first",
+    "title": "Profile",
+    "basicInfo": "Basic Info",
+    "username": "Username",
+    "displayName": "Display Name",
+    "role": "Role",
+    "apiKey": {
+      "title": "API Key",
+      "description": "Authentication for CI/CD and automation tools",
+      "createBtn": "Create Key",
+      "namePlaceholder": "Enter API Key name (e.g., CI/CD Token)…",
+      "create": "Create",
+      "empty": "No API Keys",
+      "emptyHint": "Click the button above to create one",
+      "nameRequired": "Please enter an API Key name",
+      "createFailed": "Creation failed",
+      "createSuccess": "API Key created successfully",
+      "saveWarning": "⚠ Please save this Key now. It won't be shown again after closing.",
+      "permissions": "Permissions",
+      "lastUsed": "Last used",
+      "createdAt": "Created",
+      "deleteConfirm": "Are you sure you want to delete this API Key? This action cannot be undone.",
+      "deleteFailed": "Delete failed"
+    }
+  },
+  "notFound": {
+    "title": "404",
+    "message": "Page not found",
+    "backHome": "Back to Home"
+  },
+  "errorBoundary": {
+    "title": "Something went wrong",
+    "message": "An error occurred while loading the page. Please refresh or go back to the home page.",
+    "backHome": "Back to Home"
+  }
+}

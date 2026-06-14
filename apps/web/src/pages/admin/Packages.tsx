@@ -4,6 +4,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { api } from '../../lib/api';
 import { ArrowLeft, Trash2, Pause, Play } from 'lucide-react';
 
@@ -23,14 +24,16 @@ interface AdminPackage {
 }
 
 export default function AdminPackages() {
+  const { t, i18n } = useTranslation(['admin', 'common']);
   const [packages, setPackages] = useState<AdminPackage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState({ page: 1, per_page: 20, total: 0, total_pages: 0 });
 
-  // 筛选条件
   const [typeFilter, setTypeFilter] = useState('');
   const [includeDeleted, setIncludeDeleted] = useState(false);
+
+  const locale = i18n.language === 'zh' ? 'zh-CN' : 'en-US';
 
   const loadPackages = useCallback(async () => {
     try {
@@ -44,35 +47,35 @@ export default function AdminPackages() {
       setPackages(data.data);
       setPagination(data.pagination);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : '加载失败');
+      setError(err instanceof Error ? err.message : t('common:error.loadFailed'));
     } finally {
       setLoading(false);
     }
-  }, [pagination.page, pagination.per_page, typeFilter, includeDeleted]);
+  }, [pagination.page, pagination.per_page, typeFilter, includeDeleted, t]);
 
   useEffect(() => {
     loadPackages();
   }, [loadPackages]);
 
   const handleStatusChange = async (packageId: string, newStatus: string) => {
-    const reason = newStatus === 'suspended' ? prompt('请输入下架原因（可选）') : undefined;
+    const reason = newStatus === 'suspended' ? prompt(t('packages.confirm.suspendPrompt')) : undefined;
 
     try {
       await api.admin.updatePackageStatus(packageId, newStatus, reason || undefined);
       loadPackages();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : '操作失败');
+      alert(err instanceof Error ? err.message : t('common:error.operationFailed'));
     }
   };
 
   const handleDelete = async (packageId: string) => {
-    if (!confirm('确定要永久删除该包吗？此操作不可恢复。')) return;
+    if (!confirm(t('packages.confirm.delete'))) return;
 
     try {
       await api.admin.deletePackage(packageId);
       loadPackages();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : '操作失败');
+      alert(err instanceof Error ? err.message : t('common:error.operationFailed'));
     }
   };
 
@@ -90,24 +93,24 @@ export default function AdminPackages() {
 
   const getStatusBadge = (pkg: AdminPackage) => {
     if (pkg.deleted_at) {
-      return <span className="px-2 py-1 rounded-full text-xs border bg-gray-500/10 text-gray-500 border-gray-500/20">已删除</span>;
+      return <span className="px-2 py-1 rounded-full text-xs border bg-gray-500/10 text-gray-500 border-gray-500/20">{t('packages.status.deleted')}</span>;
     }
     if (pkg.admin_status === 'suspended') {
-      return <span className="px-2 py-1 rounded-full text-xs border bg-yellow-500/10 text-yellow-500 border-yellow-500/20">已下架</span>;
+      return <span className="px-2 py-1 rounded-full text-xs border bg-yellow-500/10 text-yellow-500 border-yellow-500/20">{t('packages.status.suspended')}</span>;
     }
-    return <span className="px-2 py-1 rounded-full text-xs border bg-green-500/10 text-green-500 border-green-500/20">正常</span>;
+    return <span className="px-2 py-1 rounded-full text-xs border bg-green-500/10 text-green-500 border-green-500/20">{t('packages.status.active')}</span>;
   };
 
   return (
     <div className="container mx-auto px-4 py-8">
       {/* 头部 */}
       <div className="flex items-center gap-4 mb-8">
-        <Link to="/admin" aria-label="返回管理后台" className="p-2 rounded-lg hover:bg-secondary transition-colors focus-visible:ring-2 focus-visible:ring-primary/20">
+        <Link to="/admin" aria-label={t('common:actions.back')} className="p-2 rounded-lg hover:bg-secondary transition-colors focus-visible:ring-2 focus-visible:ring-primary/20">
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div>
-          <h1 className="text-3xl font-bold">包管理</h1>
-          <p className="text-muted-foreground mt-1">共 {pagination.total} 个包</p>
+          <h1 className="text-3xl font-bold">{t('packages.title')}</h1>
+          <p className="text-muted-foreground mt-1">{t('packages.totalPackages', { count: pagination.total })}</p>
         </div>
       </div>
 
@@ -116,10 +119,10 @@ export default function AdminPackages() {
         <select
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value)}
-          aria-label="筛选类型"
+          aria-label={t('packages.table.type')}
           className="px-4 py-2 rounded-lg bg-background border border-input"
         >
-          <option value="">所有类型</option>
+          <option value="">{t('packages.allTypes')}</option>
           <option value="mcp">MCP</option>
           <option value="skill">Skill</option>
         </select>
@@ -130,7 +133,7 @@ export default function AdminPackages() {
             onChange={(e) => setIncludeDeleted(e.target.checked)}
             className="rounded border-input"
           />
-          <span className="text-sm">显示已删除</span>
+          <span className="text-sm">{t('packages.showDeleted')}</span>
         </label>
       </div>
 
@@ -146,26 +149,26 @@ export default function AdminPackages() {
         <table className="w-full">
           <thead className="bg-secondary/50">
             <tr>
-              <th className="px-6 py-3 text-left text-sm font-medium">包名</th>
-              <th className="px-6 py-3 text-left text-sm font-medium">类型</th>
-              <th className="px-6 py-3 text-left text-sm font-medium">状态</th>
-              <th className="px-6 py-3 text-left text-sm font-medium">版本</th>
-              <th className="px-6 py-3 text-left text-sm font-medium">下载量</th>
-              <th className="px-6 py-3 text-left text-sm font-medium">创建时间</th>
-              <th className="px-6 py-3 text-right text-sm font-medium">操作</th>
+              <th className="px-6 py-3 text-left text-sm font-medium">{t('packages.table.name')}</th>
+              <th className="px-6 py-3 text-left text-sm font-medium">{t('packages.table.type')}</th>
+              <th className="px-6 py-3 text-left text-sm font-medium">{t('packages.table.status')}</th>
+              <th className="px-6 py-3 text-left text-sm font-medium">{t('packages.table.version')}</th>
+              <th className="px-6 py-3 text-left text-sm font-medium">{t('packages.table.downloads')}</th>
+              <th className="px-6 py-3 text-left text-sm font-medium">{t('packages.table.createdAt')}</th>
+              <th className="px-6 py-3 text-right text-sm font-medium">{t('packages.table.actions')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
             {loading ? (
               <tr>
                 <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">
-                  加载中…
+                  {t('packages.loading')}
                 </td>
               </tr>
             ) : packages.length === 0 ? (
               <tr>
                 <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">
-                  暂无数据
+                  {t('common:empty.noData')}
                 </td>
               </tr>
             ) : (
@@ -188,7 +191,7 @@ export default function AdminPackages() {
                     {pkg.downloads_count.toLocaleString()}
                   </td>
                   <td className="px-6 py-4 text-sm text-muted-foreground">
-                    {pkg.created_at ? new Date(pkg.created_at).toLocaleDateString('zh-CN') : '-'}
+                    {pkg.created_at ? new Date(pkg.created_at).toLocaleDateString(locale) : '-'}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-end gap-2">
@@ -197,27 +200,27 @@ export default function AdminPackages() {
                           {pkg.admin_status === 'active' ? (
                             <button
                               onClick={() => handleStatusChange(pkg.id, 'suspended')}
-                              aria-label="下架包"
+                              aria-label={t('packages.actions.suspend')}
                               className="p-2 rounded-lg hover:bg-yellow-500/10 text-yellow-500 focus-visible:ring-2 focus-visible:ring-primary/20"
-                              title="下架"
+                              title={t('packages.actions.suspend')}
                             >
                               <Pause className="w-4 h-4" />
                             </button>
                           ) : (
                             <button
                               onClick={() => handleStatusChange(pkg.id, 'active')}
-                              aria-label="恢复包"
+                              aria-label={t('packages.actions.restore')}
                               className="p-2 rounded-lg hover:bg-green-500/10 text-green-500 focus-visible:ring-2 focus-visible:ring-primary/20"
-                              title="恢复"
+                              title={t('packages.actions.restore')}
                             >
                               <Play className="w-4 h-4" />
                             </button>
                           )}
                           <button
                             onClick={() => handleDelete(pkg.id)}
-                            aria-label="永久删除包"
+                            aria-label={t('packages.actions.permanentDelete')}
                             className="p-2 rounded-lg hover:bg-red-500/10 text-red-500 focus-visible:ring-2 focus-visible:ring-primary/20"
-                            title="永久删除"
+                            title={t('packages.actions.permanentDelete')}
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -236,7 +239,7 @@ export default function AdminPackages() {
       {pagination.total_pages > 1 && (
         <div className="flex items-center justify-between mt-6">
           <p className="text-sm text-muted-foreground">
-            第 {pagination.page} / {pagination.total_pages} 页
+            {t('common:pagination.pageInfo', { page: pagination.page, total: pagination.total_pages })}
           </p>
           <div className="flex gap-2">
             <button
@@ -244,14 +247,14 @@ export default function AdminPackages() {
               disabled={pagination.page <= 1}
               className="px-4 py-2 rounded-lg border border-input hover:bg-secondary disabled:opacity-50 transition-colors focus-visible:ring-2 focus-visible:ring-primary/20"
             >
-              上一页
+              {t('common:pagination.prev')}
             </button>
             <button
               onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
               disabled={pagination.page >= pagination.total_pages}
               className="px-4 py-2 rounded-lg border border-input hover:bg-secondary disabled:opacity-50 transition-colors focus-visible:ring-2 focus-visible:ring-primary/20"
             >
-              下一页
+              {t('common:pagination.next')}
             </button>
           </div>
         </div>

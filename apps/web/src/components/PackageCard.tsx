@@ -4,6 +4,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { PackageResponse } from '../lib/api';
 import { Download, Tag } from 'lucide-react';
 
@@ -13,6 +14,7 @@ interface PackageCardProps {
 }
 
 export const PackageCard = React.memo(function PackageCard({ package: pkg, index = 0 }: PackageCardProps) {
+  const { t } = useTranslation('common');
   const isMCP = pkg.type === 'mcp';
 
   return (
@@ -39,7 +41,7 @@ export const PackageCard = React.memo(function PackageCard({ package: pkg, index
             </span>
           </div>
           <p className="text-sm text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed">
-            {pkg.description || '暂无描述'}
+            {pkg.description || t('empty.noDescription')}
           </p>
         </div>
       </div>

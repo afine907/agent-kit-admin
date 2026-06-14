@@ -1,0 +1,12 @@
+{
+  "10000": "Success",
+  "20000": "Invalid request parameters",
+  "20001": "Authentication failed",
+  "20002": "Insufficient permissions",
+  "20003": "Resource not found",
+  "20004": "Resource already exists",
+  "20005": "Resource has been deleted",
+  "20006": "Too many requests, please try again later",
+  "30000": "Internal server error",
+  "30002": "Storage service error"
+}

@@ -4,19 +4,22 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { api, AdminUserResponse } from '../../lib/api';
 import { ArrowLeft, Search, Shield, UserCheck, UserX, Ban } from 'lucide-react';
 
 export default function AdminUsers() {
+  const { t, i18n } = useTranslation(['admin', 'common']);
   const [users, setUsers] = useState<AdminUserResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState({ page: 1, per_page: 20, total: 0, total_pages: 0 });
 
-  // 筛选条件
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [keyword, setKeyword] = useState('');
+
+  const locale = i18n.language === 'zh' ? 'zh-CN' : 'en-US';
 
   const loadUsers = useCallback(async () => {
     try {
@@ -31,11 +34,11 @@ export default function AdminUsers() {
       setUsers(data.data);
       setPagination(data.pagination);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : '加载失败');
+      setError(err instanceof Error ? err.message : t('common:error.loadFailed'));
     } finally {
       setLoading(false);
     }
-  }, [pagination.page, pagination.per_page, roleFilter, statusFilter, keyword]);
+  }, [pagination.page, pagination.per_page, roleFilter, statusFilter, keyword, t]);
 
   useEffect(() => {
     loadUsers();
@@ -47,35 +50,36 @@ export default function AdminUsers() {
   };
 
   const handleStatusChange = async (userId: string, newStatus: string) => {
-    if (!confirm(`确定要${newStatus === 'suspended' ? '停用' : '启用'}该用户吗？`)) return;
+    const msg = newStatus === 'suspended' ? t('users.confirm.suspend') : t('users.confirm.activate');
+    if (!confirm(msg)) return;
 
     try {
       await api.admin.updateUserStatus(userId, newStatus);
       loadUsers();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : '操作失败');
+      alert(err instanceof Error ? err.message : t('common:error.operationFailed'));
     }
   };
 
   const handleRoleChange = async (userId: string, newRole: string) => {
-    if (!confirm(`确定要将该用户角色修改为 ${newRole} 吗？`)) return;
+    if (!confirm(t('users.confirm.changeRole', { role: newRole }))) return;
 
     try {
       await api.admin.updateUserRole(userId, newRole);
       loadUsers();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : '操作失败');
+      alert(err instanceof Error ? err.message : t('common:error.operationFailed'));
     }
   };
 
   const handleDelete = async (userId: string) => {
-    if (!confirm('确定要删除该用户吗？此操作不可恢复。')) return;
+    if (!confirm(t('users.confirm.delete'))) return;
 
     try {
       await api.admin.deleteUser(userId);
       loadUsers();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : '操作失败');
+      alert(err instanceof Error ? err.message : t('common:error.operationFailed'));
     }
   };
 
@@ -85,14 +89,9 @@ export default function AdminUsers() {
       admin: 'bg-orange-500/10 text-orange-500 border-orange-500/20',
       member: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
     };
-    const labels: Record<string, string> = {
-      super_admin: '超级管理员',
-      admin: '管理员',
-      member: '普通用户',
-    };
     return (
       <span className={`px-2 py-1 rounded-full text-xs border ${styles[role] || styles.member}`}>
-        {labels[role] || role}
+        {t(`common:roles.${role}`, role)}
       </span>
     );
   };
@@ -104,15 +103,9 @@ export default function AdminUsers() {
       banned: 'bg-red-500/10 text-red-500 border-red-500/20',
       deleted: 'bg-gray-500/10 text-gray-500 border-gray-500/20',
     };
-    const labels: Record<string, string> = {
-      active: '正常',
-      suspended: '已停用',
-      banned: '已封禁',
-      deleted: '已删除',
-    };
     return (
       <span className={`px-2 py-1 rounded-full text-xs border ${styles[status] || styles.active}`}>
-        {labels[status] || status}
+        {t(`common:status.${status}`, status)}
       </span>
     );
   };
@@ -121,12 +114,12 @@ export default function AdminUsers() {
     <div className="container mx-auto px-4 py-8">
       {/* 头部 */}
       <div className="flex items-center gap-4 mb-8">
-        <Link to="/admin" aria-label="返回管理后台" className="p-2 rounded-lg hover:bg-secondary transition-colors focus-visible:ring-2 focus-visible:ring-primary/20">
+        <Link to="/admin" aria-label={t('common:actions.back')} className="p-2 rounded-lg hover:bg-secondary transition-colors focus-visible:ring-2 focus-visible:ring-primary/20">
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div>
-          <h1 className="text-3xl font-bold">用户管理</h1>
-          <p className="text-muted-foreground mt-1">共 {pagination.total} 个用户</p>
+          <h1 className="text-3xl font-bold">{t('users.title')}</h1>
+          <p className="text-muted-foreground mt-1">{t('users.totalUsers', { count: pagination.total })}</p>
         </div>
       </div>
 
@@ -137,9 +130,9 @@ export default function AdminUsers() {
           <input
             type="text"
             name="keyword"
-            aria-label="搜索用户名或邮箱"
+            aria-label={t('users.searchPlaceholder')}
             autoComplete="off"
-            placeholder="搜索用户名/邮箱…"
+            placeholder={t('users.searchPlaceholder')}
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -149,24 +142,24 @@ export default function AdminUsers() {
         <select
           value={roleFilter}
           onChange={(e) => setRoleFilter(e.target.value)}
-          aria-label="筛选角色"
+          aria-label={t('users.table.role')}
           className="px-4 py-2 rounded-lg bg-background border border-input"
         >
-          <option value="">所有角色</option>
-          <option value="super_admin">超级管理员</option>
-          <option value="admin">管理员</option>
-          <option value="member">普通用户</option>
+          <option value="">{t('users.allRoles')}</option>
+          <option value="super_admin">{t('common:roles.super_admin')}</option>
+          <option value="admin">{t('common:roles.admin')}</option>
+          <option value="member">{t('common:roles.member')}</option>
         </select>
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          aria-label="筛选状态"
+          aria-label={t('users.table.status')}
           className="px-4 py-2 rounded-lg bg-background border border-input"
         >
-          <option value="">所有状态</option>
-          <option value="active">正常</option>
-          <option value="suspended">已停用</option>
-          <option value="banned">已封禁</option>
+          <option value="">{t('users.allStatuses')}</option>
+          <option value="active">{t('common:status.active')}</option>
+          <option value="suspended">{t('common:status.suspended')}</option>
+          <option value="banned">{t('common:status.banned')}</option>
         </select>
       </div>
 
@@ -182,25 +175,25 @@ export default function AdminUsers() {
         <table className="w-full">
           <thead className="bg-secondary/50">
             <tr>
-              <th className="px-6 py-3 text-left text-sm font-medium">用户</th>
-              <th className="px-6 py-3 text-left text-sm font-medium">角色</th>
-              <th className="px-6 py-3 text-left text-sm font-medium">状态</th>
-              <th className="px-6 py-3 text-left text-sm font-medium">登录方式</th>
-              <th className="px-6 py-3 text-left text-sm font-medium">注册时间</th>
-              <th className="px-6 py-3 text-right text-sm font-medium">操作</th>
+              <th className="px-6 py-3 text-left text-sm font-medium">{t('users.table.user')}</th>
+              <th className="px-6 py-3 text-left text-sm font-medium">{t('users.table.role')}</th>
+              <th className="px-6 py-3 text-left text-sm font-medium">{t('users.table.status')}</th>
+              <th className="px-6 py-3 text-left text-sm font-medium">{t('users.table.loginMethod')}</th>
+              <th className="px-6 py-3 text-left text-sm font-medium">{t('users.table.registeredAt')}</th>
+              <th className="px-6 py-3 text-right text-sm font-medium">{t('users.table.actions')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
             {loading ? (
               <tr>
                 <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
-                  加载中…
+                  {t('users.loading')}
                 </td>
               </tr>
             ) : users.length === 0 ? (
               <tr>
                 <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
-                  暂无数据
+                  {t('common:empty.noData')}
                 </td>
               </tr>
             ) : (
@@ -215,28 +208,28 @@ export default function AdminUsers() {
                   <td className="px-6 py-4">{getRoleBadge(user.role)}</td>
                   <td className="px-6 py-4">{getStatusBadge(user.status)}</td>
                   <td className="px-6 py-4 text-sm text-muted-foreground">
-                    {user.oauth_provider === 'local' ? '本地' : user.oauth_provider}
+                    {user.oauth_provider === 'local' ? t('users.local') : user.oauth_provider}
                   </td>
                   <td className="px-6 py-4 text-sm text-muted-foreground">
-                    {user.created_at ? new Date(user.created_at).toLocaleDateString('zh-CN') : '-'}
+                    {user.created_at ? new Date(user.created_at).toLocaleDateString(locale) : '-'}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-end gap-2">
                       {user.status === 'active' ? (
                         <button
                           onClick={() => handleStatusChange(user.id, 'suspended')}
-                          aria-label="停用用户"
+                          aria-label={t('users.actions.suspend')}
                           className="p-2 rounded-lg hover:bg-yellow-500/10 text-yellow-500 focus-visible:ring-2 focus-visible:ring-primary/20"
-                          title="停用"
+                          title={t('users.actions.suspend')}
                         >
                           <UserX className="w-4 h-4" />
                         </button>
                       ) : (
                         <button
                           onClick={() => handleStatusChange(user.id, 'active')}
-                          aria-label="启用用户"
+                          aria-label={t('users.actions.activate')}
                           className="p-2 rounded-lg hover:bg-green-500/10 text-green-500 focus-visible:ring-2 focus-visible:ring-primary/20"
-                          title="启用"
+                          title={t('users.actions.activate')}
                         >
                           <UserCheck className="w-4 h-4" />
                         </button>
@@ -244,9 +237,9 @@ export default function AdminUsers() {
                       {user.role === 'member' && (
                         <button
                           onClick={() => handleRoleChange(user.id, 'admin')}
-                          aria-label="设为管理员"
+                          aria-label={t('users.actions.setAdmin')}
                           className="p-2 rounded-lg hover:bg-orange-500/10 text-orange-500 focus-visible:ring-2 focus-visible:ring-primary/20"
-                          title="设为管理员"
+                          title={t('users.actions.setAdmin')}
                         >
                           <Shield className="w-4 h-4" />
                         </button>
@@ -254,18 +247,18 @@ export default function AdminUsers() {
                       {user.role === 'admin' && (
                         <button
                           onClick={() => handleRoleChange(user.id, 'member')}
-                          aria-label="取消管理员"
+                          aria-label={t('users.actions.removeAdmin')}
                           className="p-2 rounded-lg hover:bg-blue-500/10 text-blue-500 focus-visible:ring-2 focus-visible:ring-primary/20"
-                          title="取消管理员"
+                          title={t('users.actions.removeAdmin')}
                         >
                           <Shield className="w-4 h-4" />
                         </button>
                       )}
                       <button
                         onClick={() => handleDelete(user.id)}
-                        aria-label="删除用户"
+                        aria-label={t('users.actions.delete')}
                         className="p-2 rounded-lg hover:bg-red-500/10 text-red-500 focus-visible:ring-2 focus-visible:ring-primary/20"
-                        title="删除"
+                        title={t('users.actions.delete')}
                       >
                         <Ban className="w-4 h-4" />
                       </button>
@@ -282,7 +275,7 @@ export default function AdminUsers() {
       {pagination.total_pages > 1 && (
         <div className="flex items-center justify-between mt-6">
           <p className="text-sm text-muted-foreground">
-            第 {pagination.page} / {pagination.total_pages} 页
+            {t('common:pagination.pageInfo', { page: pagination.page, total: pagination.total_pages })}
           </p>
           <div className="flex gap-2">
             <button
@@ -290,14 +283,14 @@ export default function AdminUsers() {
               disabled={pagination.page <= 1}
               className="px-4 py-2 rounded-lg border border-input hover:bg-secondary disabled:opacity-50 transition-colors focus-visible:ring-2 focus-visible:ring-primary/20"
             >
-              上一页
+              {t('common:pagination.prev')}
             </button>
             <button
               onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
               disabled={pagination.page >= pagination.total_pages}
               className="px-4 py-2 rounded-lg border border-input hover:bg-secondary disabled:opacity-50 transition-colors focus-visible:ring-2 focus-visible:ring-primary/20"
             >
-              下一页
+              {t('common:pagination.next')}
             </button>
           </div>
         </div>

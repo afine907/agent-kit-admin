@@ -9,11 +9,14 @@ import ora from 'ora';
 import express from 'express';
 import open from 'open';
 import type { Server } from 'http';
+import { i18n } from '../i18n.js';
 import { configManager } from '../config/manager.js';
 import { apiClient } from '../api/client.js';
 
+const t = (key: string, options?: Record<string, unknown>): string => i18n.t(key, options) as string;
+
 // OAuth Provider 列表
-const OAUTH_PROVIDERS = [
+const OAUTH_PROVIDERS = () => [
   { name: '企业微信 (WeChat Work)', value: 'wechat_work' },
   { name: '飞书 (Feishu)', value: 'feishu' },
   { name: '钉钉 (DingTalk)', value: 'dingtalk' },
@@ -23,22 +26,20 @@ const OAUTH_PROVIDERS = [
 const CALLBACK_PORT = 3456;
 
 export const loginCommand = new Command('login')
-  .description('登录到 Agent Kit Registry')
+  .description(t('commands:login.description'))
   .option('--registry <url>', 'Registry URL')
-  .option('--email <email>', '邮箱 (本地登录)')
-  .option('--password <password>', '密码 (本地登录)')
+  .option('--email <email>', t('commands:login.email'))
+  .option('--password <password>', t('commands:login.password'))
   .option('--provider <provider>', 'OAuth Provider (wechat_work/feishu/dingtalk)')
   .action(async (options) => {
     try {
-      // 设置 registry
       if (options.registry) {
         configManager.setRegistry(options.registry);
         apiClient.setToken('');
       }
 
-      console.log(chalk.bold('\n🔐 Agent Kit Admin - 登录\n'));
+      console.log(chalk.bold(`\n${t('commands:login.title')}\n`));
 
-      // 判断登录方式
       let useLocalLogin = options.email && options.password;
 
       if (!useLocalLogin && !options.provider) {
@@ -46,10 +47,10 @@ export const loginCommand = new Command('login')
           {
             type: 'list',
             name: 'method',
-            message: '选择登录方式:',
+            message: t('commands:login.selectMethod'),
             choices: [
-              { name: '邮箱密码登录', value: 'local' },
-              { name: 'OAuth 登录 (企业微信/飞书/钉钉)', value: 'oauth' },
+              { name: t('commands:login.localLogin'), value: 'local' },
+              { name: t('commands:login.oauthLogin'), value: 'oauth' },
             ],
           },
         ]);
@@ -57,14 +58,12 @@ export const loginCommand = new Command('login')
       }
 
       if (useLocalLogin) {
-        // 本地登录
         await localLogin(options);
       } else {
-        // OAuth 登录
         await oauthLogin(options);
       }
     } catch (error: unknown) {
-      console.error(chalk.red(`\n✖ 登录失败: ${error instanceof Error ? error.message : String(error)}`));
+      console.error(chalk.red(`\n✖ ${t('commands:login.loginFailed')}: ${error instanceof Error ? error.message : String(error)}`));
       process.exit(1);
     }
   });
@@ -82,35 +81,33 @@ async function localLogin(options: LocalLoginOptions) {
   let email = options.email;
   let password = options.password;
 
-  // 交互式输入
   if (!email || !password) {
     const answers = await inquirer.prompt([
       {
         type: 'input',
         name: 'email',
-        message: '邮箱:',
+        message: t('commands:login.email'),
         when: !email,
-        validate: (input) => input.includes('@') || '请输入有效的邮箱',
+        validate: (input) => input.includes('@') || t('commands:login.emailValidation'),
       },
       {
         type: 'password',
         name: 'password',
-        message: '密码:',
+        message: t('commands:login.password'),
         when: !password,
-        validate: (input) => input.length >= 8 || '密码至少 8 位',
+        validate: (input) => input.length >= 8 || t('commands:login.passwordValidation'),
       },
     ]);
     email = email || answers.email;
     password = password || answers.password;
   }
 
-  const spinner = ora('正在登录...').start();
+  const spinner = ora(t('commands:login.loggingIn')).start();
 
   try {
-    const result = await apiClient.login(email, password);
-    spinner.succeed('登录成功');
+    const result = await apiClient.login(email!, password!);
+    spinner.succeed(t('commands:login.loginSuccess'));
 
-    // 保存 token 和用户信息
     configManager.setToken(result.token);
     if (result.refresh_token) {
       configManager.setRefreshToken(result.refresh_token);
@@ -122,66 +119,59 @@ async function localLogin(options: LocalLoginOptions) {
       role: result.user.role,
     });
 
-    // 显示成功信息
-    console.log(chalk.green('\n✔ 登录成功!\n'));
-    console.log(chalk.gray(`  用户: ${result.user.username}`));
-    console.log(chalk.gray(`  角色: ${result.user.role || 'member'}`));
-    console.log(chalk.gray(`  Token 已保存到: ${configManager.getConfigPath()}`));
+    console.log(chalk.green(`\n✔ ${t('commands:login.loginSuccessTitle')}\n`));
+    console.log(chalk.gray(`  ${t('commands:login.user')}: ${result.user.username}`));
+    console.log(chalk.gray(`  ${t('commands:login.role')}: ${result.user.role || 'member'}`));
+    console.log(chalk.gray(`  ${t('commands:login.tokenSaved')}: ${configManager.getConfigPath()}`));
     console.log('');
   } catch (error: unknown) {
-    spinner.fail('登录失败');
+    spinner.fail(t('commands:login.loginFailed'));
     throw error;
   }
 }
 
 async function oauthLogin(options: OAuthLoginOptions) {
-  // 选择 OAuth Provider
   let provider = options.provider;
   if (!provider) {
     const answer = await inquirer.prompt([
       {
         type: 'list',
         name: 'provider',
-        message: '选择 OAuth Provider:',
-        choices: OAUTH_PROVIDERS,
+        message: t('commands:login.selectProvider'),
+        choices: OAUTH_PROVIDERS(),
       },
     ]);
     provider = answer.provider;
   }
 
-  // 验证 provider
-  const validProviders = OAUTH_PROVIDERS.map((p) => p.value);
-  if (!validProviders.includes(provider)) {
-    console.error(chalk.red(`\n✖ 不支持的 Provider: ${provider}`));
-    console.log(chalk.gray(`  支持的 Provider: ${validProviders.join(', ')}`));
+  const validProviders = OAUTH_PROVIDERS().map((p) => p.value);
+  if (!validProviders.includes(provider!)) {
+    console.error(chalk.red(`\n✖ ${t('commands:login.unsupportedProvider')}: ${provider}`));
+    console.log(chalk.gray(`  ${t('commands:login.supportedProviders')}: ${validProviders.join(', ')}`));
     process.exit(1);
   }
 
-  const spinner = ora('正在获取 OAuth 授权 URL...').start();
+  const spinner = ora(t('commands:login.fetchingOAuthUrl')).start();
 
-  // 获取 OAuth URL
   let authUrl: string;
   try {
-    authUrl = await apiClient.getOAuthUrl(provider);
-    spinner.succeed('已获取授权 URL');
+    authUrl = await apiClient.getOAuthUrl(provider!);
+    spinner.succeed(t('commands:login.oauthUrlFetched'));
   } catch (error: unknown) {
-    spinner.fail('获取授权 URL 失败');
+    spinner.fail(t('commands:login.oauthUrlFailed'));
     console.error(chalk.red(`\n✖ ${error instanceof Error ? error.message : String(error)}`));
     process.exit(1);
   }
 
-  // 启动本地回调服务器
   const tokenPromise = new Promise<string>((resolve, reject) => {
     const app = express();
     let server: Server | undefined;
 
-    // 超时处理
     const timeout = setTimeout(() => {
       server?.close();
-      reject(new Error('登录超时 (5 分钟)'));
+      reject(new Error(t('commands:login.loginTimeout')));
     }, 5 * 60 * 1000);
 
-    // 回调路由
     app.get('/callback', (req, res) => {
       const token = req.query.token as string;
       if (token) {
@@ -189,8 +179,8 @@ async function oauthLogin(options: OAuthLoginOptions) {
         res.send(`
           <html>
             <body style="font-family: sans-serif; text-align: center; padding: 50px;">
-              <h1>✅ 登录成功!</h1>
-              <p>请返回终端继续操作。</p>
+              <h1>✅ ${t('commands:login.loginSuccessTitle')}</h1>
+              <p>${i18n.language === 'zh' ? '请返回终端继续操作。' : 'Please return to the terminal.'}</p>
               <script>setTimeout(() => window.close(), 2000)</script>
             </body>
           </html>
@@ -198,54 +188,48 @@ async function oauthLogin(options: OAuthLoginOptions) {
         server?.close();
         resolve(token);
       } else {
-        res.status(400).send('缺少 token 参数');
+        res.status(400).send('Missing token parameter');
       }
     });
 
-    // 启动服务器
     server = app.listen(CALLBACK_PORT, () => {
-      console.log(chalk.gray(`\n  本地回调服务器已启动 (端口: ${CALLBACK_PORT})`));
+      console.log(chalk.gray(`\n  ${t('commands:login.callbackServerStarted')}: ${CALLBACK_PORT})`));
     });
 
     server.on('error', (err: NodeJS.ErrnoException) => {
       if (err.code === 'EADDRINUSE') {
-        reject(new Error(`端口 ${CALLBACK_PORT} 已被占用，请关闭占用该端口的程序`));
+        reject(new Error(t('commands:login.portInUse', { port: CALLBACK_PORT })));
       } else {
         reject(err);
       }
     });
   });
 
-  // 打开浏览器
-  console.log(chalk.gray('\n  正在打开浏览器进行授权...'));
-  console.log(chalk.gray(`  如果浏览器没有自动打开，请访问:`));
+  console.log(chalk.gray(`\n  ${t('commands:login.openingBrowser')}`));
+  console.log(chalk.gray(`  ${t('commands:login.manualVisit')}`));
   console.log(chalk.cyan(`  ${authUrl}\n`));
 
   try {
     await open(authUrl);
   } catch {
-    // 浏览器打开失败，用户手动访问
-    console.log(chalk.yellow('  ⚠ 无法自动打开浏览器，请手动访问上述 URL'));
+    console.log(chalk.yellow(`  ⚠ ${t('commands:login.browserOpenFailed')}`));
   }
 
-  // 等待回调
-  const spinner2 = ora('等待授权完成...').start();
+  const spinner2 = ora(t('commands:login.waitingAuth')).start();
 
   let token: string;
   try {
     token = await tokenPromise;
-    spinner2.succeed('授权成功');
+    spinner2.succeed(t('commands:login.authSuccess'));
   } catch (error: unknown) {
-    spinner2.fail('授权失败');
+    spinner2.fail(t('commands:login.authFailed'));
     console.error(chalk.red(`\n✖ ${error instanceof Error ? error.message : String(error)}`));
     process.exit(1);
   }
 
-  // 保存 token
   configManager.setToken(token);
 
-  // 获取用户信息
-  const spinner3 = ora('正在获取用户信息...').start();
+  const spinner3 = ora(t('commands:login.fetchingUserInfo')).start();
   try {
     apiClient.setToken(token);
     const user = await apiClient.getMe();
@@ -255,17 +239,16 @@ async function oauthLogin(options: OAuthLoginOptions) {
       display_name: user.display_name,
       role: user.role,
     });
-    spinner3.succeed('用户信息已获取');
+    spinner3.succeed(t('commands:login.userInfoFetched'));
   } catch {
-    spinner3.warn('无法获取用户信息，但 token 已保存');
+    spinner3.warn(t('commands:login.userInfoFailed'));
   }
 
-  // 显示成功信息
   const user = configManager.getUser();
-  console.log(chalk.green('\n✔ 登录成功!\n'));
+  console.log(chalk.green(`\n✔ ${t('commands:login.loginSuccessTitle')}\n`));
   if (user) {
-    console.log(chalk.gray(`  用户: ${user.username} (${user.display_name})`));
+    console.log(chalk.gray(`  ${t('commands:login.user')}: ${user.username} (${user.display_name})`));
   }
-  console.log(chalk.gray(`  Token 已保存到: ${configManager.getConfigPath()}`));
+  console.log(chalk.gray(`  ${t('commands:login.tokenSaved')}: ${configManager.getConfigPath()}`));
   console.log('');
 }

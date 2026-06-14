@@ -4,21 +4,23 @@
 
 import { Command } from 'commander';
 import chalk from 'chalk';
+import { i18n } from '../i18n.js';
 import { configManager } from '../config/manager.js';
 import { apiClient } from '../api/client.js';
 
+const t = (key: string, options?: Record<string, unknown>): string => i18n.t(key, options) as string;
+
 export const whoamiCommand = new Command('whoami')
-  .description('显示当前登录用户')
+  .description(t('commands:whoami.description'))
   .action(async () => {
     try {
       const token = configManager.getToken();
 
       if (!token) {
-        console.log(chalk.yellow('\n⚠ 未登录，请先运行 akit login\n'));
+        console.log(chalk.yellow(`\n⚠ ${t('commands:whoami.notLoggedIn')}\n`));
         process.exit(1);
       }
 
-      // 尝试从 API 获取最新用户信息
       try {
         apiClient.setToken(token);
         const user = await apiClient.getMe();
@@ -28,15 +30,14 @@ export const whoamiCommand = new Command('whoami')
           display_name: user.display_name,
         });
 
-        console.log(chalk.green(`\n✔ 登录为 ${user.username} (${user.display_name})\n`));
+        console.log(chalk.green(`\n✔ ${t('commands:login.user')}: ${user.username} (${user.display_name})\n`));
       } catch {
-        // API 调用失败，使用本地缓存
         const user = configManager.getUser();
         if (user) {
-          console.log(chalk.green(`\n✔ 登录为 ${user.username} (${user.display_name})\n`));
-          console.log(chalk.gray('  (无法连接到服务器，显示本地缓存信息)'));
+          console.log(chalk.green(`\n✔ ${t('commands:login.user')}: ${user.username} (${user.display_name})\n`));
+          console.log(chalk.gray(`  (${t('commands:whoami.fetchFailed')})`));
         } else {
-          console.log(chalk.yellow('\n⚠ 无法获取用户信息，请尝试重新登录\n'));
+          console.log(chalk.yellow(`\n⚠ ${t('commands:whoami.notLoggedIn')}\n`));
           process.exit(1);
         }
       }
@@ -45,7 +46,7 @@ export const whoamiCommand = new Command('whoami')
       console.log(chalk.gray(`  Registry: ${registry}`));
       console.log('');
     } catch (error: unknown) {
-      console.error(chalk.red(`\n✖ 获取用户信息失败: ${error instanceof Error ? error.message : String(error)}`));
+      console.error(chalk.red(`\n✖ ${t('commands:whoami.fetchFailed')}: ${error instanceof Error ? error.message : String(error)}`));
       process.exit(1);
     }
   });

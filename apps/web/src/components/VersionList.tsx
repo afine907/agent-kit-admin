@@ -3,6 +3,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { VersionResponse } from '../lib/api';
 import { Tag, AlertTriangle, Ban } from 'lucide-react';
 
@@ -11,10 +12,13 @@ interface VersionListProps {
 }
 
 export const VersionList = React.memo(function VersionList({ versions }: VersionListProps) {
+  const { t, i18n } = useTranslation('pages');
+  const locale = i18n.language === 'zh' ? 'zh-CN' : 'en-US';
+
   if (versions.length === 0) {
     return (
       <div className="py-8 text-center">
-        <p className="text-sm text-muted-foreground font-mono">No versions published yet</p>
+        <p className="text-sm text-muted-foreground font-mono">{t('packageDetail.noVersions', 'No versions published yet')}</p>
       </div>
     );
   }
@@ -52,7 +56,7 @@ export const VersionList = React.memo(function VersionList({ versions }: Version
           </div>
 
           <time className="text-xs text-muted-foreground font-mono">
-            {new Date(ver.published_at).toLocaleDateString('zh-CN')}
+            {new Date(ver.published_at).toLocaleDateString(locale)}
           </time>
         </div>
       ))}

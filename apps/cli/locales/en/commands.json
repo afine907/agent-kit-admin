@@ -1,0 +1,135 @@
+{
+  "login": {
+    "description": "Sign in to Agent Kit Registry",
+    "title": "🔐 Agent Kit Admin - Login",
+    "selectMethod": "Select login method:",
+    "localLogin": "Email/Password login",
+    "oauthLogin": "OAuth login (WeChat Work/Feishu/DingTalk)",
+    "email": "Email:",
+    "password": "Password:",
+    "emailValidation": "Please enter a valid email",
+    "passwordValidation": "Password must be at least 8 characters",
+    "loggingIn": "Logging in...",
+    "loginSuccess": "Login successful",
+    "loginFailed": "Login failed",
+    "loginSuccessTitle": "Login successful!",
+    "user": "User",
+    "role": "Role",
+    "tokenSaved": "Token saved to",
+    "selectProvider": "Select OAuth Provider:",
+    "unsupportedProvider": "Unsupported provider",
+    "supportedProviders": "Supported providers",
+    "fetchingOAuthUrl": "Fetching OAuth authorization URL...",
+    "oauthUrlFetched": "Authorization URL fetched",
+    "oauthUrlFailed": "Failed to fetch authorization URL",
+    "callbackServerStarted": "Local callback server started (port",
+    "openingBrowser": "Opening browser for authorization...",
+    "manualVisit": "If the browser didn't open, visit:",
+    "browserOpenFailed": "Could not open browser automatically, please visit the URL above",
+    "waitingAuth": "Waiting for authorization...",
+    "authSuccess": "Authorization successful",
+    "authFailed": "Authorization failed",
+    "loginTimeout": "Login timed out (5 minutes)",
+    "fetchingUserInfo": "Fetching user info...",
+    "userInfoFetched": "User info fetched",
+    "userInfoFailed": "Could not fetch user info, but token was saved",
+    "portInUse": "Port {{port}} is in use, please close the program using it"
+  },
+  "register": {
+    "description": "Register a new account",
+    "title": "📝 Agent Kit Admin - Register",
+    "username": "Username:",
+    "email": "Email:",
+    "password": "Password:",
+    "displayName": "Display Name (optional):",
+    "usernameMinLength": "Username must be at least 3 characters",
+    "usernamePattern": "Username can only contain letters, numbers, underscores and hyphens",
+    "emailValidation": "Please enter a valid email",
+    "passwordValidation": "Password must be at least 8 characters",
+    "registering": "Registering...",
+    "registerSuccess": "Registration successful",
+    "registerFailed": "Registration failed",
+    "user": "User",
+    "tokenSaved": "Token saved to"
+  },
+  "logout": {
+    "description": "Sign out current user",
+    "loggingOut": "Signing out...",
+    "logoutSuccess": "Signed out",
+    "notLoggedIn": "Not logged in",
+    "logoutFailed": "Logout failed"
+  },
+  "whoami": {
+    "description": "Show current logged-in user",
+    "notLoggedIn": "Not logged in, please run akit login first",
+    "fetchingUser": "Fetching user info...",
+    "fetchFailed": "Failed to fetch user info"
+  },
+  "init": {
+    "description": "Initialize project",
+    "title": "📦 Agent Kit Admin - Initialize Project",
+    "selectType": "Select package type:",
+    "mcpServer": "MCP Server (Model Context Protocol Server)",
+    "agentSkill": "Agent Skill",
+    "packageName": "Package name (e.g., @scope/my-package):",
+    "packageDescription": "Description (optional):",
+    "initializing": "Initializing project...",
+    "initSuccess": "Project initialized successfully!",
+    "initFailed": "Initialization failed"
+  },
+  "publish": {
+    "description": "Publish package to Registry",
+    "publishing": "📦 Publishing package...",
+    "readingManifest": "Reading akit.json...",
+    "validatingManifest": "Validating manifest...",
+    "creatingTarball": "Creating tarball...",
+    "packageExists": "Package already exists, skipping creation",
+    "publishSuccess": "Published successfully",
+    "publishFailed": "Publish failed"
+  },
+  "install": {
+    "description": "Install package locally",
+    "installing": "📥 Installing package...",
+    "fetchingInfo": "Fetching package info...",
+    "fetchingDownloadUrl": "Fetching download URL...",
+    "downloading": "Downloading...",
+    "configuringAgent": "Configuring agent...",
+    "noAgentDetected": "No installed agent detected",
+    "installAgentHint": "Please install Claude Code or Codex",
+    "installSuccess": "Installed successfully",
+    "installFailed": "Install failed"
+  },
+  "uninstall": {
+    "description": "Uninstall package",
+    "uninstalling": "🗑️ Uninstalling package...",
+    "uninstallSuccess": "Uninstalled successfully",
+    "uninstallFailed": "Uninstall failed"
+  },
+  "update": {
+    "description": "Update installed package",
+    "updating": "🔄 Updating package...",
+    "updateSuccess": "Updated successfully",
+    "updateFailed": "Update failed"
+  },
+  "list": {
+    "description": "List installed packages",
+    "noPackages": "No installed packages"
+  },
+  "search": {
+    "description": "Search Registry packages",
+    "searching": "Searching...",
+    "noResults": "No matching packages found",
+    "searchFailed": "Search failed"
+  },
+  "info": {
+    "description": "View package details",
+    "fetchingInfo": "Fetching package info...",
+    "fetchFailed": "Failed to fetch package info"
+  },
+  "config": {
+    "description": "Manage configuration"
+  },
+  "token": {
+    "description": "Manage authentication token"
+  }
+}

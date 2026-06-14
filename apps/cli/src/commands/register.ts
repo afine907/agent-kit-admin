@@ -6,57 +6,58 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import inquirer from 'inquirer';
 import ora from 'ora';
+import { i18n } from '../i18n.js';
 import { configManager } from '../config/manager.js';
 import { apiClient } from '../api/client.js';
 
+const t = (key: string, options?: Record<string, unknown>): string => i18n.t(key, options) as string;
+
 export const registerCommand = new Command('register')
-  .description('注册新账号')
+  .description(t('commands:register.description'))
   .option('--registry <url>', 'Registry URL')
-  .option('--username <username>', '用户名')
-  .option('--email <email>', '邮箱')
-  .option('--password <password>', '密码')
-  .option('--display-name <name>', '显示名称')
+  .option('--username <username>', t('commands:register.username'))
+  .option('--email <email>', t('commands:register.email'))
+  .option('--password <password>', t('commands:register.password'))
+  .option('--display-name <name>', t('commands:register.displayName'))
   .action(async (options) => {
     try {
-      // 设置 registry
       if (options.registry) {
         configManager.setRegistry(options.registry);
         apiClient.setToken('');
       }
 
-      console.log(chalk.bold('\n📝 Agent Kit Admin - 注册新账号\n'));
+      console.log(chalk.bold(`\n${t('commands:register.title')}\n`));
 
-      // 收集注册信息
       const answers = await inquirer.prompt([
         {
           type: 'input',
           name: 'username',
-          message: '用户名:',
+          message: t('commands:register.username'),
           when: !options.username,
           validate: (input) => {
-            if (input.length < 3) return '用户名至少 3 个字符';
-            if (!/^[a-zA-Z0-9_-]+$/.test(input)) return '用户名只能包含字母、数字、下划线和连字符';
+            if (input.length < 3) return t('commands:register.usernameMinLength');
+            if (!/^[a-zA-Z0-9_-]+$/.test(input)) return t('commands:register.usernamePattern');
             return true;
           },
         },
         {
           type: 'input',
           name: 'email',
-          message: '邮箱:',
+          message: t('commands:register.email'),
           when: !options.email,
-          validate: (input) => input.includes('@') || '请输入有效的邮箱',
+          validate: (input) => input.includes('@') || t('commands:register.emailValidation'),
         },
         {
           type: 'password',
           name: 'password',
-          message: '密码:',
+          message: t('commands:register.password'),
           when: !options.password,
-          validate: (input) => input.length >= 8 || '密码至少 8 位',
+          validate: (input) => input.length >= 8 || t('commands:register.passwordValidation'),
         },
         {
           type: 'input',
           name: 'displayName',
-          message: '显示名称 (可选):',
+          message: t('commands:register.displayName'),
           when: !options.displayName,
         },
       ]);
@@ -66,13 +67,12 @@ export const registerCommand = new Command('register')
       const password = options.password || answers.password;
       const displayName = options.displayName || answers.displayName || username;
 
-      const spinner = ora('正在注册...').start();
+      const spinner = ora(t('commands:register.registering')).start();
 
       try {
         const result = await apiClient.register(username, email, password, displayName);
-        spinner.succeed('注册成功');
+        spinner.succeed(t('commands:register.registerSuccess'));
 
-        // 保存 token 和用户信息
         configManager.setToken(result.token);
         if (result.refresh_token) {
           configManager.setRefreshToken(result.refresh_token);
@@ -84,18 +84,16 @@ export const registerCommand = new Command('register')
           role: result.user.role,
         });
 
-        // 显示成功信息
-        console.log(chalk.green('\n✔ 注册成功!\n'));
-        console.log(chalk.gray(`  用户: ${result.user.username}`));
-        console.log(chalk.gray(`  邮箱: ${result.user.email || '-'}`));
-        console.log(chalk.gray(`  Token 已保存到: ${configManager.getConfigPath()}`));
+        console.log(chalk.green(`\n✔ ${t('commands:register.registerSuccess')}\n`));
+        console.log(chalk.gray(`  ${t('commands:register.user')}: ${result.user.username}`));
+        console.log(chalk.gray(`  ${t('commands:login.tokenSaved')}: ${configManager.getConfigPath()}`));
         console.log('');
       } catch (error: unknown) {
-        spinner.fail('注册失败');
+        spinner.fail(t('commands:register.registerFailed'));
         throw error;
       }
     } catch (error: unknown) {
-      console.error(chalk.red(`\n✖ 注册失败: ${error instanceof Error ? error.message : String(error)}`));
+      console.error(chalk.red(`\n✖ ${t('commands:register.registerFailed')}: ${error instanceof Error ? error.message : String(error)}`));
       process.exit(1);
     }
   });

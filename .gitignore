@@ -96,6 +96,13 @@ postgres_data/
 # 测试包
 fixtures/test-packages/*.tar.gz
 
+# 测试数据库
+*.db
+!apps/server/migrations/
+
+# E2E 测试截图
+e2e-screenshots/
+
 # CLI 配置
 .akit/
 

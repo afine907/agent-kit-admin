@@ -3,6 +3,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Search, X } from 'lucide-react';
 
 interface SearchBarProps {
@@ -11,7 +12,8 @@ interface SearchBarProps {
   placeholder?: string;
 }
 
-export function SearchBar({ value, onChange, placeholder = '搜索包…' }: SearchBarProps) {
+export function SearchBar({ value, onChange, placeholder }: SearchBarProps) {
+  const { t } = useTranslation('common');
   const [inputValue, setInputValue] = useState(value);
 
   useEffect(() => {
@@ -31,7 +33,7 @@ export function SearchBar({ value, onChange, placeholder = '搜索包…' }: Sea
       <input
         type="text"
         name="search"
-        aria-label="搜索"
+        aria-label={t('actions.search')}
         autoComplete="off"
         value={inputValue}
         onChange={(e) => setInputValue(e.target.value)}
@@ -41,7 +43,7 @@ export function SearchBar({ value, onChange, placeholder = '搜索包…' }: Sea
       {inputValue && (
         <button
           onClick={() => setInputValue('')}
-          aria-label="清除搜索"
+          aria-label={t('actions.clearSearch')}
           className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 text-muted-foreground hover:text-foreground rounded transition-colors focus-visible:ring-2 focus-visible:ring-primary/20"
         >
           <X className="w-3.5 h-3.5" />

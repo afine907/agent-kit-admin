@@ -3,19 +3,15 @@
  */
 
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { SearchBar } from '../components/SearchBar';
 import { PackageCard } from '../components/PackageCard';
 import { usePackages } from '../hooks/usePackages';
 import { PackageResponse } from '../lib/api';
 import { Boxes, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react';
 
-const TYPE_FILTERS = [
-  { value: undefined, label: '全部' },
-  { value: 'mcp', label: 'MCP' },
-  { value: 'skill', label: 'Skill' },
-] as const;
-
 export default function Home() {
+  const { t } = useTranslation('pages');
   const [search, setSearch] = useState('');
   const [type, setType] = useState<string | undefined>();
   const [page, setPage] = useState(1);
@@ -37,6 +33,12 @@ export default function Home() {
     setPage(1);
   }, []);
 
+  const TYPE_FILTERS = [
+    { value: undefined, label: t('home.filterAll') },
+    { value: 'mcp', label: 'MCP' },
+    { value: 'skill', label: 'Skill' },
+  ] as const;
+
   return (
     <div className="container mx-auto py-10">
       {/* Hero 区域 */}
@@ -46,11 +48,11 @@ export default function Home() {
             <Boxes className="w-5 h-5 text-primary" />
           </div>
           <h1 className="text-3xl font-extrabold tracking-tight">
-            Agent Kit Registry
+            {t('home.title')}
           </h1>
         </div>
         <p className="text-muted-foreground text-base pl-[52px]">
-          搜索和安装 AI Agent 包 — MCP 服务器和 Agent Skills
+          {t('home.subtitle')}
         </p>
       </div>
 
@@ -60,7 +62,7 @@ export default function Home() {
           <SearchBar
             value={search}
             onChange={handleSearch}
-            placeholder="搜索包名或描述…"
+            placeholder={t('home.searchPlaceholder')}
           />
         </div>
         <div className="flex gap-1 p-1 bg-secondary/50 rounded-lg border border-border/50">
@@ -107,7 +109,7 @@ export default function Home() {
           <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-destructive/10 border border-destructive/20 mb-4">
             <AlertCircle className="w-6 h-6 text-destructive" />
           </div>
-          <p className="text-destructive font-medium mb-1">加载失败</p>
+          <p className="text-destructive font-medium mb-1">{t('error.loadFailed')}</p>
           <p className="text-sm text-muted-foreground">{(error as Error).message}</p>
         </div>
       )}
@@ -124,7 +126,7 @@ export default function Home() {
           ) : (
             <div className="flex flex-col items-center justify-center py-16 animate-fade-in-up">
               <div className="text-4xl mb-3">📭</div>
-              <p className="text-muted-foreground">未找到匹配的包</p>
+              <p className="text-muted-foreground">{t('home.noResults')}</p>
             </div>
           )}
 
@@ -137,17 +139,17 @@ export default function Home() {
                 className="flex items-center gap-1 px-3 py-1.5 text-sm border border-border/50 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed hover:bg-secondary/50 transition-colors focus-visible:ring-2 focus-visible:ring-primary/20"
               >
                 <ChevronLeft className="w-4 h-4" />
-                上一页
+                {t('pagination.prev')}
               </button>
               <span className="px-4 py-1.5 text-sm font-mono text-muted-foreground bg-secondary/30 rounded-lg border border-border/30">
-                {page} / {data.pagination.total_pages}
+                {t('pagination.pageInfo', { page, total: data.pagination.total_pages })}
               </span>
               <button
                 onClick={() => setPage(page + 1)}
                 disabled={page === data.pagination.total_pages}
                 className="flex items-center gap-1 px-3 py-1.5 text-sm border border-border/50 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed hover:bg-secondary/50 transition-colors focus-visible:ring-2 focus-visible:ring-primary/20"
               >
-                下一页
+                {t('pagination.next')}
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>

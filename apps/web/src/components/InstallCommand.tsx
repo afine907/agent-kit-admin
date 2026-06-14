@@ -3,6 +3,7 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Copy, Check, Terminal } from 'lucide-react';
 
 interface InstallCommandProps {
@@ -11,11 +12,11 @@ interface InstallCommandProps {
 }
 
 export const InstallCommand = React.memo(function InstallCommand({ scope, name }: InstallCommandProps) {
+  const { t } = useTranslation('common');
   const [copied, setCopied] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
   const command = `akit install ${scope}/${name}`;
 
-  // 组件卸载时清除 timer，防止内存泄漏
   useEffect(() => {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
@@ -47,7 +48,7 @@ export const InstallCommand = React.memo(function InstallCommand({ scope, name }
       </code>
       <button
         onClick={handleCopy}
-        aria-label={copied ? '已复制' : '复制安装命令'}
+        aria-label={copied ? t('actions.copied') : t('actions.copy')}
         className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors focus-visible:ring-2 focus-visible:ring-primary/20 ${
           copied
             ? 'bg-primary/20 text-primary border border-primary/30'
@@ -57,12 +58,12 @@ export const InstallCommand = React.memo(function InstallCommand({ scope, name }
         {copied ? (
           <>
             <Check className="w-3 h-3" />
-            已复制
+            {t('actions.copied')}
           </>
         ) : (
           <>
             <Copy className="w-3 h-3" />
-            复制
+            {t('actions.copy')}
           </>
         )}
       </button>
