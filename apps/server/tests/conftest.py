@@ -10,8 +10,8 @@ import os
 os.environ.setdefault("DEBUG", "true")
 
 import pytest
-import jwt
-from unittest.mock import AsyncMock, MagicMock, patch
+from jose import jwt
+from unittest.mock import patch
 from datetime import datetime, timedelta, timezone
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
@@ -63,8 +63,6 @@ async def db(setup_db):
 
         # 拦截 commit：service 层的 commit() 改为 flush()，
         # 数据留在事务内但不真正提交，最后统一回滚
-        original_commit = session.commit
-
         async def _no_commit():
             await session.flush()
 
@@ -127,6 +125,7 @@ async def test_user(db: AsyncSession):
 async def local_user(db: AsyncSession):
     """创建本地注册用户"""
     from app.core.security import hash_password
+
     user = User(
         username="localuser",
         email="local@example.com",
@@ -147,6 +146,7 @@ async def local_user(db: AsyncSession):
 async def admin_user(db: AsyncSession):
     """创建管理员用户"""
     from app.core.security import hash_password
+
     user = User(
         username="admin",
         email="admin@example.com",
@@ -167,6 +167,7 @@ async def admin_user(db: AsyncSession):
 async def super_admin_user(db: AsyncSession):
     """创建超级管理员用户"""
     from app.core.security import hash_password
+
     user = User(
         username="superadmin",
         email="superadmin@example.com",
@@ -187,6 +188,7 @@ async def super_admin_user(db: AsyncSession):
 async def suspended_user(db: AsyncSession):
     """创建已停用的用户"""
     from app.core.security import hash_password
+
     user = User(
         username="suspended",
         email="suspended@example.com",
@@ -453,6 +455,7 @@ class MockStorageService:
         """模拟上传包文件"""
         object_path = f"packages/{scope}/{name}/{version}.tar.gz"
         import hashlib
+
         sha256 = hashlib.sha256(data).hexdigest()
         return object_path, sha256
 
@@ -462,6 +465,7 @@ class MockStorageService:
         # 读取文件内容以计算 hash 和大小
         content = await file.read()
         import hashlib
+
         sha256 = hashlib.sha256(content).hexdigest()
         return object_path, sha256, len(content)
 
@@ -490,6 +494,8 @@ def mock_storage_service():
     """
     mock_service = MockStorageService()
 
-    with patch("app.services.storage.get_storage_service", return_value=mock_service), \
-         patch("app.services.storage.StorageService", return_value=mock_service):
+    with (
+        patch("app.services.storage.get_storage_service", return_value=mock_service),
+        patch("app.services.storage.StorageService", return_value=mock_service),
+    ):
         yield mock_service

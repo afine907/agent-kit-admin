@@ -38,12 +38,14 @@ async def get_current_user_optional(
 
     match = _BEARER_TOKEN_RE.match(authorization)
     if not match:
-        raise AppError(code=ErrorCodes.AUTH_INVALID_TOKEN, message="无效的 Authorization 格式", status_code=401)
+        raise AppError(code=ErrorCodes.AUTH_INVALID_TOKEN, message="Invalid Authorization format", status_code=401)
     token = match.group(1)
 
     # API Key 认证 (Phase 2 实现)
     if token.startswith("akit_"):
-        raise AppError(code=ErrorCodes.AUTH_REQUIRED, message="API Key 认证暂未实现", status_code=401)
+        raise AppError(
+            code=ErrorCodes.AUTH_REQUIRED, message="API Key authentication not yet implemented", status_code=401
+        )
 
     # JWT 认证
     from app.services.auth import AuthService
@@ -51,7 +53,7 @@ async def get_current_user_optional(
     auth_service = AuthService(db)
     user = await auth_service.verify_token(token)
     if not user:
-        raise AppError(code=ErrorCodes.AUTH_INVALID_TOKEN, message="无效或过期的 Token", status_code=401)
+        raise AppError(code=ErrorCodes.AUTH_INVALID_TOKEN, message="Invalid or expired token", status_code=401)
     return user
 
 
@@ -61,16 +63,18 @@ async def get_current_user(
 ) -> UserType:
     """强制用户认证 - 必须登录"""
     if not authorization:
-        raise AppError(code=ErrorCodes.AUTH_REQUIRED, message="未提供认证信息", status_code=401)
+        raise AppError(code=ErrorCodes.AUTH_REQUIRED, message="No authentication provided", status_code=401)
 
     match = _BEARER_TOKEN_RE.match(authorization)
     if not match:
-        raise AppError(code=ErrorCodes.AUTH_INVALID_TOKEN, message="无效的 Authorization 格式", status_code=401)
+        raise AppError(code=ErrorCodes.AUTH_INVALID_TOKEN, message="Invalid Authorization format", status_code=401)
     token = match.group(1)
 
     # API Key 认证 (Phase 2 实现)
     if token.startswith("akit_"):
-        raise AppError(code=ErrorCodes.AUTH_REQUIRED, message="API Key 认证暂未实现", status_code=401)
+        raise AppError(
+            code=ErrorCodes.AUTH_REQUIRED, message="API Key authentication not yet implemented", status_code=401
+        )
 
     # JWT 认证
     from app.services.auth import AuthService
@@ -78,7 +82,7 @@ async def get_current_user(
     auth_service = AuthService(db)
     user = await auth_service.verify_token(token)
     if not user:
-        raise AppError(code=ErrorCodes.AUTH_INVALID_TOKEN, message="无效或过期的 Token", status_code=401)
+        raise AppError(code=ErrorCodes.AUTH_INVALID_TOKEN, message="Invalid or expired token", status_code=401)
     return user
 
 
@@ -88,11 +92,11 @@ async def get_current_user_with_token(
 ) -> tuple[UserType, str]:
     """获取当前用户和原始 token - 用于需要 token 操作的场景（如登出）"""
     if not authorization:
-        raise AppError(code=ErrorCodes.AUTH_REQUIRED, message="未提供认证信息", status_code=401)
+        raise AppError(code=ErrorCodes.AUTH_REQUIRED, message="No authentication provided", status_code=401)
 
     match = _BEARER_TOKEN_RE.match(authorization)
     if not match:
-        raise AppError(code=ErrorCodes.AUTH_INVALID_TOKEN, message="无效的 Authorization 格式", status_code=401)
+        raise AppError(code=ErrorCodes.AUTH_INVALID_TOKEN, message="Invalid Authorization format", status_code=401)
     token = match.group(1)
 
     # JWT 认证
@@ -101,7 +105,7 @@ async def get_current_user_with_token(
     auth_service = AuthService(db)
     user = await auth_service.verify_token(token)
     if not user:
-        raise AppError(code=ErrorCodes.AUTH_INVALID_TOKEN, message="无效或过期的 Token", status_code=401)
+        raise AppError(code=ErrorCodes.AUTH_INVALID_TOKEN, message="Invalid or expired token", status_code=401)
     return user, token
 
 
@@ -112,7 +116,7 @@ async def require_admin(
     if user.role not in ("admin", "super_admin"):
         raise AppError(
             code=ErrorCodes.AUTH_FORBIDDEN,
-            message="需要管理员权限",
+            message="Admin access required",
             status_code=403,
         )
     return user
@@ -125,7 +129,7 @@ async def require_super_admin(
     if user.role != "super_admin":
         raise AppError(
             code=ErrorCodes.AUTH_FORBIDDEN,
-            message="需要超级管理员权限",
+            message="Super admin access required",
             status_code=403,
         )
     return user

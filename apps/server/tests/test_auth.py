@@ -66,7 +66,9 @@ class TestGetMe:
         assert data["role"] == test_user.role
 
     @pytest.mark.asyncio
-    async def test_get_me_super_admin_role(self, client: AsyncClient, super_admin_headers: dict, super_admin_user: User):
+    async def test_get_me_super_admin_role(
+        self, client: AsyncClient, super_admin_headers: dict, super_admin_user: User
+    ):
         """测试超级管理员 /me 返回 super_admin 角色"""
         response = await client.get("/api/v1/auth/me", headers=super_admin_headers)
         assert response.status_code == 200
@@ -92,7 +94,7 @@ class TestGetMe:
     @pytest.mark.asyncio
     async def test_get_me_expired_token(self, client: AsyncClient, test_user: User):
         """测试过期 Token"""
-        import jwt
+        from jose import jwt
         from datetime import datetime, timedelta, timezone
         from app.config import get_settings
 

@@ -3,7 +3,6 @@
 import pytest
 import json
 from httpx import AsyncClient
-from app.models.user import User
 from tests.helpers import create_test_tarball
 
 
@@ -19,16 +18,18 @@ class TestVersionPublish:
     ):
         """测试发布版本成功"""
         tarball = create_test_tarball()
-        manifest = json.dumps({
-            "name": test_package["name"],
-            "version": "1.0.0",
-            "type": "mcp",
-            "mcp": {
-                "transport": "stdio",
-                "command": "node",
-                "args": ["index.js"],
-            },
-        })
+        manifest = json.dumps(
+            {
+                "name": test_package["name"],
+                "version": "1.0.0",
+                "type": "mcp",
+                "mcp": {
+                    "transport": "stdio",
+                    "command": "node",
+                    "args": ["index.js"],
+                },
+            }
+        )
 
         response = await client.post(
             f"/api/v1/packages/{test_package['scope']}/{test_package['name']}/versions",
@@ -55,11 +56,13 @@ class TestVersionPublish:
     ):
         """测试发布重复版本"""
         tarball = create_test_tarball()
-        manifest = json.dumps({
-            "name": test_package_with_version["name"],
-            "version": "1.0.0",
-            "type": "mcp",
-        })
+        manifest = json.dumps(
+            {
+                "name": test_package_with_version["name"],
+                "version": "1.0.0",
+                "type": "mcp",
+            }
+        )
 
         response = await client.post(
             f"/api/v1/packages/{test_package_with_version['scope']}/{test_package_with_version['name']}/versions",
@@ -145,16 +148,18 @@ class TestVersionPublish:
         """测试发布新版本更新 latest"""
         # 发布 1.0.0
         tarball1 = create_test_tarball()
-        manifest1 = json.dumps({
-            "name": test_package["name"],
-            "version": "1.0.0",
-            "type": "mcp",
-            "mcp": {
-                "transport": "stdio",
-                "command": "node",
-                "args": ["index.js"],
-            },
-        })
+        manifest1 = json.dumps(
+            {
+                "name": test_package["name"],
+                "version": "1.0.0",
+                "type": "mcp",
+                "mcp": {
+                    "transport": "stdio",
+                    "command": "node",
+                    "args": ["index.js"],
+                },
+            }
+        )
 
         response1 = await client.post(
             f"/api/v1/packages/{test_package['scope']}/{test_package['name']}/versions",
@@ -166,16 +171,18 @@ class TestVersionPublish:
 
         # 发布 1.1.0
         tarball2 = create_test_tarball()
-        manifest2 = json.dumps({
-            "name": test_package["name"],
-            "version": "1.1.0",
-            "type": "mcp",
-            "mcp": {
-                "transport": "stdio",
-                "command": "node",
-                "args": ["index.js"],
-            },
-        })
+        manifest2 = json.dumps(
+            {
+                "name": test_package["name"],
+                "version": "1.1.0",
+                "type": "mcp",
+                "mcp": {
+                    "transport": "stdio",
+                    "command": "node",
+                    "args": ["index.js"],
+                },
+            }
+        )
 
         response2 = await client.post(
             f"/api/v1/packages/{test_package['scope']}/{test_package['name']}/versions",
@@ -186,9 +193,7 @@ class TestVersionPublish:
         assert response2.status_code == 201
 
         # 验证最新版本已更新
-        get_response = await client.get(
-            f"/api/v1/packages/{test_package['scope']}/{test_package['name']}"
-        )
+        get_response = await client.get(f"/api/v1/packages/{test_package['scope']}/{test_package['name']}")
         assert get_response.status_code == 200
         assert get_response.json()["latest_version"] == "1.1.0"
 
@@ -249,9 +254,7 @@ class TestVersionList:
         test_package: dict,
     ):
         """测试空版本列表"""
-        response = await client.get(
-            f"/api/v1/packages/{test_package['scope']}/{test_package['name']}/versions"
-        )
+        response = await client.get(f"/api/v1/packages/{test_package['scope']}/{test_package['name']}/versions")
         assert response.status_code == 200
         data = response.json()
         assert data["data"] == []
@@ -264,9 +267,7 @@ class TestVersionList:
     ):
         """测试有数据的版本列表"""
         pkg = test_package_with_version
-        response = await client.get(
-            f"/api/v1/packages/{pkg['scope']}/{pkg['name']}/versions"
-        )
+        response = await client.get(f"/api/v1/packages/{pkg['scope']}/{pkg['name']}/versions")
         assert response.status_code == 200
         data = response.json()
         assert len(data["data"]) > 0
@@ -289,9 +290,7 @@ class TestVersionList:
     ):
         """测试版本列表分页"""
         pkg = test_package_with_version
-        response = await client.get(
-            f"/api/v1/packages/{pkg['scope']}/{pkg['name']}/versions?page=1&per_page=10"
-        )
+        response = await client.get(f"/api/v1/packages/{pkg['scope']}/{pkg['name']}/versions?page=1&per_page=10")
         assert response.status_code == 200
         data = response.json()
         assert "data" in data

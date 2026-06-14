@@ -79,7 +79,7 @@ class StorageService:
             if head["ContentLength"] != len(data):
                 raise AppError(
                     code=ErrorCodes.STORAGE_INTEGRITY_ERROR,
-                    message="文件完整性验证失败",
+                    message="File integrity verification failed",
                     status_code=500,
                 )
 
@@ -89,7 +89,7 @@ class StorageService:
         except Exception as e:
             raise AppError(
                 code=ErrorCodes.STORAGE_UPLOAD_FAILED,
-                message=f"文件上传失败: {str(e)}",
+                message=f"File upload failed: {str(e)}",
                 status_code=500,
             )
 
@@ -123,7 +123,7 @@ class StorageService:
                     if total_size > MAX_TARBALL_SIZE:
                         raise AppError(
                             code=ErrorCodes.VERSION_CONTENT_TOO_LARGE,
-                            message=f"包文件大小超过限制 ({total_size} bytes)，最大允许 {MAX_TARBALL_SIZE} bytes (50MB)",
+                            message=f"Package file size exceeds limit ({total_size} bytes), maximum allowed {MAX_TARBALL_SIZE} bytes (50MB)",
                             status_code=413,
                         )
 
@@ -153,7 +153,7 @@ class StorageService:
                 if head["ContentLength"] != total_size:
                     raise AppError(
                         code=ErrorCodes.STORAGE_INTEGRITY_ERROR,
-                        message="文件完整性验证失败",
+                        message="File integrity verification failed",
                         status_code=500,
                     )
 
@@ -163,7 +163,7 @@ class StorageService:
         except Exception as e:
             raise AppError(
                 code=ErrorCodes.STORAGE_UPLOAD_FAILED,
-                message=f"文件上传失败: {str(e)}",
+                message=f"File upload failed: {str(e)}",
                 status_code=500,
             )
 
@@ -183,7 +183,7 @@ class StorageService:
         except Exception as e:
             raise AppError(
                 code=ErrorCodes.STORAGE_UPLOAD_FAILED,
-                message=f"内容上传失败: {str(e)}",
+                message=f"Content upload failed: {str(e)}",
                 status_code=500,
             )
 
@@ -203,7 +203,7 @@ class StorageService:
         except Exception as e:
             raise AppError(
                 code=ErrorCodes.STORAGE_DOWNLOAD_FAILED,
-                message=f"生成下载链接失败: {str(e)}",
+                message=f"Failed to generate download URL: {str(e)}",
                 status_code=500,
             )
 
@@ -218,7 +218,7 @@ class StorageService:
         except Exception as e:
             raise AppError(
                 code=ErrorCodes.STORAGE_DELETE_FAILED,
-                message=f"删除文件失败: {str(e)}",
+                message=f"Failed to delete file: {str(e)}",
                 status_code=500,
             )
 
@@ -232,5 +232,5 @@ class StorageService:
             )
             return head["ContentLength"]
         except Exception as e:
-            logger.warning(f"获取文件大小失败 {object_path}: {e}")
+            logger.warning(f"Failed to get file size {object_path}: {e}")
             return 0

@@ -73,9 +73,7 @@ class APIKeyService:
     async def list_keys(self, user_id: str) -> list[dict]:
         """列出用户的所有 API Key"""
         result = await self.db.execute(
-            select(APIKey)
-            .where(APIKey.user_id == user_id)
-            .order_by(APIKey.created_at.desc())
+            select(APIKey).where(APIKey.user_id == user_id).order_by(APIKey.created_at.desc())
         )
         keys = result.scalars().all()
 
@@ -104,7 +102,7 @@ class APIKeyService:
         if not api_key:
             raise AppError(
                 code=ErrorCodes.NOT_FOUND,
-                message="API Key 不存在",
+                message="API Key not found",
                 status_code=404,
             )
 
@@ -121,9 +119,7 @@ class APIKeyService:
         """
         key_hash = hash_api_key(key)
 
-        result = await self.db.execute(
-            select(APIKey).where(APIKey.key_hash == key_hash)
-        )
+        result = await self.db.execute(select(APIKey).where(APIKey.key_hash == key_hash))
         api_key = result.scalar_one_or_none()
 
         if not api_key:
@@ -165,11 +161,7 @@ class APIKeyService:
         _pending_last_used_updates.clear()
 
         # 批量 UPDATE - 一次 commit 更新所有待持久化的 key
-        await self.db.execute(
-            update(APIKey)
-            .where(APIKey.key_hash.in_(batch))
-            .values(last_used_at=now)
-        )
+        await self.db.execute(update(APIKey).where(APIKey.key_hash.in_(batch)).values(last_used_at=now))
         await self.db.commit()
 
         return len(batch)

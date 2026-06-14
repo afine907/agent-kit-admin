@@ -31,7 +31,7 @@ class PackageService:
         if sort not in self.ALLOWED_SORT_FIELDS:
             raise AppError(
                 code=ErrorCodes.INVALID_PARAM,
-                message=f"不支持的排序字段: {sort}，允许的字段: {', '.join(sorted(self.ALLOWED_SORT_FIELDS))}",
+                message=f"Unsupported sort field: {sort}, allowed fields: {', '.join(sorted(self.ALLOWED_SORT_FIELDS))}",
                 status_code=400,
             )
 
@@ -109,16 +109,22 @@ class PackageService:
         package = result.scalar_one_or_none()
 
         if not package:
-            raise AppError(code=ErrorCodes.PACKAGE_NOT_FOUND, message=f"包 {scope}/{name} 不存在", status_code=404)
+            raise AppError(
+                code=ErrorCodes.PACKAGE_NOT_FOUND, message=f"Package {scope}/{name} not found", status_code=404
+            )
 
         # 已删除的包返回 410 Gone
         if package.deleted_at:
-            raise AppError(code=ErrorCodes.PACKAGE_DELETED, message=f"包 {scope}/{name} 已被删除", status_code=410)
+            raise AppError(
+                code=ErrorCodes.PACKAGE_DELETED, message=f"Package {scope}/{name} has been deleted", status_code=410
+            )
 
         # 可见性检查
         if package.visibility == "private":
             if not current_user or package.owner_id != current_user.id:
-                raise AppError(code=ErrorCodes.PACKAGE_NOT_FOUND, message=f"包 {scope}/{name} 不存在", status_code=404)
+                raise AppError(
+                    code=ErrorCodes.PACKAGE_NOT_FOUND, message=f"Package {scope}/{name} not found", status_code=404
+                )
 
         return package
 
@@ -141,12 +147,12 @@ class PackageService:
             if existing.deleted_at:
                 raise AppError(
                     code=ErrorCodes.PACKAGE_NAME_RESERVED,
-                    message=f"包名 {scope}/{name} 已被占用（已删除的包名不可重新注册）",
+                    message=f"Package name {scope}/{name} is taken (deleted package names cannot be re-registered)",
                     status_code=409,
                 )
             raise AppError(
                 code=ErrorCodes.PACKAGE_ALREADY_EXISTS,
-                message=f"包 {scope}/{name} 已存在",
+                message=f"Package {scope}/{name} already exists",
                 status_code=409,
             )
 

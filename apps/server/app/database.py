@@ -20,6 +20,7 @@ class CompatJSONB(types.TypeDecorator):
     def load_dialect_impl(self, dialect):
         if dialect.name == "postgresql":
             from sqlalchemy.dialects.postgresql import JSONB
+
             return dialect.type_descriptor(JSONB())
         return dialect.type_descriptor(types.JSON())
 
@@ -33,6 +34,7 @@ class CompatINET(types.TypeDecorator):
     def load_dialect_impl(self, dialect):
         if dialect.name == "postgresql":
             from sqlalchemy.dialects.postgresql import INET
+
             return dialect.type_descriptor(INET())
         return dialect.type_descriptor(types.String(45))
 
@@ -50,6 +52,7 @@ class CompatUUID(types.TypeDecorator):
     def load_dialect_impl(self, dialect):
         if dialect.name == "postgresql":
             from sqlalchemy.dialects.postgresql import UUID as PgUUID
+
             return dialect.type_descriptor(PgUUID(as_uuid=True))
         return dialect.type_descriptor(types.String(36))
 
@@ -72,6 +75,7 @@ class CompatUUID(types.TypeDecorator):
         # because models compare with == and fixtures use string IDs)
         return value
 
+
 settings = get_settings()
 
 # 检测数据库类型
@@ -83,11 +87,13 @@ engine_kwargs = {
     "echo": settings.DEBUG,
 }
 if not _is_sqlite:
-    engine_kwargs.update({
-        "pool_size": 20,
-        "max_overflow": 10,
-        "pool_pre_ping": True,
-    })
+    engine_kwargs.update(
+        {
+            "pool_size": 20,
+            "max_overflow": 10,
+            "pool_pre_ping": True,
+        }
+    )
 
 engine = create_async_engine(_db_url, **engine_kwargs)
 

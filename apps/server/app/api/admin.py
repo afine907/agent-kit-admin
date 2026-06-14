@@ -1,7 +1,6 @@
 """管理员 API 路由"""
 
 import logging
-import re
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -34,18 +33,22 @@ def _escape_like_pattern(value: str) -> str:
 # Schemas
 # ============================================
 
+
 class UserStatusUpdate(BaseModel):
     """用户状态更新请求"""
+
     status: str  # active / suspended / banned
 
 
 class UserRoleUpdate(BaseModel):
     """用户角色更新请求"""
+
     role: str  # admin / member
 
 
 class PackageStatusUpdate(BaseModel):
     """包状态更新请求"""
+
     status: str  # active / suspended
     reason: str | None = None
 
@@ -53,6 +56,7 @@ class PackageStatusUpdate(BaseModel):
 # ============================================
 # 包管理
 # ============================================
+
 
 @router.get("/packages")
 async def list_packages(
@@ -120,11 +124,11 @@ async def update_package_status(
     """修改包状态（管理员）"""
     # 验证状态值
     if data.status not in ("active", "suspended"):
-        raise AppError(code=ErrorCodes.INVALID_PARAM, message="无效的状态值", status_code=422)
+        raise AppError(code=ErrorCodes.INVALID_PARAM, message="Invalid status value", status_code=422)
 
     package = await db.get(Package, package_id)
     if not package:
-        raise AppError(code=ErrorCodes.NOT_FOUND, message="包不存在", status_code=404)
+        raise AppError(code=ErrorCodes.NOT_FOUND, message="Package not found", status_code=404)
 
     package.admin_status = data.status
     package.admin_note = data.reason
@@ -150,16 +154,14 @@ async def hard_delete_package(
     """
     package = await db.get(Package, package_id)
     if not package:
-        raise AppError(code=ErrorCodes.NOT_FOUND, message="包不存在", status_code=404)
+        raise AppError(code=ErrorCodes.NOT_FOUND, message="Package not found", status_code=404)
 
     storage = get_storage_service()
     deleted_files = 0
     failed_files = 0
 
     # 1. 查询该包的所有版本
-    versions_result = await db.execute(
-        select(Version).where(Version.package_id == package_id)
-    )
+    versions_result = await db.execute(select(Version).where(Version.package_id == package_id))
     versions = versions_result.scalars().all()
 
     # 2. 删除每个版本的 MinIO tarball 文件
@@ -179,9 +181,7 @@ async def hard_delete_package(
             )
 
     # 3. 删除下载记录（数据库外键 ondelete=CASCADE 会处理，但显式删除更安全）
-    downloads_result = await db.execute(
-        select(Download).where(Download.package_id == package_id)
-    )
+    downloads_result = await db.execute(select(Download).where(Download.package_id == package_id))
     downloads = downloads_result.scalars().all()
     for download in downloads:
         await db.delete(download)
@@ -197,11 +197,13 @@ async def hard_delete_package(
     if failed_files:
         logger.warning(
             "包 %s 硬删除完成: %d 个文件成功删除, %d 个文件删除失败",
-            package.full_name, deleted_files, failed_files,
+            package.full_name,
+            deleted_files,
+            failed_files,
         )
 
     return {
-        "message": "包已删除",
+        "message": "Package has been deleted",
         "versions_deleted": len(versions),
         "downloads_deleted": len(downloads),
         "files_deleted": deleted_files,
@@ -212,6 +214,7 @@ async def hard_delete_package(
 # ============================================
 # 用户管理
 # ============================================
+
 
 @router.get("/users")
 async def list_users(
@@ -286,7 +289,7 @@ async def get_user(
     """获取用户详情（管理员）"""
     user = await db.get(User, user_id)
     if not user:
-        raise AppError(code=ErrorCodes.NOT_FOUND, message="用户不存在", status_code=404)
+        raise AppError(code=ErrorCodes.NOT_FOUND, message="User not found", status_code=404)
 
     return {
         "id": str(user.id),
@@ -312,15 +315,15 @@ async def update_user_status(
     """修改用户状态（管理员）"""
     # 验证状态值
     if data.status not in ("active", "suspended", "banned"):
-        raise AppError(code=ErrorCodes.INVALID_PARAM, message="无效的状态值", status_code=422)
+        raise AppError(code=ErrorCodes.INVALID_PARAM, message="Invalid status value", status_code=422)
 
     user = await db.get(User, user_id)
     if not user:
-        raise AppError(code=ErrorCodes.NOT_FOUND, message="用户不存在", status_code=404)
+        raise AppError(code=ErrorCodes.NOT_FOUND, message="User not found", status_code=404)
 
     # 不能修改自己
     if str(user.id) == str(admin.id):
-        raise AppError(code=ErrorCodes.INVALID_PARAM, message="不能修改自己的状态", status_code=400)
+        raise AppError(code=ErrorCodes.INVALID_PARAM, message="Cannot modify your own status", status_code=400)
 
     user.status = data.status
     await db.commit()
@@ -343,19 +346,19 @@ async def update_user_role(
     """修改用户角色（仅超级管理员）"""
     # 验证角色值
     if data.role not in ("admin", "member"):
-        raise AppError(code=ErrorCodes.INVALID_PARAM, message="无效的角色值", status_code=422)
+        raise AppError(code=ErrorCodes.INVALID_PARAM, message="Invalid role value", status_code=422)
 
     user = await db.get(User, user_id)
     if not user:
-        raise AppError(code=ErrorCodes.NOT_FOUND, message="用户不存在", status_code=404)
+        raise AppError(code=ErrorCodes.NOT_FOUND, message="User not found", status_code=404)
 
     # 不能修改自己
     if str(user.id) == str(admin.id):
-        raise AppError(code=ErrorCodes.INVALID_PARAM, message="不能修改自己的角色", status_code=400)
+        raise AppError(code=ErrorCodes.INVALID_PARAM, message="Cannot modify your own role", status_code=400)
 
     # 不能提升为 super_admin
     if data.role == "super_admin":
-        raise AppError(code=ErrorCodes.INVALID_PARAM, message="不能提升为超级管理员", status_code=400)
+        raise AppError(code=ErrorCodes.INVALID_PARAM, message="Cannot promote to super admin", status_code=400)
 
     user.role = data.role
     await db.commit()
@@ -383,16 +386,14 @@ async def delete_user(
     """
     user = await db.get(User, user_id)
     if not user:
-        raise AppError(code=ErrorCodes.NOT_FOUND, message="用户不存在", status_code=404)
+        raise AppError(code=ErrorCodes.NOT_FOUND, message="User not found", status_code=404)
 
     # 不能删除自己
     if str(user.id) == str(admin.id):
-        raise AppError(code=ErrorCodes.INVALID_PARAM, message="不能删除自己", status_code=400)
+        raise AppError(code=ErrorCodes.INVALID_PARAM, message="Cannot delete yourself", status_code=400)
 
     # 1. 删除该用户的所有 API Key（立即失效 API 认证）
-    api_keys_result = await db.execute(
-        select(APIKey).where(APIKey.user_id == user_id)
-    )
+    api_keys_result = await db.execute(select(APIKey).where(APIKey.user_id == user_id))
     api_keys = api_keys_result.scalars().all()
     for api_key in api_keys:
         await db.delete(api_key)
@@ -404,14 +405,16 @@ async def delete_user(
     # 3. 清除用户缓存，使已颁发的 JWT token 在下次使用时重新查库验证
     # verify_token 会重新从 DB 读取用户，发现 status=deleted 后拒绝请求
     from app.services.auth import AuthService
+
     AuthService.invalidate_user_cache(user_id)
 
-    return {"message": "用户已删除", "api_keys_invalidated": len(api_keys)}
+    return {"message": "User has been deleted", "api_keys_invalidated": len(api_keys)}
 
 
 # ============================================
 # 系统统计
 # ============================================
+
 
 @router.get("/stats")
 async def get_system_stats(
@@ -470,10 +473,12 @@ async def get_download_trends(
 
     while current_date <= end_date:
         date_str = current_date.isoformat()
-        trends.append({
-            "date": date_str,
-            "downloads": row_dict.get(date_str, 0),
-        })
+        trends.append(
+            {
+                "date": date_str,
+                "downloads": row_dict.get(date_str, 0),
+            }
+        )
         current_date += timedelta(days=1)
 
     return {"trends": trends, "days": days}

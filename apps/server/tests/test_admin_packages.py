@@ -3,7 +3,6 @@
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.models.user import User
 from app.models.package import Package
 
 
@@ -11,7 +10,9 @@ class TestAdminPackageList:
     """管理员包列表测试"""
 
     @pytest.mark.asyncio
-    async def test_admin_can_list_all_packages(self, client: AsyncClient, admin_headers: dict, test_package: dict, deleted_package: dict):
+    async def test_admin_can_list_all_packages(
+        self, client: AsyncClient, admin_headers: dict, test_package: dict, deleted_package: dict
+    ):
         """管理员可以查看所有包（含已删除）"""
         response = await client.get("/api/v1/admin/packages", headers=admin_headers)
         assert response.status_code == 200
@@ -36,7 +37,9 @@ class TestAdminPackageList:
         assert response.status_code == 403
 
     @pytest.mark.asyncio
-    async def test_admin_list_packages_with_type_filter(self, client: AsyncClient, admin_headers: dict, test_package: dict):
+    async def test_admin_list_packages_with_type_filter(
+        self, client: AsyncClient, admin_headers: dict, test_package: dict
+    ):
         """按类型筛选包"""
         response = await client.get("/api/v1/admin/packages?type=mcp", headers=admin_headers)
         assert response.status_code == 200
@@ -45,7 +48,9 @@ class TestAdminPackageList:
             assert pkg["type"] == "mcp"
 
     @pytest.mark.asyncio
-    async def test_admin_list_packages_pagination(self, client: AsyncClient, admin_headers: dict, multiple_packages: list):
+    async def test_admin_list_packages_pagination(
+        self, client: AsyncClient, admin_headers: dict, multiple_packages: list
+    ):
         """包列表分页"""
         response = await client.get("/api/v1/admin/packages?page=1&per_page=2", headers=admin_headers)
         assert response.status_code == 200
@@ -57,7 +62,9 @@ class TestAdminPackageStatus:
     """管理员包状态管理测试"""
 
     @pytest.mark.asyncio
-    async def test_admin_can_suspend_package(self, client: AsyncClient, admin_headers: dict, test_package: dict, db: AsyncSession):
+    async def test_admin_can_suspend_package(
+        self, client: AsyncClient, admin_headers: dict, test_package: dict, db: AsyncSession
+    ):
         """管理员可以下架包"""
         response = await client.patch(
             f"/api/v1/admin/packages/{test_package['id']}/status",
@@ -73,7 +80,9 @@ class TestAdminPackageStatus:
         assert pkg.admin_status == "suspended"
 
     @pytest.mark.asyncio
-    async def test_admin_can_restore_package(self, client: AsyncClient, admin_headers: dict, test_package: dict, db: AsyncSession):
+    async def test_admin_can_restore_package(
+        self, client: AsyncClient, admin_headers: dict, test_package: dict, db: AsyncSession
+    ):
         """管理员可以恢复包"""
         # 先下架
         await client.patch(
@@ -127,7 +136,9 @@ class TestAdminPackageDelete:
     """管理员包删除测试（硬删除，仅 super_admin）"""
 
     @pytest.mark.asyncio
-    async def test_super_admin_can_hard_delete_package(self, client: AsyncClient, super_admin_headers: dict, test_package: dict, db: AsyncSession):
+    async def test_super_admin_can_hard_delete_package(
+        self, client: AsyncClient, super_admin_headers: dict, test_package: dict, db: AsyncSession
+    ):
         """超级管理员可以硬删除包"""
         response = await client.delete(
             f"/api/v1/admin/packages/{test_package['id']}",

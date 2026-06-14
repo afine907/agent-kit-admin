@@ -2,19 +2,20 @@
 
 import logging
 import secrets
-import httpx
 from datetime import datetime, timedelta, timezone
-from collections import defaultdict
-from cachetools import TTLCache
 
-logger = logging.getLogger(__name__)
+import httpx
+from cachetools import TTLCache
 from jose import jwt, JWTError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.config import get_settings
-from app.models.user import User
-from app.errors import AppError, ErrorCodes
 from app.core.security import hash_password, verify_password
+from app.errors import AppError, ErrorCodes
+from app.models.user import User
+
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
@@ -33,10 +34,7 @@ _login_failures: TTLCache[str, dict] = TTLCache(
     ttl=_LOGIN_LOCKOUT_MINUTES * 60,  # 自动过期，防止无限增长
 )
 
-logger.warning(
-    "认证服务使用内存存储（登录限制/OAuth state/Token 黑名单），"
-    "多实例部署时请改用 Redis"
-)
+logger.warning("认证服务使用内存存储（登录限制/OAuth state/Token 黑名单），多实例部署时请改用 Redis")
 
 
 class UserSnapshot:
@@ -67,6 +65,7 @@ class UserSnapshot:
         self.oauth_provider = oauth_provider
         self.role = role
         self.status = status
+
 
 # OAuth state 存储 - 用于防止 CSRF 攻击
 # 格式: {state_token: {"provider": str, "expires": datetime}}
@@ -199,7 +198,9 @@ class AuthService:
         设置过期时间为 token 原始过期时间，防止内存泄漏。
         """
         try:
-            payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM], options={"verify_exp": False})
+            payload = jwt.decode(
+                token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM], options={"verify_exp": False}
+            )
             exp_timestamp = payload.get("exp")
             if exp_timestamp:
                 expire_time = datetime.fromtimestamp(exp_timestamp, tz=timezone.utc)
@@ -266,7 +267,7 @@ class AuthService:
             remaining_minutes = (remaining_seconds + 59) // 60  # 向上取整
             raise AppError(
                 code=ErrorCodes.RATE_LIMIT,
-                message=f"登录失败次数过多，请 {remaining_minutes} 分钟后再试",
+                message=f"Too many failed login attempts, please try again in {remaining_minutes} minutes",
                 status_code=429,
             )
 
@@ -318,7 +319,7 @@ class AuthService:
         if result.scalar_one_or_none():
             raise AppError(
                 code=ErrorCodes.USER_ALREADY_EXISTS,
-                message="用户名已存在",
+                message="Username already exists",
                 status_code=409,
             )
 
@@ -327,7 +328,7 @@ class AuthService:
         if result.scalar_one_or_none():
             raise AppError(
                 code=ErrorCodes.USER_ALREADY_EXISTS,
-                message="邮箱已存在",
+                message="Email already exists",
                 status_code=409,
             )
 
@@ -378,7 +379,7 @@ class AuthService:
             self._check_login_rate_limit(email)  # 记录后再次检查
             raise AppError(
                 code=ErrorCodes.AUTH_REQUIRED,
-                message="邮箱或密码错误",
+                message="Invalid email or password",
                 status_code=401,
             )
 
@@ -386,13 +387,13 @@ class AuthService:
         if user.status == "suspended":
             raise AppError(
                 code=ErrorCodes.USER_SUSPENDED,
-                message="账号已被停用",
+                message="Account has been suspended",
                 status_code=403,
             )
         if user.status == "banned":
             raise AppError(
                 code=ErrorCodes.USER_BANNED,
-                message="账号已被封禁",
+                message="Account has been banned",
                 status_code=403,
             )
 
@@ -402,7 +403,7 @@ class AuthService:
             self._check_login_rate_limit(email)  # 记录后再次检查
             raise AppError(
                 code=ErrorCodes.AUTH_REQUIRED,
-                message="该账号不支持密码登录",
+                message="Password login is not supported for this account",
                 status_code=401,
             )
 
@@ -411,7 +412,7 @@ class AuthService:
             self._check_login_rate_limit(email)  # 记录后再次检查
             raise AppError(
                 code=ErrorCodes.AUTH_REQUIRED,
-                message="邮箱或密码错误",
+                message="Invalid email or password",
                 status_code=401,
             )
 
@@ -447,7 +448,7 @@ class AuthService:
         if not user:
             raise AppError(
                 code=ErrorCodes.AUTH_INVALID_TOKEN,
-                message="无效或过期的 Refresh Token",
+                message="Invalid or expired refresh token",
                 status_code=401,
             )
 
@@ -455,7 +456,7 @@ class AuthService:
         if user.status != "active":
             raise AppError(
                 code=ErrorCodes.AUTH_FORBIDDEN,
-                message="账号状态异常",
+                message="Account status is abnormal",
                 status_code=403,
             )
 
@@ -478,9 +479,7 @@ class AuthService:
     ) -> User:
         """开发环境快速登录 - 查找或创建用户"""
         # 查找已有用户
-        result = await self.db.execute(
-            select(User).where(User.username == username)
-        )
+        result = await self.db.execute(select(User).where(User.username == username))
         user = result.scalar_one_or_none()
 
         if user:
@@ -525,7 +524,9 @@ class AuthService:
 
         if provider == "wechat_work":
             if not settings.WECHAT_WORK_CORP_ID:
-                raise AppError(code=ErrorCodes.AUTH_OAUTH_FAILED, message="企业微信未配置", status_code=500)
+                raise AppError(
+                    code=ErrorCodes.AUTH_OAUTH_FAILED, message="WeChat Work is not configured", status_code=500
+                )
             return (
                 f"https://open.work.weixin.qq.com/wwopen/sso/qrConnect"
                 f"?appid={settings.WECHAT_WORK_CORP_ID}"
@@ -535,7 +536,7 @@ class AuthService:
             )
         elif provider == "feishu":
             if not settings.FEISHU_APP_ID:
-                raise AppError(code=ErrorCodes.AUTH_OAUTH_FAILED, message="飞书未配置", status_code=500)
+                raise AppError(code=ErrorCodes.AUTH_OAUTH_FAILED, message="Feishu is not configured", status_code=500)
             return (
                 f"https://open.feishu.cn/open-apis/authen/v1/authorize"
                 f"?app_id={settings.FEISHU_APP_ID}"
@@ -544,7 +545,7 @@ class AuthService:
             )
         elif provider == "dingtalk":
             if not settings.DINGTALK_APP_KEY:
-                raise AppError(code=ErrorCodes.AUTH_OAUTH_FAILED, message="钉钉未配置", status_code=500)
+                raise AppError(code=ErrorCodes.AUTH_OAUTH_FAILED, message="DingTalk is not configured", status_code=500)
             return (
                 f"https://login.dingtalk.com/oauth2/auth"
                 f"?client_id={settings.DINGTALK_APP_KEY}"
@@ -554,7 +555,9 @@ class AuthService:
                 f"&state={state_token}"
             )
         else:
-            raise AppError(code=ErrorCodes.AUTH_OAUTH_FAILED, message=f"不支持的 Provider: {provider}", status_code=400)
+            raise AppError(
+                code=ErrorCodes.AUTH_OAUTH_FAILED, message=f"Unsupported provider: {provider}", status_code=400
+            )
 
     def _cleanup_expired_states(self) -> None:
         """清理过期的 OAuth state"""
@@ -572,7 +575,7 @@ class AuthService:
         if not state:
             raise AppError(
                 code=ErrorCodes.AUTH_OAUTH_FAILED,
-                message="缺少 OAuth state 参数",
+                message="Missing OAuth state parameter",
                 status_code=400,
             )
 
@@ -582,7 +585,7 @@ class AuthService:
         if not state_data:
             raise AppError(
                 code=ErrorCodes.AUTH_OAUTH_FAILED,
-                message="无效或已过期的 OAuth state",
+                message="Invalid or expired OAuth state",
                 status_code=400,
             )
 
@@ -590,7 +593,7 @@ class AuthService:
         if state_data["expires"] < datetime.now(timezone.utc):
             raise AppError(
                 code=ErrorCodes.AUTH_OAUTH_FAILED,
-                message="OAuth state 已过期",
+                message="OAuth state has expired",
                 status_code=400,
             )
 
@@ -598,7 +601,7 @@ class AuthService:
         if state_data["provider"] != provider:
             raise AppError(
                 code=ErrorCodes.AUTH_OAUTH_FAILED,
-                message="OAuth state 与 provider 不匹配",
+                message="OAuth state does not match provider",
                 status_code=400,
             )
 
@@ -644,7 +647,7 @@ class AuthService:
                 return await self._dingtalk_callback(client, code)
             else:
                 raise AppError(
-                    code=ErrorCodes.AUTH_OAUTH_FAILED, message=f"不支持的 Provider: {provider}", status_code=400
+                    code=ErrorCodes.AUTH_OAUTH_FAILED, message=f"Unsupported provider: {provider}", status_code=400
                 )
 
     async def _wechat_work_callback(self, client: httpx.AsyncClient, code: str) -> dict:
@@ -660,14 +663,14 @@ class AuthService:
         if token_resp.status_code != 200:
             raise AppError(
                 code=ErrorCodes.AUTH_OAUTH_FAILED,
-                message=f"企业微信获取 access_token 失败: HTTP {token_resp.status_code}",
+                message=f"WeChat Work failed to get access_token: HTTP {token_resp.status_code}",
                 status_code=502,
             )
         token_data = token_resp.json()
         if token_data.get("errcode", 0) != 0:
             raise AppError(
                 code=ErrorCodes.AUTH_OAUTH_FAILED,
-                message=f"企业微信获取 access_token 失败: {token_data.get('errmsg', '未知错误')}",
+                message=f"WeChat Work failed to get access_token: {token_data.get('errmsg', 'unknown error')}",
                 status_code=502,
             )
         access_token = token_data.get("access_token")
@@ -680,14 +683,14 @@ class AuthService:
         if user_resp.status_code != 200:
             raise AppError(
                 code=ErrorCodes.AUTH_OAUTH_FAILED,
-                message=f"企业微信获取用户信息失败: HTTP {user_resp.status_code}",
+                message=f"WeChat Work failed to get user info: HTTP {user_resp.status_code}",
                 status_code=502,
             )
         user_data = user_resp.json()
         if user_data.get("errcode", 0) != 0:
             raise AppError(
                 code=ErrorCodes.AUTH_OAUTH_FAILED,
-                message=f"企业微信获取用户信息失败: {user_data.get('errmsg', '未知错误')}",
+                message=f"WeChat Work failed to get user info: {user_data.get('errmsg', 'unknown error')}",
                 status_code=502,
             )
 
@@ -711,7 +714,7 @@ class AuthService:
         if tenant_resp.status_code != 200:
             raise AppError(
                 code=ErrorCodes.AUTH_OAUTH_FAILED,
-                message=f"飞书获取 tenant_access_token 失败: HTTP {tenant_resp.status_code}",
+                message=f"Feishu failed to get tenant_access_token: HTTP {tenant_resp.status_code}",
                 status_code=502,
             )
         tenant_data = tenant_resp.json()
@@ -719,7 +722,7 @@ class AuthService:
         if not tenant_token:
             raise AppError(
                 code=ErrorCodes.AUTH_OAUTH_FAILED,
-                message=f"飞书获取 tenant_access_token 失败: {tenant_data.get('msg', '未知错误')}",
+                message=f"Feishu failed to get tenant_access_token: {tenant_data.get('msg', 'unknown error')}",
                 status_code=502,
             )
 
@@ -732,14 +735,14 @@ class AuthService:
         if token_resp.status_code != 200:
             raise AppError(
                 code=ErrorCodes.AUTH_OAUTH_FAILED,
-                message=f"飞书获取 access_token 失败: HTTP {token_resp.status_code}",
+                message=f"Feishu failed to get access_token: HTTP {token_resp.status_code}",
                 status_code=502,
             )
         token_data = token_resp.json()
         if token_data.get("code", 0) != 0:
             raise AppError(
                 code=ErrorCodes.AUTH_OAUTH_FAILED,
-                message=f"飞书获取 access_token 失败: {token_data.get('msg', '未知错误')}",
+                message=f"Feishu failed to get access_token: {token_data.get('msg', 'unknown error')}",
                 status_code=502,
             )
         access_token = token_data.get("data", {}).get("access_token")
@@ -752,14 +755,14 @@ class AuthService:
         if user_resp.status_code != 200:
             raise AppError(
                 code=ErrorCodes.AUTH_OAUTH_FAILED,
-                message=f"飞书获取用户信息失败: HTTP {user_resp.status_code}",
+                message=f"Feishu failed to get user info: HTTP {user_resp.status_code}",
                 status_code=502,
             )
         user_resp_data = user_resp.json()
         if user_resp_data.get("code", 0) != 0:
             raise AppError(
                 code=ErrorCodes.AUTH_OAUTH_FAILED,
-                message=f"飞书获取用户信息失败: {user_resp_data.get('msg', '未知错误')}",
+                message=f"Feishu failed to get user info: {user_resp_data.get('msg', 'unknown error')}",
                 status_code=502,
             )
         user_data = user_resp_data.get("data", {})
@@ -787,7 +790,7 @@ class AuthService:
         if token_resp.status_code != 200:
             raise AppError(
                 code=ErrorCodes.AUTH_OAUTH_FAILED,
-                message=f"钉钉获取 access_token 失败: HTTP {token_resp.status_code}",
+                message=f"DingTalk failed to get access_token: HTTP {token_resp.status_code}",
                 status_code=502,
             )
         token_data = token_resp.json()
@@ -795,7 +798,7 @@ class AuthService:
         if not access_token:
             raise AppError(
                 code=ErrorCodes.AUTH_OAUTH_FAILED,
-                message=f"钉钉获取 access_token 失败: {token_data.get('message', '未返回 accessToken')}",
+                message=f"DingTalk failed to get access_token: {token_data.get('message', 'accessToken not returned')}",
                 status_code=502,
             )
 
@@ -807,7 +810,7 @@ class AuthService:
         if user_resp.status_code != 200:
             raise AppError(
                 code=ErrorCodes.AUTH_OAUTH_FAILED,
-                message=f"钉钉获取用户信息失败: HTTP {user_resp.status_code}",
+                message=f"DingTalk failed to get user info: HTTP {user_resp.status_code}",
                 status_code=502,
             )
         user_data = user_resp.json()

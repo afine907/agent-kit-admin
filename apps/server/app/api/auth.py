@@ -9,7 +9,7 @@ from app.services.auth import AuthService
 from app.services.api_key import APIKeyService
 from app.api.deps import get_current_user, get_current_user_with_token
 from app.models.user import User
-from app.schemas.auth import RegisterRequest, LoginRequest, RefreshRequest, AuthResponse, CreateAPIKeyRequest
+from app.schemas.auth import RegisterRequest, LoginRequest, RefreshRequest, CreateAPIKeyRequest
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -40,6 +40,7 @@ def _validate_oauth_provider(provider: str) -> None:
 
 class DevLoginRequest(BaseModel):
     """开发环境登录请求"""
+
     username: str
     display_name: str | None = None
     role: str | None = None  # 可选：指定角色 (super_admin / admin / member)
@@ -96,7 +97,7 @@ async def logout(
     auth_service = AuthService(db)
     # 将 token 加入黑名单
     auth_service.blacklist_token(token)
-    return {"message": "登出成功"}
+    return {"message": "Logged out successfully"}
 
 
 @router.post("/dev-login")

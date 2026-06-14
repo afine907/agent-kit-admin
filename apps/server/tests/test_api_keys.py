@@ -12,8 +12,6 @@
 
 import pytest
 from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.models.user import User
 
 
 @pytest.mark.asyncio
@@ -148,9 +146,7 @@ class TestDeleteAPIKey:
         )
         assert len(list_resp.json()) == 0
 
-    async def test_delete_other_users_key(
-        self, client: AsyncClient, local_user_headers: dict, auth_headers: dict
-    ):
+    async def test_delete_other_users_key(self, client: AsyncClient, local_user_headers: dict, auth_headers: dict):
         """不能删除别人的 API Key"""
         # test_user 创建
         create_resp = await client.post(

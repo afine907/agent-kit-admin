@@ -35,6 +35,7 @@ async def lifespan(app: FastAPI):
     # 初始化管理员
     if settings.INIT_ADMIN_EMAIL and settings.INIT_ADMIN_PASSWORD:
         from app.cli import create_admin
+
         await create_admin(
             email=settings.INIT_ADMIN_EMAIL,
             password=settings.INIT_ADMIN_PASSWORD,

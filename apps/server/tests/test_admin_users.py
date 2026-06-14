@@ -3,7 +3,6 @@
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 from app.models.user import User
 
 
@@ -11,7 +10,9 @@ class TestAdminUserList:
     """管理员用户列表测试"""
 
     @pytest.mark.asyncio
-    async def test_admin_can_list_users(self, client: AsyncClient, admin_headers: dict, test_user: User, local_user: User):
+    async def test_admin_can_list_users(
+        self, client: AsyncClient, admin_headers: dict, test_user: User, local_user: User
+    ):
         """管理员可以查看用户列表"""
         response = await client.get("/api/v1/admin/users", headers=admin_headers)
         assert response.status_code == 200
@@ -42,7 +43,9 @@ class TestAdminUserList:
             assert user["role"] == "admin"
 
     @pytest.mark.asyncio
-    async def test_admin_list_users_with_status_filter(self, client: AsyncClient, admin_headers: dict, suspended_user: User):
+    async def test_admin_list_users_with_status_filter(
+        self, client: AsyncClient, admin_headers: dict, suspended_user: User
+    ):
         """按状态筛选用户"""
         response = await client.get("/api/v1/admin/users?status=suspended", headers=admin_headers)
         assert response.status_code == 200
@@ -101,7 +104,9 @@ class TestAdminUpdateUserStatus:
     """管理员修改用户状态测试"""
 
     @pytest.mark.asyncio
-    async def test_admin_can_suspend_user(self, client: AsyncClient, admin_headers: dict, test_user: User, db: AsyncSession):
+    async def test_admin_can_suspend_user(
+        self, client: AsyncClient, admin_headers: dict, test_user: User, db: AsyncSession
+    ):
         """管理员可以停用用户"""
         response = await client.patch(
             f"/api/v1/admin/users/{test_user.id}/status",
@@ -117,7 +122,9 @@ class TestAdminUpdateUserStatus:
         assert test_user.status == "suspended"
 
     @pytest.mark.asyncio
-    async def test_admin_can_activate_user(self, client: AsyncClient, admin_headers: dict, suspended_user: User, db: AsyncSession):
+    async def test_admin_can_activate_user(
+        self, client: AsyncClient, admin_headers: dict, suspended_user: User, db: AsyncSession
+    ):
         """管理员可以启用用户"""
         response = await client.patch(
             f"/api/v1/admin/users/{suspended_user.id}/status",
@@ -129,7 +136,9 @@ class TestAdminUpdateUserStatus:
         assert data["status"] == "active"
 
     @pytest.mark.asyncio
-    async def test_admin_can_ban_user(self, client: AsyncClient, admin_headers: dict, test_user: User, db: AsyncSession):
+    async def test_admin_can_ban_user(
+        self, client: AsyncClient, admin_headers: dict, test_user: User, db: AsyncSession
+    ):
         """管理员可以封禁用户"""
         response = await client.patch(
             f"/api/v1/admin/users/{test_user.id}/status",
@@ -175,7 +184,9 @@ class TestAdminUpdateUserRole:
     """管理员修改用户角色测试（仅 super_admin）"""
 
     @pytest.mark.asyncio
-    async def test_super_admin_can_change_role(self, client: AsyncClient, super_admin_headers: dict, test_user: User, db: AsyncSession):
+    async def test_super_admin_can_change_role(
+        self, client: AsyncClient, super_admin_headers: dict, test_user: User, db: AsyncSession
+    ):
         """超级管理员可以修改用户角色"""
         response = await client.patch(
             f"/api/v1/admin/users/{test_user.id}/role",
@@ -222,7 +233,9 @@ class TestAdminUpdateUserRole:
         assert response.status_code in (400, 422)
 
     @pytest.mark.asyncio
-    async def test_super_admin_cannot_change_own_role(self, client: AsyncClient, super_admin_headers: dict, super_admin_user: User):
+    async def test_super_admin_cannot_change_own_role(
+        self, client: AsyncClient, super_admin_headers: dict, super_admin_user: User
+    ):
         """超级管理员不能修改自己的角色"""
         response = await client.patch(
             f"/api/v1/admin/users/{super_admin_user.id}/role",
@@ -246,7 +259,9 @@ class TestAdminDeleteUser:
     """管理员删除用户测试（仅 super_admin）"""
 
     @pytest.mark.asyncio
-    async def test_super_admin_can_delete_user(self, client: AsyncClient, super_admin_headers: dict, test_user: User, db: AsyncSession):
+    async def test_super_admin_can_delete_user(
+        self, client: AsyncClient, super_admin_headers: dict, test_user: User, db: AsyncSession
+    ):
         """超级管理员可以删除用户"""
         response = await client.delete(
             f"/api/v1/admin/users/{test_user.id}",
@@ -268,7 +283,9 @@ class TestAdminDeleteUser:
         assert response.status_code == 403
 
     @pytest.mark.asyncio
-    async def test_super_admin_cannot_delete_self(self, client: AsyncClient, super_admin_headers: dict, super_admin_user: User):
+    async def test_super_admin_cannot_delete_self(
+        self, client: AsyncClient, super_admin_headers: dict, super_admin_user: User
+    ):
         """超级管理员不能删除自己"""
         response = await client.delete(
             f"/api/v1/admin/users/{super_admin_user.id}",

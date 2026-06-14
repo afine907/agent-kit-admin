@@ -204,12 +204,10 @@ async def _record_download(
 
             # 使用 SQL 原子操作更新计数，避免并发竞态
             await session.execute(
-                update(Package)
-                .where(Package.id == package_id)
-                .values(downloads_count=Package.downloads_count + 1)
+                update(Package).where(Package.id == package_id).values(downloads_count=Package.downloads_count + 1)
             )
 
             await session.commit()
     except Exception as e:
         # 下载计数失败只记录日志，不影响用户体验
-        logger.warning("记录下载失败 package_id=%s version_id=%s: %s", package_id, version_id, e)
+        logger.warning("Failed to record download package_id=%s version_id=%s: %s", package_id, version_id, e)

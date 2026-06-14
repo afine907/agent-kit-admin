@@ -76,7 +76,7 @@ class VersionService:
         if not SEMVER_PATTERN.match(version):
             raise AppError(
                 code=ErrorCodes.VERSION_INVALID_SEMVER,
-                message=f"无效的版本号: {version}",
+                message=f"Invalid version number: {version}",
                 status_code=400,
             )
 
@@ -85,7 +85,7 @@ class VersionService:
         if existing:
             raise AppError(
                 code=ErrorCodes.VERSION_ALREADY_EXISTS,
-                message=f"版本 {version} 已存在",
+                message=f"Version {version} already exists",
                 status_code=409,
             )
 
@@ -100,7 +100,7 @@ class VersionService:
             if content_size > 50 * 1024:  # > 50KB
                 raise AppError(
                     code=ErrorCodes.VERSION_CONTENT_TOO_LARGE,
-                    message="Skill content 超过 50KB 限制",
+                    message="Skill content exceeds 50KB limit",
                     status_code=400,
                 )
 
@@ -116,7 +116,7 @@ class VersionService:
         if not package:
             raise AppError(
                 code=ErrorCodes.PACKAGE_NOT_FOUND,
-                message=f"包不存在: {package_id}",
+                message=f"Package not found: {package_id}",
                 status_code=404,
             )
 
@@ -166,7 +166,7 @@ class VersionService:
             await self.db.rollback()
             raise AppError(
                 code=ErrorCodes.VERSION_ALREADY_EXISTS,
-                message=f"版本 {version} 已存在",
+                message=f"Version {version} already exists",
                 status_code=409,
             )
 
@@ -253,7 +253,7 @@ class VersionService:
             if field not in manifest:
                 raise AppError(
                     code=ErrorCodes.PACKAGE_INVALID_MANIFEST,
-                    message=f"manifest 缺少必填字段: {field}",
+                    message=f"Manifest missing required field: {field}",
                     status_code=400,
                 )
 
@@ -261,7 +261,7 @@ class VersionService:
         if manifest["type"] not in ("mcp", "skill"):
             raise AppError(
                 code=ErrorCodes.PACKAGE_INVALID_MANIFEST,
-                message="type 必须是 mcp 或 skill",
+                message="type must be 'mcp' or 'skill'",
                 status_code=400,
             )
 
@@ -269,7 +269,7 @@ class VersionService:
         if manifest["type"] == "mcp" and "mcp" not in manifest:
             raise AppError(
                 code=ErrorCodes.PACKAGE_INVALID_MANIFEST,
-                message="MCP 包必须包含 mcp 配置",
+                message="MCP packages must include mcp config",
                 status_code=400,
             )
 
@@ -277,7 +277,7 @@ class VersionService:
         if manifest["type"] == "skill" and "skill" not in manifest:
             raise AppError(
                 code=ErrorCodes.PACKAGE_INVALID_MANIFEST,
-                message="Skill 包必须包含 skill 配置",
+                message="Skill packages must include skill config",
                 status_code=400,
             )
 
@@ -287,19 +287,19 @@ class VersionService:
             if "transport" not in mcp:
                 raise AppError(
                     code=ErrorCodes.PACKAGE_INVALID_MANIFEST,
-                    message="mcp 配置必须包含 transport",
+                    message="mcp config must include transport",
                     status_code=400,
                 )
             if mcp["transport"] not in ("stdio", "sse", "streamable-http"):
                 raise AppError(
                     code=ErrorCodes.PACKAGE_INVALID_MANIFEST,
-                    message="transport 必须是 stdio、sse 或 streamable-http",
+                    message="transport must be 'stdio', 'sse', or 'streamable-http'",
                     status_code=400,
                 )
             if "command" not in mcp:
                 raise AppError(
                     code=ErrorCodes.PACKAGE_INVALID_MANIFEST,
-                    message="mcp 配置必须包含 command",
+                    message="mcp config must include command",
                     status_code=400,
                 )
 
@@ -309,6 +309,6 @@ class VersionService:
             if "content" not in skill:
                 raise AppError(
                     code=ErrorCodes.PACKAGE_INVALID_MANIFEST,
-                    message="skill 配置必须包含 content",
+                    message="skill config must include content",
                     status_code=400,
                 )

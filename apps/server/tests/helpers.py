@@ -25,16 +25,18 @@ def create_test_tarball(
     tarball = io.BytesIO()
     with tarfile.open(fileobj=tarball, mode="w:gz") as tar:
         # 添加 akit.json
-        manifest = json.dumps({
-            "name": name,
-            "version": version,
-            "type": pkg_type,
-            "mcp": {
-                "transport": "stdio",
-                "command": "node",
-                "args": ["index.js"],
-            },
-        }).encode()
+        manifest = json.dumps(
+            {
+                "name": name,
+                "version": version,
+                "type": pkg_type,
+                "mcp": {
+                    "transport": "stdio",
+                    "command": "node",
+                    "args": ["index.js"],
+                },
+            }
+        ).encode()
         info = tarfile.TarInfo(name="akit.json")
         info.size = len(manifest)
         tar.addfile(info, io.BytesIO(manifest))

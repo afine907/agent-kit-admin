@@ -11,7 +11,6 @@
 
 import pytest
 from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession
 from app.services.auth import AuthService
 
 
@@ -38,7 +37,7 @@ class TestLoginRateLimit:
                     "password": "WrongPassword123!",
                 },
             )
-            assert response.status_code == 401, f"第 {i+1} 次应返回 401"
+            assert response.status_code == 401, f"第 {i + 1} 次应返回 401"
 
         # 第 5 次失败触发锁定，返回 429
         response = await client.post(
