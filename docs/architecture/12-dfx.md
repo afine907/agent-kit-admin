@@ -209,6 +209,104 @@ agent-kit-admin/
 | CLI | 单元测试 + E2E | > 60% |
 | Web | 组件测试 + E2E | > 50% |
 
+### CI/CD 流水线设计
+
+#### 流水线概览
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        CI 流水线 (ci.yml)                        │
+├─────────────────────────────────────────────────────────────────┤
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐        │
+│  │ Lint CLI │  │ Lint Web │  │ Lint     │  │ TypeCheck│        │
+│  │  (oxlint)│  │  (oxlint)│  │ Server   │  │   (tsc)  │        │
+│  └────┬─────┘  └────┬─────┘  │ (ruff)   │  └────┬─────┘        │
+│       │              │        └────┬─────┘       │              │
+│       │              │             │              │              │
+│       ▼              ▼             ▼              ▼              │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐                      │
+│  │ Test CLI │  │ Test     │  │  Build   │                      │
+│  │ (vitest) │  │ Server   │  │ (CLI+Web)│                      │
+│  └──────────┘  │(pytest)  │  └──────────┘                      │
+│                └──────────┘                                     │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│                   Docker 部署测试 (docker-test.yml)              │
+├─────────────────────────────────────────────────────────────────┤
+│  ┌──────────────────┐    ┌─────────────────────────────┐       │
+│  │ Docker 构建测试   │───▶│ Docker Compose 完整部署测试  │       │
+│  │ (Server + Web)   │    │ (DB + MinIO + Server + Web) │       │
+│  └──────────────────┘    └─────────────────────────────┘       │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### CI 门禁 (ci.yml)
+
+**触发条件：**
+- Push 到 `main` / `master` 分支
+- Pull Request 到 `main` / `master` 分支
+
+**并行任务：**
+
+| 任务 | 工具 | 耗时 | 说明 |
+|------|------|------|------|
+| Lint CLI | oxlint | ~15s | 检查 CLI 代码规范 |
+| Lint Web | oxlint | ~15s | 检查 Web 代码规范 |
+| Lint Server | ruff | ~25s | 检查 Python 代码规范 + 格式化 |
+| Test CLI | vitest | ~20s | CLI 单元测试 |
+| Test Server | pytest | ~1m20s | Server 单元测试 + 集成测试（需 PostgreSQL） |
+| TypeCheck | tsc | ~20s | TypeScript 类型检查 |
+| Build | pnpm build | ~30s | 构建 CLI 和 Web（依赖所有 lint/test 通过） |
+
+**环境要求：**
+- Node.js 20 + pnpm 9
+- Python 3.11
+- PostgreSQL 16（Test Server 使用 GitHub Actions services）
+
+**代码覆盖率：**
+- Server 测试覆盖率上传到 Codecov
+- 覆盖率报告路径：`apps/server/coverage.xml`
+
+#### Docker 部署测试 (docker-test.yml)
+
+**触发条件：**
+- Push 到 `master` 分支（仅当 `apps/server/**`、`apps/web/**`、`deploy/docker/**` 变更时）
+- Pull Request 到 `master` 分支
+- 手动触发（workflow_dispatch）
+
+**测试阶段：**
+
+| 阶段 | 任务 | 说明 |
+|------|------|------|
+| 1 | Docker 构建测试 | 验证 Server 和 Web 镜像可以成功构建 |
+| 2 | Docker Compose 完整部署测试 | 启动所有服务，验证端到端可用性 |
+
+**Docker Compose 测试内容：**
+1. 启动基础设施：PostgreSQL、MinIO
+2. 验证数据库初始化（表创建）
+3. 构建应用镜像：Server、Web
+4. 启动完整服务：db + minio + server + web + caddy
+5. 验证服务可访问性：
+   - Server API 健康检查
+   - Caddy 网关反向代理
+6. 查看服务状态和资源使用
+
+**注意事项：**
+- MinIO 容器不设置健康检查（GitHub Actions 限制）
+- 使用 `docker compose exec -T server python -c "..."` 进行健康检查（容器内无 curl）
+- 测试完成后自动清理容器和卷
+
+#### 待改进项
+
+| 项目 | 状态 | 说明 |
+|------|------|------|
+| mypy 类型检查 | ⏸️ 暂时禁用 | 历史遗留类型错误，待修复后启用 |
+| 并发测试 | ⏸️ 暂时跳过 | Session flushing 冲突，需重构测试 |
+| 覆盖率阈值 | 📝 待配置 | 当前仅上传，未设置最低阈值 |
+| E2E 测试 | 📝 待实现 | Playwright/Cypress 测试 |
+| 镜像推送 | 📝 待实现 | 测试通过后推送到 Docker Hub/GHCR |
+
 ---
 
 ## DFX-06: 可观测性 (Observability)
