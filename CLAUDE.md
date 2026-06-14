@@ -15,7 +15,7 @@ Three components, one deployment:
 | Component | Stack | Directory | Purpose |
 |---|---|---|---|
 | **server** | Python 3.11+ / FastAPI / SQLAlchemy 2.0 (async) | `apps/server/` | REST API + package registry logic (single FastAPI app) |
-| **cli** | Node.js 18+ / TypeScript / Commander.js | `apps/cli/` | `akit` CLI — publish, install, manage packages |
+| **cli** | Node.js 20+ / TypeScript / Commander.js | `apps/cli/` | `akit` CLI — publish, install, manage packages |
 | **web** | React 18 / Vite 5 / shadcn/ui / TypeScript | `apps/web/` | SPA admin dashboard |
 
 Infrastructure: PostgreSQL 16 (metadata) + MinIO (package tarballs) + Caddy (gateway/TLS) — all via Docker Compose.
@@ -28,16 +28,27 @@ All implementation specs live in `docs/architecture/`. Read these before writing
 
 | Document | When to read |
 |---|---|
+| `01-project-overview.md` | Project vision, target users, core features |
 | `02-architecture.md` | Before building any component — system architecture, request flows, planned directory structure |
+| `03-tech-stack.md` | Technology choices, versions, and rationale |
 | `04-data-model.md` | Before writing models/migrations — full SQL schema, indexes, soft delete strategy, JSONB manifest structures |
 | `05-api-design.md` | Before writing API routes — all endpoints, request/response formats, error codes, version tag rules, search strategy |
 | `06-cli-design.md` | Before writing CLI commands — all commands, interactive flows, Agent config write logic, output formats |
 | `07-auth-design.md` | Before implementing auth — OAuth flows (WeChat Work/Feishu/DingTalk), JWT, RBAC, API Key auth |
+| `08-deployment.md` | Docker Compose setup, environment variables, production deployment |
+| `09-roadmap.md` | Version planning, feature milestones |
+| `10-user-stories.md` | User personas and usage scenarios |
 | `11-mvp-spec.md` | Before starting MVP — scope, Agent adapter architecture with TypeScript code, acceptance criteria |
+| `12-dfx.md` | Non-functional requirements: deployability, reliability, **CI/CD pipeline design** |
 | `13-edge-cases.md` | Before writing error handling — 20 edge cases with exact API responses and CLI messages |
+| `14-prd-phases.md` | Product requirements phased plan |
+| `15-user-journey.md` | End-to-end user flows |
 | `16-developer-quickstart.md` | Before writing any backend code — layered architecture (Route → Service → Model), middleware chain, dependency injection pattern, error handling |
+| `17-akit-skill-design.md` | Skill package format and capabilities |
 | `18-manifest-schema.md` | Before implementing package validation — JSON Schema for `akit.json`, validation rules |
+| `19-database-migrations.md` | Alembic migration strategy and conventions |
 | `20-frontend-types.md` | Before writing frontend — TypeScript types, TanStack Query hooks, Zustand stores |
+| `21-review-issue-search.md` | Review and search feature design |
 
 Diagrams in `docs/architecture/diagrams/` (Mermaid format): architecture overview, data flow sequences, ER diagrams, user interaction flows.
 
