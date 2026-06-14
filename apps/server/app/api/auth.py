@@ -18,6 +18,7 @@ class DevLoginRequest(BaseModel):
     """开发环境登录请求"""
     username: str
     display_name: str | None = None
+    role: str | None = None  # 可选：指定角色 (super_admin / admin / member)
 
 
 @router.post("/register", status_code=201)
@@ -90,6 +91,7 @@ async def dev_login(
     user = await auth_service.get_or_create_dev_user(
         username=data.username,
         display_name=data.display_name or data.username,
+        role=data.role,
     )
 
     # 复用 AuthService 的 create_token（使用 python-jose + timezone-aware datetime）
@@ -109,6 +111,17 @@ async def dev_login(
 @router.get("/oauth/{provider}")
 async def oauth_login(provider: str):
     """OAuth 登录跳转 - 302 重定向到授权页"""
+    from app.config import get_settings
+
+    settings = get_settings()
+    if settings.OAUTH_PROVIDER and provider != settings.OAUTH_PROVIDER:
+        from app.errors import AppError
+        raise AppError(
+            code="OAUTH_PROVIDER_DISABLED",
+            message=f"OAuth provider '{provider}' is not enabled",
+            status_code=403,
+        )
+
     from app.database import AsyncSessionLocal
 
     async with AsyncSessionLocal() as db:
@@ -125,6 +138,17 @@ async def oauth_callback(
     db: AsyncSession = Depends(get_db),
 ):
     """OAuth 回调 - 返回 JWT Token 和用户信息"""
+    from app.config import get_settings
+
+    settings = get_settings()
+    if settings.OAUTH_PROVIDER and provider != settings.OAUTH_PROVIDER:
+        from app.errors import AppError
+        raise AppError(
+            code="OAUTH_PROVIDER_DISABLED",
+            message=f"OAuth provider '{provider}' is not enabled",
+            status_code=403,
+        )
+
     auth_service = AuthService(db)
     result = await auth_service.handle_oauth_callback(provider, code, state)
     return result
@@ -141,6 +165,7 @@ async def get_me(
         "email": user.email,
         "display_name": user.display_name,
         "avatar_url": user.avatar_url,
+        "role": user.role,
     }
 
 

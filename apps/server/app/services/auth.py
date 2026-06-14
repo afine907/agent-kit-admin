@@ -474,6 +474,7 @@ class AuthService:
         self,
         username: str,
         display_name: str,
+        role: str | None = None,
     ) -> User:
         """开发环境快速登录 - 查找或创建用户"""
         # 查找已有用户
@@ -483,6 +484,11 @@ class AuthService:
         user = result.scalar_one_or_none()
 
         if user:
+            # 如果指定了 role，更新已有用户的角色
+            if role and user.role != role:
+                user.role = role
+                await self.db.commit()
+                await self.db.refresh(user)
             return user
 
         # 创建新用户
@@ -491,6 +497,7 @@ class AuthService:
             display_name=display_name,
             oauth_provider="dev",
             oauth_id=f"dev_{username}",
+            role=role or "member",
         )
         self.db.add(user)
         await self.db.commit()
