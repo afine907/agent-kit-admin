@@ -33,7 +33,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run ESLint
+      - name: Run oxlint
         run: pnpm --filter akit lint
 
   lint-web:
@@ -58,7 +58,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run ESLint
+      - name: Run oxlint
         run: pnpm --filter agent-kit-web lint
 
   lint-server:
