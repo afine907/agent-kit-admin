@@ -168,8 +168,7 @@ React 18 + Vite + TypeScript + shadcn/ui + Tailwind CSS
     "postcss": "^8.4.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
-    "eslint": "^8.56.0",
-    "prettier": "^3.2.0"
+    "oxlint": "^1.69.0"
   }
 }
 ```
@@ -186,6 +185,7 @@ React 18 + Vite + TypeScript + shadcn/ui + Tailwind CSS
 | **React Router** | 标准路由方案 |
 | **React Hook Form + Zod** | 表单 + 验证，性能好 |
 | **Lucide React** | 精美的图标库 |
+| **oxlint** | Rust 编写的超快 linter，比 ESLint 快 50-100x，零配置 |
 
 ### 为什么选 shadcn/ui
 

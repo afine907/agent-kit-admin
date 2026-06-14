@@ -163,7 +163,7 @@ DFX (Design for X) 是指在设计阶段就考虑的各种非功能性需求。
 
 | ID | 需求 | 优先级 | 验收标准 |
 |---|---|---|---|
-| M-001 | 代码规范 | P0 | Python: ruff, TS: eslint |
+| M-001 | 代码规范 | P0 | Python: ruff, TS: oxlint |
 | M-002 | 测试覆盖 | P1 | > 60% (MVP) |
 | M-003 | CI/CD | P0 | GitHub Actions |
 | M-004 | CHANGELOG | P0 | 每个版本记录变更 |

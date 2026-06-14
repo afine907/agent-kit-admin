@@ -18,7 +18,7 @@ globs: ["**/*.ts", "**/*.tsx", "**/*.py"]
 
 | 语言 | 工具 | 缩进 | 行宽 | 引号 |
 |---|---|---|---|---|
-| TypeScript/JavaScript | ESLint + Prettier | 2 空格 | 120 | 单引号 `'` |
+| TypeScript/JavaScript | oxlint | 2 空格 | 120 | 单引号 `'` |
 | Python | Ruff | 4 空格 | 120 | 双引号 `"` |
 
 ## 注释规范
