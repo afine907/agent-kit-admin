@@ -1,6 +1,6 @@
 """认证 API 路由"""
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Path
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,6 +12,30 @@ from app.models.user import User
 from app.schemas.auth import RegisterRequest, LoginRequest, RefreshRequest, AuthResponse, CreateAPIKeyRequest
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+# OAuth 提供商白名单
+VALID_OAUTH_PROVIDERS = {"wechat_work", "feishu", "dingtalk"}
+
+
+def _validate_oauth_provider(provider: str) -> None:
+    """校验 OAuth 提供商是否合法且已启用"""
+    from app.errors import AppError, ErrorCodes
+    from app.config import get_settings
+
+    if provider not in VALID_OAUTH_PROVIDERS:
+        raise AppError(
+            code=ErrorCodes.NOT_FOUND,
+            message="OAuth provider not found",
+            status_code=404,
+        )
+
+    settings = get_settings()
+    if settings.OAUTH_PROVIDER and provider != settings.OAUTH_PROVIDER:
+        raise AppError(
+            code=ErrorCodes.AUTH_FORBIDDEN,
+            message=f"OAuth provider '{provider}' is not enabled",
+            status_code=403,
+        )
 
 
 class DevLoginRequest(BaseModel):
@@ -109,18 +133,9 @@ async def dev_login(
 
 
 @router.get("/oauth/{provider}")
-async def oauth_login(provider: str):
+async def oauth_login(provider: str = Path(..., description="OAuth 提供商")):
     """OAuth 登录跳转 - 302 重定向到授权页"""
-    from app.config import get_settings
-
-    settings = get_settings()
-    if settings.OAUTH_PROVIDER and provider != settings.OAUTH_PROVIDER:
-        from app.errors import AppError
-        raise AppError(
-            code="OAUTH_PROVIDER_DISABLED",
-            message=f"OAuth provider '{provider}' is not enabled",
-            status_code=403,
-        )
+    _validate_oauth_provider(provider)
 
     from app.database import AsyncSessionLocal
 
@@ -132,22 +147,13 @@ async def oauth_login(provider: str):
 
 @router.get("/oauth/{provider}/callback")
 async def oauth_callback(
-    provider: str,
+    provider: str = Path(..., description="OAuth 提供商"),
     code: str = Query(...),
     state: str = Query(..., description="OAuth state 参数，用于防止 CSRF 攻击"),
     db: AsyncSession = Depends(get_db),
 ):
     """OAuth 回调 - 返回 JWT Token 和用户信息"""
-    from app.config import get_settings
-
-    settings = get_settings()
-    if settings.OAUTH_PROVIDER and provider != settings.OAUTH_PROVIDER:
-        from app.errors import AppError
-        raise AppError(
-            code="OAUTH_PROVIDER_DISABLED",
-            message=f"OAuth provider '{provider}' is not enabled",
-            status_code=403,
-        )
+    _validate_oauth_provider(provider)
 
     auth_service = AuthService(db)
     result = await auth_service.handle_oauth_callback(provider, code, state)

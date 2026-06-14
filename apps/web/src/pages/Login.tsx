@@ -2,53 +2,59 @@
  * 登录/注册页面 - 支持本地登录和 OAuth
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { api } from '../lib/api';
 import { useAuthStore } from '../stores/authStore';
-import { Boxes, MessageSquare, Bird, Smartphone, ArrowRight, Shield, Mail, Lock, User } from 'lucide-react';
+import { Boxes, ArrowRight, Shield, Mail, Lock, User } from 'lucide-react';
+import { WechatWorkIcon, FeishuIcon, DingtalkIcon } from '../components/icons';
 
-const PROVIDERS = [
-  {
-    id: 'wechat_work',
-    name: '企业微信',
-    icon: MessageSquare,
-    color: 'text-green-400',
-    bg: 'bg-green-400/10',
-    border: 'border-green-400/20',
-  },
-  {
-    id: 'feishu',
-    name: '飞书',
-    icon: Bird,
-    color: 'text-blue-400',
-    bg: 'bg-blue-400/10',
-    border: 'border-blue-400/20',
-  },
-  {
-    id: 'dingtalk',
-    name: '钉钉',
-    icon: Smartphone,
-    color: 'text-sky-400',
-    bg: 'bg-sky-400/10',
-    border: 'border-sky-400/20',
-  },
-];
+type OAuthProviderId = 'wechat_work' | 'feishu' | 'dingtalk';
+
+const PROVIDER_ICONS: Record<OAuthProviderId, React.FC<{ size?: number }>> = {
+  wechat_work: WechatWorkIcon,
+  feishu: FeishuIcon,
+  dingtalk: DingtalkIcon,
+};
+
+const PROVIDER_STYLES: Record<OAuthProviderId, { color: string; bg: string; border: string }> = {
+  wechat_work: { color: 'text-green-500', bg: 'bg-green-500/10', border: 'border-green-500/20' },
+  feishu: { color: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
+  dingtalk: { color: 'text-sky-500', bg: 'bg-sky-500/10', border: 'border-sky-500/20' },
+};
+
+function isValidProvider(p: string): p is OAuthProviderId {
+  return p in PROVIDER_ICONS;
+}
 
 type Mode = 'login' | 'register';
 
 export default function Login() {
+  const { t } = useTranslation('pages');
   const navigate = useNavigate();
   const { setAuth } = useAuthStore();
   const [mode, setMode] = useState<Mode>('login');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [oauthProvider, setOauthProvider] = useState<string>('');
 
-  // 表单数据
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');
+
+  useEffect(() => {
+    api.getConfig()
+      .then((data) => setOauthProvider(data?.data?.oauth_provider || ''))
+      .catch(() => {});
+  }, []);
+
+  const providerIds: OAuthProviderId[] = oauthProvider
+    ? isValidProvider(oauthProvider)
+      ? [oauthProvider]
+      : []
+    : (Object.keys(PROVIDER_ICONS) as OAuthProviderId[]);
 
   const handleLocalLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,7 +66,7 @@ export default function Login() {
       setAuth(data.token, data.user, data.refresh_token);
       navigate('/');
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : '登录失败');
+      setError(err instanceof Error ? err.message : t('login.loginFailed'));
     } finally {
       setLoading(false);
     }
@@ -76,7 +82,7 @@ export default function Login() {
       setAuth(data.token, data.user, data.refresh_token);
       navigate('/');
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : '注册失败');
+      setError(err instanceof Error ? err.message : t('login.registerFailed'));
     } finally {
       setLoading(false);
     }
@@ -95,9 +101,9 @@ export default function Login() {
           <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 mb-4 glow-cyan">
             <Boxes className="w-7 h-7 text-primary" />
           </div>
-          <h1 className="text-2xl font-extrabold tracking-tight">Agent Kit</h1>
+          <h1 className="text-2xl font-extrabold tracking-tight">{t('login.title')}</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {mode === 'login' ? '登录到包注册中心' : '注册新账号'}
+            {mode === 'login' ? t('login.subtitle.login') : t('login.subtitle.register')}
           </p>
         </div>
 
@@ -120,8 +126,8 @@ export default function Login() {
                   type="text"
                   autoComplete="username"
                   spellCheck={false}
-                  aria-label="用户名"
-                  placeholder="用户名…"
+                  aria-label={t('login.username')}
+                  placeholder={t('login.usernamePlaceholder')}
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   required
@@ -136,8 +142,8 @@ export default function Login() {
                 name="displayName"
                 type="text"
                 autoComplete="name"
-                aria-label="显示名称"
-                placeholder="显示名称（可选）…"
+                aria-label={t('login.displayName')}
+                placeholder={t('login.displayNamePlaceholder')}
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 className="w-full px-4 py-3 rounded-lg bg-background border border-input focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary outline-none transition-colors text-sm"
@@ -152,8 +158,8 @@ export default function Login() {
               type="email"
               autoComplete="email"
               spellCheck={false}
-              aria-label="邮箱"
-              placeholder="邮箱…"
+              aria-label={t('login.email')}
+              placeholder={t('login.emailPlaceholder')}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -167,8 +173,8 @@ export default function Login() {
               name="password"
               type="password"
               autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-              aria-label="密码"
-              placeholder="密码…"
+              aria-label={t('login.password')}
+              placeholder={t('login.passwordPlaceholder')}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -181,7 +187,7 @@ export default function Login() {
             disabled={loading}
             className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary/20"
           >
-            {loading ? '处理中…' : mode === 'login' ? '登录' : '注册'}
+            {loading ? t('login.processing') : mode === 'login' ? t('login.loginBtn') : t('login.registerBtn')}
             <ArrowRight className="w-4 h-4" />
           </button>
         </form>
@@ -190,16 +196,16 @@ export default function Login() {
         <div className="mt-4 text-center text-sm">
           {mode === 'login' ? (
             <span className="text-muted-foreground">
-              没有账号？{' '}
+              {t('login.noAccount')}{' '}
               <button onClick={() => { setMode('register'); setError(null); }} className="text-primary hover:underline focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:outline-none">
-                注册
+                {t('login.registerBtn')}
               </button>
             </span>
           ) : (
             <span className="text-muted-foreground">
-              已有账号？{' '}
+              {t('login.hasAccount')}{' '}
               <button onClick={() => { setMode('login'); setError(null); }} className="text-primary hover:underline focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:outline-none">
-                登录
+                {t('login.loginBtn')}
               </button>
             </span>
           )}
@@ -208,38 +214,41 @@ export default function Login() {
         {/* 分隔线 */}
         <div className="flex items-center gap-3 my-6">
           <div className="flex-1 h-px bg-border" />
-          <span className="text-xs text-muted-foreground">或</span>
+          <span className="text-xs text-muted-foreground">{t('login.or')}</span>
           <div className="flex-1 h-px bg-border" />
         </div>
 
         {/* OAuth 登录 */}
-        <div className="space-y-2.5">
-          {PROVIDERS.map((provider, i) => {
-            const Icon = provider.icon;
-            return (
-              <button
-                key={provider.id}
-                onClick={() => handleOAuthLogin(provider.id)}
-                disabled={loading}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-colors duration-200 group bg-card border-border/50 hover:border-border hover:bg-secondary/30 disabled:opacity-50`}
-                style={{ animationDelay: `${i * 80}ms` }}
-              >
-                <div className={`flex items-center justify-center w-9 h-9 rounded-lg ${provider.bg} ${provider.border}`}>
-                  <Icon className={`w-4.5 h-4.5 ${provider.color}`} />
-                </div>
-                <span className="flex-1 text-left text-sm font-medium">
-                  使用 {provider.name} 登录
-                </span>
-                <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
-              </button>
-            );
-          })}
-        </div>
+        {providerIds.length > 0 && (
+          <div className="space-y-2.5">
+            {providerIds.map((id, i) => {
+              const Icon = PROVIDER_ICONS[id];
+              const style = PROVIDER_STYLES[id];
+              return (
+                <button
+                  key={id}
+                  onClick={() => handleOAuthLogin(id)}
+                  disabled={loading}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-colors duration-200 group bg-card border-border/50 hover:border-border hover:bg-secondary/30 disabled:opacity-50"
+                  style={{ animationDelay: `${i * 80}ms` }}
+                >
+                  <div className={`flex items-center justify-center w-9 h-9 rounded-lg ${style.bg} ${style.border}`}>
+                    <Icon size={20} />
+                  </div>
+                  <span className="flex-1 text-left text-sm font-medium">
+                    {t('login.oauthLogin', { provider: t(`login.providers.${id}`) })}
+                  </span>
+                  <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {/* 底部提示 */}
         <div className="flex items-center justify-center gap-1.5 mt-6 text-xs text-muted-foreground/60">
           <Shield className="w-3 h-3" />
-          登录即表示您同意我们的服务条款和隐私政策
+          {t('login.footer')}
         </div>
       </div>
     </div>

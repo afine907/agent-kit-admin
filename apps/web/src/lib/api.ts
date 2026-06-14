@@ -137,8 +137,15 @@ export interface APIKeyResponse {
   created_at: string;
 }
 
+export interface AppConfig {
+  oauth_provider: string;
+}
+
 // API 函数
 export const api = {
+  // 配置
+  getConfig: () => client.get<{ data: AppConfig }>('/api/v1/config').then((r) => r.data),
+
   // 认证
   getOAuthUrl: (provider: string) => `/api/v1/auth/oauth/${provider}`,
   getMe: () => client.get<User>('/api/v1/auth/me').then((r) => r.data),

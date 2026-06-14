@@ -59,6 +59,10 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRE_HOURS: int = 24
 
+    # OAuth - 启用的 IM 提供商（wechat_work / feishu / dingtalk）
+    # 设置后只启用对应的 OAuth 登录，留空则显示所有已配置的提供商
+    OAUTH_PROVIDER: str = ""
+
     # OAuth - 企业微信
     WECHAT_WORK_CORP_ID: str = ""
     WECHAT_WORK_SECRET: str = ""
