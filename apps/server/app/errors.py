@@ -55,6 +55,12 @@ class ErrorCodes:
     STORAGE_INTEGRITY_ERROR = 30000
     STORAGE_DELETE_FAILED = 30000
 
+    # 团队错误
+    TEAM_NOT_FOUND = 20003
+    TEAM_SLUG_EXISTS = 20004
+    TEAM_MEMBER_EXISTS = 20004
+    TEAM_PERMISSION_DENIED = 20002
+
 
 def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
     """全局 AppError 异常处理器"""

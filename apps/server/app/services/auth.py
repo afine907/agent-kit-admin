@@ -365,6 +365,64 @@ class AuthService:
             },
         }
 
+    async def register_with_auto_username(
+        self,
+        username: str,
+        email: str,
+        password: str,
+        display_name: str | None = None,
+    ) -> dict:
+        """本地注册 - 用户名冲突时自动添加数字后缀
+
+        如果用户名已存在，自动尝试 username-2, username-3, ... 直到找到可用名。
+        """
+        # 检查原始用户名
+        final_username = username
+        result = await self.db.execute(select(User).where(User.username == username))
+        if result.scalar_one_or_none():
+            # 用户名冲突，自动递增后缀
+            counter = 2
+            while True:
+                candidate = f"{username}-{counter}"
+                result = await self.db.execute(select(User).where(User.username == candidate))
+                if not result.scalar_one_or_none():
+                    final_username = candidate
+                    break
+                counter += 1
+
+        # 创建用户
+        user = User(
+            username=final_username,
+            email=email,
+            display_name=display_name or final_username,
+            password_hash=hash_password(password),
+            oauth_provider="local",
+            oauth_id=None,
+            role="member",
+            status="active",
+        )
+        self.db.add(user)
+        await self.db.commit()
+        await self.db.refresh(user)
+
+        # 生成 Token
+        access_token = self.create_token(str(user.id), user.username)
+        refresh_token = self.create_refresh_token(str(user.id))
+
+        return {
+            "token": access_token,
+            "refresh_token": refresh_token,
+            "user": {
+                "id": str(user.id),
+                "username": user.username,
+                "email": user.email,
+                "display_name": user.display_name,
+                "avatar_url": user.avatar_url,
+                "role": user.role,
+                "status": user.status,
+            },
+        }
+
     async def login(self, email: str, password: str) -> dict:
         """本地登录"""
         # 检查登录失败次数限制

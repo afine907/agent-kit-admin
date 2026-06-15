@@ -11,6 +11,7 @@ import { join } from 'path';
 import { homedir } from 'os';
 import { agentRegistry } from '../agents/registry.js';
 import { parsePackageName } from '../utils/package-name.js';
+import { FileLock } from '../utils/lock.js';
 
 // 包安装目录
 const PACKAGES_DIR = join(homedir(), '.akit', 'packages');
@@ -68,8 +69,19 @@ export const uninstallCommand = new Command('uninstall')
       if (agentName) {
         const adapter = agentRegistry.get(agentName);
         if (adapter && await adapter.hasConfig(name)) {
-          await adapter.removeConfig(name);
-          spinner1.succeed(`已从 ${adapter.name} 移除配置`);
+          const configPath = adapter.getConfigPath();
+          const lock = new FileLock(configPath);
+
+          let release: (() => Promise<void>) | undefined;
+          try {
+            release = await lock.acquire({ timeout: 10000 });
+            await adapter.removeConfig(name);
+            spinner1.succeed(`已从 ${adapter.name} 移除配置`);
+          } finally {
+            if (release) {
+              await release();
+            }
+          }
         } else {
           spinner1.info('未找到 Agent 配置');
         }

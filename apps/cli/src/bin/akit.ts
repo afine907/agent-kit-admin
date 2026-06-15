@@ -22,6 +22,7 @@ import { searchCommand } from '../commands/search.js';
 import { infoCommand } from '../commands/info.js';
 import { configCommand } from '../commands/config.js';
 import { tokenCommand } from '../commands/token.js';
+import { setupSkillCommand } from '../commands/setup-skill.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -62,6 +63,9 @@ async function main() {
   program.addCommand(searchCommand);
   program.addCommand(infoCommand);
   program.addCommand(configCommand);
+
+  // 注册 setup-claude-skill 命令（函数式注册）
+  setupSkillCommand(program);
 
   // 帮助信息
   program

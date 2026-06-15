@@ -3,6 +3,8 @@
     "packages": "Packages",
     "admin": "Admin",
     "myPackages": "My Packages",
+    "teams": "Teams",
+    "publish": "Publish",
     "logout": "Logout",
     "login": "Login"
   },
@@ -20,11 +22,14 @@
     "clearSearch": "Clear search",
     "loading": "Loading…",
     "submit": "Submit",
+    "submitting": "Submitting…",
+    "update": "Update",
     "close": "Close"
   },
   "pagination": {
     "prev": "Previous",
     "next": "Next",
+    "page": "{{page}} / {{total}}",
     "pageInfo": "{{page}} / {{total}}"
   },
   "status": {

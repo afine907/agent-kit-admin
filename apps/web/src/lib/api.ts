@@ -137,6 +137,43 @@ export interface APIKeyResponse {
   created_at: string;
 }
 
+// 评价相关类型
+export interface ReviewResponse {
+  id: string;
+  package_id: string;
+  version_id?: string;
+  user_id: string;
+  username: string;
+  display_name?: string;
+  avatar_url?: string;
+  rating: number;
+  comment?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ReviewListResponse {
+  data: ReviewResponse[];
+  pagination: {
+    page: number;
+    per_page: number;
+    total: number;
+    total_pages: number;
+  };
+  stats: {
+    average_rating: number;
+    total_reviews: number;
+    rating_distribution: Record<number, number>;
+  };
+}
+
+// 包统计类型
+export interface PackageStatsResponse {
+  total_downloads: number;
+  recent_downloads: number;
+  trends: DownloadTrend[];
+}
+
 export interface AppConfig {
   oauth_provider: string;
 }
@@ -186,11 +223,45 @@ export const api = {
   getPackage: (scope: string, name: string) =>
     client.get<PackageResponse>(`/api/v1/packages/${scope}/${name}`).then((r) => r.data),
 
+  createPackage: (data: {
+    name: string;
+    scope: string;
+    type: 'mcp' | 'skill';
+    description?: string;
+    license?: string;
+    repository?: string;
+    homepage?: string;
+    visibility?: string;
+    tags?: string[];
+  }) => client.post<PackageResponse>('/api/v1/packages', data).then((r) => r.data),
+
   listVersions: (scope: string, name: string) =>
     client.get<VersionListResponse>(`/api/v1/packages/${scope}/${name}/versions`).then((r) => r.data),
 
   getDownloadUrl: (scope: string, name: string, version?: string) =>
     `/api/v1/packages/${scope}/${name}/download${version ? `?version=${version}` : ''}`,
+
+  publishVersion: (scope: string, name: string, formData: FormData) =>
+    client.post(`/api/v1/packages/${scope}/${name}/versions`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then((r) => r.data),
+
+  // 评价
+  listReviews: (scope: string, name: string, params?: { page?: number; per_page?: number }) =>
+    client.get<ReviewListResponse>(`/api/v1/packages/${scope}/${name}/reviews`, { params }).then((r) => r.data),
+
+  createReview: (scope: string, name: string, data: { rating: number; comment?: string; version_id?: string }) =>
+    client.post<ReviewResponse>(`/api/v1/packages/${scope}/${name}/reviews`, data).then((r) => r.data),
+
+  updateReview: (scope: string, name: string, reviewId: string, data: { rating: number; comment?: string }) =>
+    client.put<ReviewResponse>(`/api/v1/packages/${scope}/${name}/reviews/${reviewId}`, data).then((r) => r.data),
+
+  deleteReview: (scope: string, name: string, reviewId: string) =>
+    client.delete(`/api/v1/packages/${scope}/${name}/reviews/${reviewId}`).then((r) => r.data),
+
+  // 包统计
+  getPackageStats: (scope: string, name: string) =>
+    client.get<PackageStatsResponse>(`/api/v1/packages/${scope}/${name}/stats`).then((r) => r.data),
 
   // 管理后台
   admin: {

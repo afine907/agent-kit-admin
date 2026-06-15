@@ -9,6 +9,8 @@ const Home = React.lazy(() => import('./pages/Home'));
 const Login = React.lazy(() => import('./pages/Login'));
 const PackageDetail = React.lazy(() => import('./pages/PackageDetail'));
 const Profile = React.lazy(() => import('./pages/Profile'));
+const Publish = React.lazy(() => import('./pages/Publish'));
+const Teams = React.lazy(() => import('./pages/Teams'));
 const NotFound = React.lazy(() => import('./pages/NotFound'));
 
 // 管理后台页面
@@ -57,6 +59,22 @@ function App() {
               element={
                 <RequireAuth>
                   <Profile />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/publish"
+              element={
+                <RequireAuth>
+                  <Publish />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/teams"
+              element={
+                <RequireAuth>
+                  <Teams />
                 </RequireAuth>
               }
             />

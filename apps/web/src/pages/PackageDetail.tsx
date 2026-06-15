@@ -2,11 +2,18 @@
  * PackageDetail 页面 - 终端风格包详情
  */
 
+import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { usePackage, useVersions } from '../hooks/usePackages';
 import { VersionList } from '../components/VersionList';
 import { InstallCommand } from '../components/InstallCommand';
+import { ReviewList } from '../components/ReviewList';
+import { ReviewForm } from '../components/ReviewForm';
+import { RatingDistribution } from '../components/RatingDistribution';
+import { PackageStats } from '../components/PackageStats';
+import { useReviews } from '../hooks/useReviews';
+import { ReviewResponse } from '../lib/api';
 import {
   ChevronRight,
   ArrowLeft,
@@ -17,14 +24,17 @@ import {
   ExternalLink,
   AlertCircle,
   Loader2,
+  Star,
 } from 'lucide-react';
 
 export default function PackageDetail() {
   const { t, i18n } = useTranslation('pages');
   const { scope, name } = useParams<{ scope: string; name: string }>();
+  const [editingReview, setEditingReview] = useState<ReviewResponse | null>(null);
 
   const { data: pkg, isLoading, error } = usePackage(scope || '', name || '');
   const { data: versions } = useVersions(scope || '', name || '');
+  const { data: reviewsData } = useReviews(scope || '', name || '');
 
   const locale = i18n.language === 'zh' ? 'zh-CN' : 'en-US';
 
@@ -126,6 +136,41 @@ export default function PackageDetail() {
             </h2>
             <VersionList versions={versions?.data || []} />
           </div>
+
+          {/* 评价区域 */}
+          <div className="animate-fade-in-up" style={{ animationDelay: '250ms' }}>
+            <h2 className="text-xs font-mono font-medium text-muted-foreground uppercase tracking-wider mb-3">
+              {t('packageDetail.reviews.title')}
+            </h2>
+
+            {/* 评分分布 */}
+            {reviewsData?.stats && (
+              <div className="mb-4">
+                <RatingDistribution
+                  averageRating={reviewsData.stats.average_rating}
+                  totalReviews={reviewsData.stats.total_reviews}
+                  distribution={reviewsData.stats.rating_distribution}
+                />
+              </div>
+            )}
+
+            {/* 评价表单 */}
+            <div className="mb-4">
+              <ReviewForm
+                scope={scope || ''}
+                name={name || ''}
+                editingReview={editingReview}
+                onCancelEdit={() => setEditingReview(null)}
+              />
+            </div>
+
+            {/* 评价列表 */}
+            <ReviewList
+              scope={scope || ''}
+              name={name || ''}
+              onEdit={setEditingReview}
+            />
+          </div>
         </div>
 
         {/* 右侧 - 元信息 */}
@@ -200,6 +245,42 @@ export default function PackageDetail() {
               </div>
             </div>
           </div>
+
+          {/* 下载统计 */}
+          <div className="animate-fade-in-up" style={{ animationDelay: '250ms' }}>
+            <PackageStats scope={pkg.scope} name={pkg.name} />
+          </div>
+
+          {/* 快速评分概览 */}
+          {reviewsData?.stats && reviewsData.stats.total_reviews > 0 && (
+            <div className="p-5 rounded-xl bg-card border border-border/50 animate-fade-in-up" style={{ animationDelay: '300ms' }}>
+              <h3 className="text-xs font-mono font-medium text-muted-foreground uppercase tracking-wider mb-4">
+                {t('packageDetail.reviews.rating')}
+              </h3>
+              <div className="flex items-center gap-3">
+                <div className="text-3xl font-bold text-primary">
+                  {reviewsData.stats.average_rating.toFixed(1)}
+                </div>
+                <div>
+                  <div className="flex items-center gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        className={`w-4 h-4 ${
+                          star <= Math.round(reviewsData.stats.average_rating)
+                            ? 'fill-yellow-400 text-yellow-400'
+                            : 'text-gray-300'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {reviewsData.stats.total_reviews} {t('packageDetail.reviews.reviews')}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

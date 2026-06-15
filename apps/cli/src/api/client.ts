@@ -124,7 +124,21 @@ export class ApiClient {
 
         if (isRetryable && config && (config.__retryCount ?? 0) < MAX_RETRIES) {
           config.__retryCount = (config.__retryCount ?? 0) + 1;
-          const delay = Math.pow(2, config.__retryCount) * 1000;
+
+          // 429 响应优先使用 Retry-After 头
+          let delay: number;
+          if (error.response?.status === 429) {
+            const retryAfter = error.response.headers?.['retry-after'];
+            if (retryAfter !== undefined && retryAfter !== null) {
+              const parsed = parseInt(retryAfter, 10);
+              delay = isNaN(parsed) ? Math.pow(2, config.__retryCount) * 1000 : parsed * 1000;
+            } else {
+              delay = Math.pow(2, config.__retryCount) * 1000;
+            }
+          } else {
+            delay = Math.pow(2, config.__retryCount) * 1000;
+          }
+
           await new Promise((r) => setTimeout(r, delay));
           return this.client(config);
         }

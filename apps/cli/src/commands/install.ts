@@ -13,6 +13,7 @@ import { apiClient } from '../api/client.js';
 import { agentRegistry } from '../agents/registry.js';
 import { readManifest } from '../utils/manifest.js';
 import { parsePackageName } from '../utils/package-name.js';
+import { FileLock } from '../utils/lock.js';
 
 // 包安装目录
 const PACKAGES_DIR = join(homedir(), '.akit', 'packages');
@@ -150,15 +151,36 @@ export const installCommand = new Command('install')
           process.exit(1);
         }
 
-        // 写入配置
+        // 写入配置（使用文件锁保护并发写入）
         if (manifest.type === 'mcp' && manifest.mcp) {
-          await adapter.writeConfig({
-            name: name,
-            command: manifest.mcp.command,
-            args: manifest.mcp.args || [],
-            env: {},
-          });
-          spinner4.succeed(`配置已写入: ${adapter.getConfigPath()}`);
+          const configPath = adapter.getConfigPath();
+          const lock = new FileLock(configPath);
+
+          // 确保配置文件存在
+          if (!existsSync(configPath)) {
+            const fs = await import('fs');
+            const configDir = join(configPath, '..');
+            if (!existsSync(configDir)) {
+              mkdirSync(configDir, { recursive: true });
+            }
+            fs.writeFileSync(configPath, '{}');
+          }
+
+          let release: (() => Promise<void>) | undefined;
+          try {
+            release = await lock.acquire({ timeout: 10000 });
+            await adapter.writeConfig({
+              name: name,
+              command: manifest.mcp.command,
+              args: manifest.mcp.args || [],
+              env: {},
+            });
+            spinner4.succeed(`配置已写入: ${configPath}`);
+          } finally {
+            if (release) {
+              await release();
+            }
+          }
         } else {
           spinner4.info('非 MCP 包，跳过 Agent 配置');
         }

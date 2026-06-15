@@ -1,12 +1,28 @@
 /**
- * 个人资料页面
+ * 个人资料页面 - 包含用户设置
  */
 
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../stores/authStore';
 import { api, APIKeyResponse } from '../lib/api';
-import { User, Mail, Shield, Key, Plus, Trash2, Copy, Check, AlertCircle } from 'lucide-react';
+import {
+  User,
+  Mail,
+  Shield,
+  Key,
+  Plus,
+  Trash2,
+  Copy,
+  Check,
+  AlertCircle,
+  Settings,
+  Bell,
+  Moon,
+  Sun,
+  Monitor,
+  Globe,
+} from 'lucide-react';
 
 export default function Profile() {
   const { t, i18n } = useTranslation(['pages', 'common']);
@@ -21,6 +37,17 @@ export default function Profile() {
   const [createdKey, setCreatedKey] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState(false);
   const [keyError, setKeyError] = useState<string | null>(null);
+
+  // 用户设置状态
+  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(
+    () => (localStorage.getItem('theme') as 'light' | 'dark' | 'system') || 'system'
+  );
+  const [language, setLanguage] = useState(i18n.language);
+  const [notifications, setNotifications] = useState({
+    email: true,
+    browser: true,
+    updates: false,
+  });
 
   const locale = i18n.language === 'zh' ? 'zh-CN' : 'en-US';
 
@@ -90,6 +117,30 @@ export default function Profile() {
       member: t('common:roles.member'),
     };
     return roles[role || ''] || role || '-';
+  };
+
+  const handleThemeChange = (newTheme: 'light' | 'dark' | 'system') => {
+    setTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
+    // 应用主题
+    const root = document.documentElement;
+    if (newTheme === 'dark' || (newTheme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+  };
+
+  const handleLanguageChange = (newLang: string) => {
+    setLanguage(newLang);
+    i18n.changeLanguage(newLang);
+    localStorage.setItem('language', newLang);
+  };
+
+  const handleNotificationChange = (key: keyof typeof notifications, value: boolean) => {
+    setNotifications((prev) => ({ ...prev, [key]: value }));
+    // 保存到 localStorage
+    localStorage.setItem('notifications', JSON.stringify({ ...notifications, [key]: value }));
   };
 
   if (!user) {
@@ -330,6 +381,98 @@ export default function Profile() {
             ))}
           </div>
         )}
+      </div>
+
+      {/* 用户设置 */}
+      <div className="bg-card rounded-xl border border-border p-6 mt-6">
+        <div className="flex items-center gap-2 mb-6">
+          <Settings className="w-5 h-5" />
+          <h2 className="text-xl font-semibold">{t('profile.settings.title')}</h2>
+        </div>
+
+        <div className="space-y-6">
+          {/* 主题设置 */}
+          <div>
+            <label className="text-sm font-medium text-muted-foreground mb-3 block">
+              {t('profile.settings.theme')}
+            </label>
+            <div className="flex items-center gap-4">
+              {[
+                { value: 'light', icon: Sun, label: t('profile.settings.themeLight') },
+                { value: 'dark', icon: Moon, label: t('profile.settings.themeDark') },
+                { value: 'system', icon: Monitor, label: t('profile.settings.themeSystem') },
+              ].map(({ value, icon: Icon, label }) => (
+                <button
+                  key={value}
+                  onClick={() => handleThemeChange(value as 'light' | 'dark' | 'system')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
+                    theme === value
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-border hover:bg-muted'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 语言设置 */}
+          <div>
+            <label className="text-sm font-medium text-muted-foreground mb-3 block">
+              {t('profile.settings.language')}
+            </label>
+            <div className="flex items-center gap-4">
+              {[
+                { value: 'zh', label: '中文' },
+                { value: 'en', label: 'English' },
+              ].map(({ value, label }) => (
+                <button
+                  key={value}
+                  onClick={() => handleLanguageChange(value)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
+                    language === value
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-border hover:bg-muted'
+                  }`}
+                >
+                  <Globe className="w-4 h-4" />
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 通知设置 */}
+          <div>
+            <label className="text-sm font-medium text-muted-foreground mb-3 block">
+              {t('profile.settings.notifications')}
+            </label>
+            <div className="space-y-3">
+              {[
+                { key: 'email', label: t('profile.settings.emailNotifications') },
+                { key: 'browser', label: t('profile.settings.browserNotifications') },
+                { key: 'updates', label: t('profile.settings.updateNotifications') },
+              ].map(({ key, label }) => (
+                <label key={key} className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={notifications[key as keyof typeof notifications]}
+                    onChange={(e) =>
+                      handleNotificationChange(
+                        key as keyof typeof notifications,
+                        e.target.checked
+                      )
+                    }
+                    className="w-4 h-4 rounded border-border text-primary focus-visible:ring-2 focus-visible:ring-primary/50"
+                  />
+                  <span className="text-sm">{label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

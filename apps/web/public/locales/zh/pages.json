@@ -53,7 +53,33 @@
     "time": "时间",
     "createdAt": "创建时间",
     "updatedAt": "更新时间",
-    "copyInstall": "复制安装命令"
+    "copyInstall": "复制安装命令",
+    "reviews": {
+      "title": "用户评价",
+      "rating": "评分",
+      "ratingDistribution": "评分分布",
+      "totalReviews": "共 {{count}} 条评价",
+      "reviews": "条评价",
+      "noRatings": "暂无评分",
+      "writeReview": "写评价",
+      "editReview": "编辑评价",
+      "comment": "评价内容",
+      "commentPlaceholder": "分享你的使用体验（可选）…",
+      "ratingRequired": "请选择评分",
+      "loginRequired": "请先登录后评价",
+      "empty": "暂无评价，快来写第一条吧",
+      "loadError": "加载评价失败",
+      "deleteConfirm": "确定要删除此评价吗？",
+      "submit": "提交评价",
+      "update": "更新评价",
+      "submitting": "提交中…"
+    },
+    "stats": {
+      "title": "下载统计",
+      "totalDownloads": "总下载量",
+      "recentDownloads": "近期下载",
+      "last30Days": "最近 30 天"
+    }
   },
   "profile": {
     "pleaseLogin": "请先登录",
@@ -79,6 +105,91 @@
       "createdAt": "创建",
       "deleteConfirm": "确定要删除此 API Key 吗？删除后无法恢复。",
       "deleteFailed": "删除失败"
+    },
+    "settings": {
+      "title": "用户设置",
+      "theme": "主题",
+      "themeLight": "浅色",
+      "themeDark": "深色",
+      "themeSystem": "跟随系统",
+      "language": "语言",
+      "notifications": "通知设置",
+      "emailNotifications": "邮件通知",
+      "browserNotifications": "浏览器通知",
+      "updateNotifications": "包更新通知"
+    }
+  },
+  "teams": {
+    "title": "团队管理",
+    "loginRequired": "请先登录",
+    "createBtn": "创建团队",
+    "createTitle": "创建新团队",
+    "name": "团队名称",
+    "namePlaceholder": "输入团队名称",
+    "slug": "团队标识",
+    "slugPlaceholder": "team-slug",
+    "description": "描述",
+    "descriptionPlaceholder": "描述团队…",
+    "create": "创建",
+    "empty": "暂无团队",
+    "emptyHint": "点击上方按钮创建第一个团队",
+    "createdAt": "创建时间",
+    "members": "成员",
+    "addMember": "添加成员",
+    "removeMember": "移除成员",
+    "roles": {
+      "owner": "所有者",
+      "admin": "管理员",
+      "member": "成员"
+    }
+  },
+  "publish": {
+    "title": "发布包",
+    "loginRequired": "请先登录后发布包",
+    "validationError": "请填写所有必填字段",
+    "publishFailed": "发布失败",
+    "publishing": "发布中…",
+    "publishBtn": "发布",
+    "step1": {
+      "title": "基本信息",
+      "scope": "Scope",
+      "selectScope": "选择 Scope",
+      "name": "包名",
+      "namePlaceholder": "my-mcp-server",
+      "type": "类型",
+      "mcpDesc": "Model Context Protocol 服务器",
+      "skillDesc": "Agent Skill 技能包",
+      "description": "描述",
+      "descriptionPlaceholder": "描述你的包…",
+      "license": "许可证",
+      "visibility": "可见性",
+      "public": "公开",
+      "private": "私有",
+      "team": "团队",
+      "tags": "标签",
+      "tagsPlaceholder": "添加标签…",
+      "addTag": "添加"
+    },
+    "step2": {
+      "title": "版本信息",
+      "version": "版本号",
+      "versionHint": "语义化版本号，如 0.1.0",
+      "tag": "版本标签"
+    },
+    "step3": {
+      "title": "上传文件",
+      "dropzone": "点击或拖拽文件到此处上传",
+      "fileHint": "支持 .tar.gz 和 .tgz 格式",
+      "file": "文件",
+      "requirements": "要求",
+      "req1": "包内必须包含 akit.json 清单文件",
+      "req2": "文件大小不超过 50MB",
+      "req3": "MCP 包必须包含可执行的命令"
+    },
+    "step4": {
+      "title": "确认发布",
+      "packageInfo": "包信息",
+      "versionInfo": "版本信息"
     }
   },
   "notFound": {

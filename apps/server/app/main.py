@@ -9,7 +9,7 @@ from sqlalchemy import text
 from app.config import get_settings
 from app.errors import AppError, app_error_handler
 from app.middleware import RequestIDMiddleware, LoggingMiddleware
-from app.api import auth, packages, versions, admin, reviews
+from app.api import auth, packages, versions, admin, reviews, teams
 
 # 配置日志
 logging.basicConfig(
@@ -25,7 +25,7 @@ settings = get_settings()
 async def lifespan(app: FastAPI):
     """应用生命周期 - 启动时创建数据库表和初始化管理员"""
     from app.database import engine, Base
-    from app.models import user, package, version, download, review  # noqa: F401
+    from app.models import user, package, version, download, review, team  # noqa: F401
 
     # 创建所有表
     async with engine.begin() as conn:
@@ -72,11 +72,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# 中间件 - 限流（在 CORS 之后、路由之前）
+from app.middleware.rate_limit import RateLimitMiddleware
+
+app.add_middleware(RateLimitMiddleware)
+
 # 路由注册
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(packages.router, prefix="/api/v1")
 app.include_router(versions.router, prefix="/api/v1")
 app.include_router(reviews.router, prefix="/api/v1")
+app.include_router(teams.router, prefix="/api/v1")
 app.include_router(admin.router, prefix="/api/v1")
 
 

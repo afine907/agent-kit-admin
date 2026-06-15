@@ -4,6 +4,7 @@
  */
 
 import Conf from 'conf';
+import { readFile, writeFile } from 'fs/promises';
 
 export interface UserInfo {
   id: string;
@@ -37,14 +38,100 @@ const DEFAULT_CONFIG: ConfigData = {
   installed_packages: [],
 };
 
-class ConfigManager {
+export interface RecoveryResult {
+  recovered: boolean;
+  backupPath?: string;
+}
+
+/**
+ * 生成备份路径
+ * 如果 .bak 已存在，使用带日期的备份名
+ */
+function getBackupPath(configPath: string): string {
+  const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const defaultBackup = configPath + '.bak';
+  // 使用同步版本检查，因为这是辅助函数
+  const fs = require('fs');
+  if (fs.existsSync(defaultBackup)) {
+    return `${configPath}.bak.${dateStr}`;
+  }
+  return defaultBackup;
+}
+
+/**
+ * 检测并恢复损坏的配置文件（异步版本）
+ *
+ * 如果配置文件 JSON 损坏，备份为 .bak 并创建新配置。
+ *
+ * @param configPath - 配置文件路径
+ * @returns 恢复结果
+ */
+export async function recoverConfig(configPath: string): Promise<RecoveryResult> {
+  try {
+    const content = await readFile(configPath, 'utf-8');
+    try {
+      JSON.parse(content);
+      return { recovered: false }; // 有效 JSON，无需恢复
+    } catch {
+      // JSON 损坏，需要恢复
+      const backupPath = getBackupPath(configPath);
+      await writeFile(backupPath, content, 'utf-8');
+      await writeFile(configPath, '{}', 'utf-8');
+      return { recovered: true, backupPath };
+    }
+  } catch {
+    // 文件不存在或无法读取，无需恢复
+    return { recovered: false };
+  }
+}
+
+/**
+ * 检测并恢复损坏的配置文件（同步版本）
+ * 用于构造函数中需要同步操作的场景
+ *
+ * @param configPath - 配置文件路径
+ * @returns 是否进行了恢复
+ */
+function checkAndRecoverySync(configPath: string): boolean {
+  try {
+    const fs = require('fs');
+    if (!fs.existsSync(configPath)) return false;
+    const content = fs.readFileSync(configPath, 'utf-8');
+    try {
+      JSON.parse(content);
+      return false; // 有效 JSON，无需恢复
+    } catch {
+      // JSON 损坏，同步恢复
+      const backupPath = getBackupPath(configPath);
+      fs.writeFileSync(backupPath, content, 'utf-8');
+      fs.writeFileSync(configPath, '{}', 'utf-8');
+      return true;
+    }
+  } catch {
+    // 忽略读取错误
+    return false;
+  }
+}
+
+export class ConfigManager {
   private config: Conf<ConfigData>;
 
-  constructor() {
-    this.config = new Conf<ConfigData>({
-      projectName: 'akit',
-      defaults: DEFAULT_CONFIG,
-    });
+  constructor(configPath?: string) {
+    if (configPath) {
+      // 测试模式：使用指定路径
+      this.config = new Conf<ConfigData>({
+        configFilePath: configPath,
+        defaults: DEFAULT_CONFIG,
+      } as unknown as ConstructorParameters<typeof Conf>[0]);
+    } else {
+      this.config = new Conf<ConfigData>({
+        projectName: 'akit',
+        defaults: DEFAULT_CONFIG,
+      });
+    }
+
+    // 自动检测并恢复损坏的配置
+    checkAndRecoverySync(this.config.path);
   }
 
   /**
