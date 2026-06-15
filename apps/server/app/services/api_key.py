@@ -125,9 +125,13 @@ class APIKeyService:
         if not api_key:
             return None
 
-        # 检查是否过期
-        if api_key.expires_at and api_key.expires_at < datetime.now(timezone.utc):
-            return None
+        # 检查是否过期（兼容 SQLite 返回 naive datetime）
+        if api_key.expires_at:
+            expires_at = api_key.expires_at
+            if expires_at.tzinfo is None:
+                expires_at = expires_at.replace(tzinfo=timezone.utc)
+            if expires_at < datetime.now(timezone.utc):
+                return None
 
         # 节流更新 last_used_at：同一 key 在 N 秒内不触发数据库写入
         now = datetime.now(timezone.utc)

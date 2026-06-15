@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models.user import User
 from app.services.auth import UserSnapshot
+from app.services.api_key import APIKeyService
 from app.errors import AppError, ErrorCodes
 
 # 严格匹配 Bearer token 格式：必须以 "Bearer " 开头，后面跟非空白字符
@@ -24,14 +25,17 @@ ROLE_HIERARCHY = {
 }
 
 
-async def get_current_user_optional(
-    authorization: str | None = Header(None),
-    db: AsyncSession = Depends(get_db),
-) -> UserType | None:
-    """可选的用户认证 - 不强制要求登录
+async def _authenticate_token(
+    authorization: str | None,
+    db: AsyncSession,
+) -> tuple[str, UserType] | None:
+    """公共认证逻辑 - 解析 token 并返回 (raw_token, user)
 
-    - 无 Authorization header: 返回 None (匿名)
-    - 有 Authorization header 但 token 无效: 返回 401 (明确拒绝)
+    Returns:
+        (token_str, user) 或 None（无 Authorization header 时）
+
+    Raises:
+        AppError: token 无效、过期或用户状态异常
     """
     if not authorization:
         return None
@@ -41,20 +45,47 @@ async def get_current_user_optional(
         raise AppError(code=ErrorCodes.AUTH_INVALID_TOKEN, message="Invalid Authorization format", status_code=401)
     token = match.group(1)
 
-    # API Key 认证 (Phase 2 实现)
+    user: UserType | None = None
+
+    # API Key 认证
     if token.startswith("akit_"):
-        raise AppError(
-            code=ErrorCodes.AUTH_REQUIRED, message="API Key authentication not yet implemented", status_code=401
-        )
+        api_key_service = APIKeyService(db)
+        key_info = await api_key_service.verify_key(token)
+        if not key_info:
+            raise AppError(code=ErrorCodes.AUTH_INVALID_TOKEN, message="Invalid or expired API Key", status_code=401)
+        user = await db.get(User, key_info["user_id"])
+        if not user:
+            raise AppError(code=ErrorCodes.AUTH_INVALID_TOKEN, message="API Key owner not found", status_code=401)
+    else:
+        # JWT 认证
+        from app.services.auth import AuthService
 
-    # JWT 认证
-    from app.services.auth import AuthService
+        auth_service = AuthService(db)
+        user = await auth_service.verify_token(token)
+        if not user:
+            raise AppError(code=ErrorCodes.AUTH_INVALID_TOKEN, message="Invalid or expired token", status_code=401)
 
-    auth_service = AuthService(db)
-    user = await auth_service.verify_token(token)
-    if not user:
-        raise AppError(code=ErrorCodes.AUTH_INVALID_TOKEN, message="Invalid or expired token", status_code=401)
-    return user
+    # 用户状态检查（仅对 ORM User 对象生效，UserSnapshot 跳过）
+    if isinstance(user, User):
+        if user.status in ("suspended", "banned"):
+            raise AppError(code=ErrorCodes.USER_SUSPENDED, message="User account suspended", status_code=403)
+
+    return token, user
+
+
+async def get_current_user_optional(
+    authorization: str | None = Header(None),
+    db: AsyncSession = Depends(get_db),
+) -> UserType | None:
+    """可选的用户认证 - 不强制要求登录
+
+    - 无 Authorization header: 返回 None (匿名)
+    - 有 Authorization header 但 token 无效: 返回 401 (明确拒绝)
+    """
+    result = await _authenticate_token(authorization, db)
+    if result is None:
+        return None
+    return result[1]
 
 
 async def get_current_user(
@@ -65,25 +96,8 @@ async def get_current_user(
     if not authorization:
         raise AppError(code=ErrorCodes.AUTH_REQUIRED, message="No authentication provided", status_code=401)
 
-    match = _BEARER_TOKEN_RE.match(authorization)
-    if not match:
-        raise AppError(code=ErrorCodes.AUTH_INVALID_TOKEN, message="Invalid Authorization format", status_code=401)
-    token = match.group(1)
-
-    # API Key 认证 (Phase 2 实现)
-    if token.startswith("akit_"):
-        raise AppError(
-            code=ErrorCodes.AUTH_REQUIRED, message="API Key authentication not yet implemented", status_code=401
-        )
-
-    # JWT 认证
-    from app.services.auth import AuthService
-
-    auth_service = AuthService(db)
-    user = await auth_service.verify_token(token)
-    if not user:
-        raise AppError(code=ErrorCodes.AUTH_INVALID_TOKEN, message="Invalid or expired token", status_code=401)
-    return user
+    result = await _authenticate_token(authorization, db)
+    return result[1]  # type: ignore[index]
 
 
 async def get_current_user_with_token(
@@ -94,19 +108,8 @@ async def get_current_user_with_token(
     if not authorization:
         raise AppError(code=ErrorCodes.AUTH_REQUIRED, message="No authentication provided", status_code=401)
 
-    match = _BEARER_TOKEN_RE.match(authorization)
-    if not match:
-        raise AppError(code=ErrorCodes.AUTH_INVALID_TOKEN, message="Invalid Authorization format", status_code=401)
-    token = match.group(1)
-
-    # JWT 认证
-    from app.services.auth import AuthService
-
-    auth_service = AuthService(db)
-    user = await auth_service.verify_token(token)
-    if not user:
-        raise AppError(code=ErrorCodes.AUTH_INVALID_TOKEN, message="Invalid or expired token", status_code=401)
-    return user, token
+    result = await _authenticate_token(authorization, db)
+    return result[1], result[0]  # type: ignore[index]
 
 
 async def require_admin(

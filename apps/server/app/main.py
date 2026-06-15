@@ -9,7 +9,7 @@ from sqlalchemy import text
 from app.config import get_settings
 from app.errors import AppError, app_error_handler
 from app.middleware import RequestIDMiddleware, LoggingMiddleware
-from app.api import auth, packages, versions, admin
+from app.api import auth, packages, versions, admin, reviews
 
 # 配置日志
 logging.basicConfig(
@@ -76,6 +76,7 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(packages.router, prefix="/api/v1")
 app.include_router(versions.router, prefix="/api/v1")
+app.include_router(reviews.router, prefix="/api/v1")
 app.include_router(admin.router, prefix="/api/v1")
 
 

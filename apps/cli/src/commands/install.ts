@@ -17,11 +17,36 @@ import { parsePackageName } from '../utils/package-name.js';
 // 包安装目录
 const PACKAGES_DIR = join(homedir(), '.akit', 'packages');
 
+/**
+ * 带指数退避的下载重试
+ */
+async function downloadWithRetry(url: string, maxRetries: number): Promise<Buffer> {
+  let lastError: Error | undefined;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      return Buffer.from(await response.arrayBuffer());
+    } catch (error: unknown) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      if (attempt < maxRetries) {
+        const delay = Math.pow(2, attempt) * 1000;
+        await new Promise((r) => setTimeout(r, delay));
+      }
+    }
+  }
+  throw lastError;
+}
+
 export const installCommand = new Command('install')
   .description('安装包到本地')
   .argument('<package>', '包名 (例如: @scope/name)')
   .option('--agent <name>', '目标 Agent (claude/codex)')
   .option('--tag <tag>', '版本标签', 'latest')
+  .option('--global', '全局安装到 ~/.akit/packages')
+  .option('--no-config', '仅下载包，不写入 Agent 配置')
   .action(async (packageName: string, options) => {
     try {
       console.log(chalk.bold('\n📥 安装包...\n'));
@@ -56,7 +81,8 @@ export const installCommand = new Command('install')
 
       // 4. 下载并解压
       const spinner3 = ora('下载中...').start();
-      const packageDir = join(PACKAGES_DIR, scope, name);
+      const installDir = options.global ? PACKAGES_DIR : join(process.cwd(), '.akit', 'packages');
+      const packageDir = join(installDir, scope, name);
 
       try {
         // 确保目录存在
@@ -64,9 +90,8 @@ export const installCommand = new Command('install')
           mkdirSync(packageDir, { recursive: true });
         }
 
-        // 下载文件
-        const response = await fetch(downloadUrl);
-        const buffer = Buffer.from(await response.arrayBuffer());
+        // 下载文件（带重试）
+        const buffer = await downloadWithRetry(downloadUrl, 3);
 
         // 解压 (简化实现，实际需要 tar 解压)
         const tarPath = join(packageDir, `${name}.tar.gz`);
@@ -83,63 +108,71 @@ export const installCommand = new Command('install')
       // 5. 读取 akit.json
       const manifest = readManifest(packageDir);
 
-      // 6. 配置 Agent
-      const spinner4 = ora('配置 Agent...').start();
+      // 6. 配置 Agent（--no-config 跳过）
+      if (options.config === false) {
+        // 跳过 Agent 配置
+        const version = pkg.latest_version || 'unknown';
+        console.log(chalk.green(`\n✔ 已下载 ${fullName}@${version}`));
+        console.log(chalk.gray(`  目录: ${packageDir}`));
+        console.log('');
+      } else {
+        const spinner4 = ora('配置 Agent...').start();
 
-      let agentName = options.agent;
-      if (!agentName) {
-        // 自动检测
-        const detected = await agentRegistry.detectAll();
-        if (detected.length === 0) {
-          spinner4.fail('未检测到已安装的 Agent');
-          console.error(chalk.red('\n✖ 请安装 Claude Code 或 Codex'));
+        let agentName = options.agent;
+        if (!agentName) {
+          // 自动检测
+          const detected = await agentRegistry.detectAll();
+          if (detected.length === 0) {
+            spinner4.fail('未检测到已安装的 Agent');
+            console.error(chalk.red('\n✖ 请安装 Claude Code 或 Codex'));
+            process.exit(1);
+          }
+
+          if (detected.length === 1) {
+            agentName = detected[0].name.toLowerCase();
+          } else {
+            spinner4.stop();
+            const answer = await inquirer.prompt([
+              {
+                type: 'list',
+                name: 'agent',
+                message: '选择目标 Agent:',
+                choices: detected.map((a) => ({ name: a.name, value: a.name.toLowerCase() })),
+              },
+            ]);
+            agentName = answer.agent;
+          }
+        }
+
+        const adapter = agentRegistry.get(agentName);
+        if (!adapter) {
+          spinner4.fail(`未找到 Agent 适配器: ${agentName}`);
           process.exit(1);
         }
 
-        if (detected.length === 1) {
-          agentName = detected[0].name.toLowerCase();
+        // 写入配置
+        if (manifest.type === 'mcp' && manifest.mcp) {
+          await adapter.writeConfig({
+            name: name,
+            command: manifest.mcp.command,
+            args: manifest.mcp.args || [],
+            env: {},
+          });
+          spinner4.succeed(`配置已写入: ${adapter.getConfigPath()}`);
         } else {
-          spinner4.stop();
-          const answer = await inquirer.prompt([
-            {
-              type: 'list',
-              name: 'agent',
-              message: '选择目标 Agent:',
-              choices: detected.map((a) => ({ name: a.name, value: a.name.toLowerCase() })),
-            },
-          ]);
-          agentName = answer.agent;
+          spinner4.info('非 MCP 包，跳过 Agent 配置');
         }
+
+        // 7. 更新已安装记录
+        // TODO: 更新 ~/.akit/config.json 的已安装记录
+
+        // 显示成功信息
+        const version = pkg.latest_version || 'unknown';
+        console.log(chalk.green(`\n✔ 已安装 ${fullName}@${version}`));
+        console.log(chalk.gray(`  Agent: ${adapter.name}`));
+        console.log(chalk.gray(`  Config: ${adapter.getConfigPath()} 已更新`));
+        console.log('');
       }
-
-      const adapter = agentRegistry.get(agentName);
-      if (!adapter) {
-        spinner4.fail(`未找到 Agent 适配器: ${agentName}`);
-        process.exit(1);
-      }
-
-      // 写入配置
-      if (manifest.type === 'mcp' && manifest.mcp) {
-        await adapter.writeConfig({
-          name: name,
-          command: manifest.mcp.command,
-          args: manifest.mcp.args || [],
-          env: {},
-        });
-        spinner4.succeed(`配置已写入: ${adapter.getConfigPath()}`);
-      } else {
-        spinner4.info('非 MCP 包，跳过 Agent 配置');
-      }
-
-      // 7. 更新已安装记录
-      // TODO: 更新 ~/.akit/config.json 的已安装记录
-
-      // 显示成功信息
-      const version = pkg.latest_version || 'unknown';
-      console.log(chalk.green(`\n✔ 已安装 ${fullName}@${version}`));
-      console.log(chalk.gray(`  Agent: ${adapter.name}`));
-      console.log(chalk.gray(`  Config: ${adapter.getConfigPath()} 已更新`));
-      console.log('');
     } catch (error: unknown) {
       console.error(chalk.red(`\n✖ 安装失败: ${error instanceof Error ? error.message : String(error)}`));
       process.exit(1);

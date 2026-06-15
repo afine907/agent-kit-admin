@@ -184,3 +184,30 @@ class PackageService:
             )
         )
         return result.scalar_one_or_none()
+
+    async def get_package_stats(self, scope: str, name: str, current_user: User | None = None) -> dict:
+        """获取包下载统计"""
+        package = await self.get_package(scope, name, current_user)
+
+        from app.models.download import Download
+        from app.models.version import Version
+
+        # 按版本统计下载量（限制 top 50）
+        version_stats_query = (
+            select(
+                Version.version,
+                func.count(Download.id).label("downloads"),
+            )
+            .outerjoin(Download, Download.version_id == Version.id)
+            .where(Version.package_id == package.id)
+            .group_by(Version.version)
+            .order_by(func.count(Download.id).desc())
+            .limit(50)
+        )
+        version_stats_result = await self.db.execute(version_stats_query)
+        downloads_by_version = [{"version": row.version, "downloads": row.downloads} for row in version_stats_result]
+
+        return {
+            "total_downloads": package.downloads_count,
+            "downloads_by_version": downloads_by_version,
+        }

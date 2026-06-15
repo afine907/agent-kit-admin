@@ -5,6 +5,13 @@
 import axios, { AxiosInstance } from 'axios';
 import { configManager } from '../config/manager.js';
 
+// 扩展 Axios 类型以支持重试计数
+declare module 'axios' {
+  interface AxiosRequestConfig {
+    __retryCount?: number;
+  }
+}
+
 // 类型定义
 export interface AuthResponse {
   token: string;
@@ -102,10 +109,27 @@ export class ApiClient {
       return config;
     });
 
-    // 响应拦截器 - 统一错误处理
+    // 响应拦截器 - 带重试的统一错误处理
+    const RETRYABLE_STATUSES = [429, 502, 503, 504];
+    const MAX_RETRIES = 3;
+
     this.client.interceptors.response.use(
       (response) => response,
-      (error) => {
+      async (error) => {
+        const config = error.config;
+
+        // 判断是否可重试
+        const isRetryable =
+          !error.response || RETRYABLE_STATUSES.includes(error.response.status);
+
+        if (isRetryable && config && (config.__retryCount ?? 0) < MAX_RETRIES) {
+          config.__retryCount = (config.__retryCount ?? 0) + 1;
+          const delay = Math.pow(2, config.__retryCount) * 1000;
+          await new Promise((r) => setTimeout(r, delay));
+          return this.client(config);
+        }
+
+        // 格式化错误消息
         if (error.response) {
           const { status, data } = error.response;
           const message = data?.error?.message || data?.message || error.message;

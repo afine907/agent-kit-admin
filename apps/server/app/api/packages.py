@@ -56,6 +56,19 @@ async def get_package(
     return package
 
 
+@router.get("/{scope}/{name}/stats")
+async def get_package_stats(
+    scope: str,
+    name: str,
+    current_user: UserType | None = Depends(get_current_user_optional),
+    db: AsyncSession = Depends(get_db),
+):
+    """获取包下载统计"""
+    service = PackageService(db)
+    stats = await service.get_package_stats(scope, name, current_user)
+    return stats
+
+
 @router.post("", response_model=PackageResponse, status_code=201)
 async def create_package(
     data: PackageCreate,
