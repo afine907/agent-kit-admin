@@ -17,7 +17,6 @@ import {
   Check,
   AlertCircle,
   Settings,
-  Bell,
   Moon,
   Sun,
   Monitor,
@@ -66,10 +65,17 @@ export default function Profile() {
 
   const handleSaveProfile = async () => {
     setSaving(true);
-    setTimeout(() => {
+    try {
+      await api.updateProfile({ display_name: displayName });
+      // 更新本地 auth store
+      const updatedUser = await api.getMe();
+      useAuthStore.getState().setAuth(useAuthStore.getState().getToken() || '', updatedUser);
       setIsEditing(false);
+    } catch (err: unknown) {
+      console.error('Failed to update profile:', err);
+    } finally {
       setSaving(false);
-    }, 500);
+    }
   };
 
   const handleCreateKey = async () => {

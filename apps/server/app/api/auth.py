@@ -9,7 +9,7 @@ from app.services.auth import AuthService
 from app.services.api_key import APIKeyService
 from app.api.deps import get_current_user, get_current_user_with_token
 from app.models.user import User
-from app.schemas.auth import RegisterRequest, LoginRequest, RefreshRequest, CreateAPIKeyRequest
+from app.schemas.auth import RegisterRequest, LoginRequest, RefreshRequest, CreateAPIKeyRequest, UpdateProfileRequest
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -166,6 +166,45 @@ async def get_me(
     user: User = Depends(get_current_user),
 ):
     """获取当前用户信息"""
+    return {
+        "id": str(user.id),
+        "username": user.username,
+        "email": user.email,
+        "display_name": user.display_name,
+        "avatar_url": user.avatar_url,
+        "role": user.role,
+    }
+
+
+@router.patch("/me")
+async def update_me(
+    data: UpdateProfileRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """更新当前用户资料"""
+    from app.services.auth import AuthService
+
+    update_data = data.model_dump(exclude_unset=True)
+    if not update_data:
+        return {
+            "id": str(user.id),
+            "username": user.username,
+            "email": user.email,
+            "display_name": user.display_name,
+            "avatar_url": user.avatar_url,
+            "role": user.role,
+        }
+
+    for field, value in update_data.items():
+        setattr(user, field, value)
+
+    await db.commit()
+    await db.refresh(user)
+
+    # 清除用户缓存
+    AuthService.invalidate_user_cache(str(user.id))
+
     return {
         "id": str(user.id),
         "username": user.username,

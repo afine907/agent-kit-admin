@@ -58,3 +58,10 @@ class CreateAPIKeyRequest(BaseModel):
     """创建 API Key 请求"""
 
     name: str = Field(..., min_length=1, max_length=100, description="API Key 名称")
+
+
+class UpdateProfileRequest(BaseModel):
+    """更新用户资料请求"""
+
+    display_name: str | None = Field(None, max_length=100, description="显示名称")
+    avatar_url: str | None = Field(None, max_length=2048, description="头像 URL")

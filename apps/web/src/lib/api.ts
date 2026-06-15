@@ -178,6 +178,26 @@ export interface AppConfig {
   oauth_provider: string;
 }
 
+// 团队相关类型
+export interface Team {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  avatar_url?: string;
+  member_count: number;
+  created_at: string;
+}
+
+export interface TeamMember {
+  user_id: string;
+  username: string;
+  display_name?: string;
+  avatar_url?: string;
+  role: 'owner' | 'admin' | 'member';
+  joined_at: string;
+}
+
 // API 函数
 export const api = {
   // 配置
@@ -262,6 +282,38 @@ export const api = {
   // 包统计
   getPackageStats: (scope: string, name: string) =>
     client.get<PackageStatsResponse>(`/api/v1/packages/${scope}/${name}/stats`).then((r) => r.data),
+
+  // 用户资料
+  updateProfile: (data: { display_name?: string; avatar_url?: string }) =>
+    client.patch<User>('/api/v1/auth/me', data).then((r) => r.data),
+
+  // 团队管理
+  listTeams: () =>
+    client.get<Team[]>('/api/v1/teams').then((r) => r.data),
+
+  createTeam: (data: { name: string; slug: string; description?: string }) =>
+    client.post<Team>('/api/v1/teams', data).then((r) => r.data),
+
+  getTeam: (teamId: string) =>
+    client.get<Team>(`/api/v1/teams/${teamId}`).then((r) => r.data),
+
+  updateTeam: (teamId: string, data: { name?: string; description?: string }) =>
+    client.put<Team>(`/api/v1/teams/${teamId}`, data).then((r) => r.data),
+
+  deleteTeam: (teamId: string) =>
+    client.delete(`/api/v1/teams/${teamId}`).then((r) => r.data),
+
+  listTeamMembers: (teamId: string) =>
+    client.get<TeamMember[]>(`/api/v1/teams/${teamId}/members`).then((r) => r.data),
+
+  addTeamMember: (teamId: string, data: { user_id: string; role?: string }) =>
+    client.post<TeamMember>(`/api/v1/teams/${teamId}/members`, data).then((r) => r.data),
+
+  removeTeamMember: (teamId: string, userId: string) =>
+    client.delete(`/api/v1/teams/${teamId}/members/${userId}`).then((r) => r.data),
+
+  updateTeamMemberRole: (teamId: string, userId: string, role: string) =>
+    client.put<TeamMember>(`/api/v1/teams/${teamId}/members/${userId}`, { role }).then((r) => r.data),
 
   // 管理后台
   admin: {

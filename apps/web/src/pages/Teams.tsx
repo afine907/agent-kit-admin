@@ -2,9 +2,10 @@
  * 团队管理页面
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../stores/authStore';
+import { api, type Team, type TeamMember } from '../lib/api';
 import {
   Users,
   Plus,
@@ -18,35 +19,50 @@ import {
   AlertCircle,
 } from 'lucide-react';
 
-// 临时类型定义（后端 API 完成后替换）
-interface Team {
-  id: string;
-  name: string;
-  slug: string;
-  description?: string;
-  avatar_url?: string;
-  member_count: number;
-  created_at: string;
-}
-
-interface TeamMember {
-  user_id: string;
-  username: string;
-  display_name?: string;
-  avatar_url?: string;
-  role: 'owner' | 'admin' | 'member';
-  joined_at: string;
-}
-
 export default function Teams() {
   const { t } = useTranslation('pages');
   const { user } = useAuthStore();
-  const [teams] = useState<Team[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
-  const [members] = useState<TeamMember[]>([]);
+  const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newTeam, setNewTeam] = useState({ name: '', slug: '', description: '' });
+  const [error, setError] = useState<string | null>(null);
+
+  const loadTeams = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await api.listTeams();
+      setTeams(data);
+    } catch (err: unknown) {
+      console.error('Failed to load teams:', err);
+      setError(err instanceof Error ? err.message : t('teams.loadFailed'));
+    } finally {
+      setLoading(false);
+    }
+  }, [t]);
+
+  const loadMembers = useCallback(async (teamId: string) => {
+    try {
+      const data = await api.listTeamMembers(teamId);
+      setMembers(data);
+    } catch (err: unknown) {
+      console.error('Failed to load members:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      loadTeams();
+    }
+  }, [user, loadTeams]);
+
+  useEffect(() => {
+    if (selectedTeam) {
+      loadMembers(selectedTeam.id);
+    }
+  }, [selectedTeam, loadMembers]);
 
   if (!user) {
     return (
@@ -58,17 +74,26 @@ export default function Teams() {
   }
 
   const handleCreateTeam = async () => {
-    // TODO: 调用 API 创建团队
     setLoading(true);
+    setError(null);
     try {
-      // await api.createTeam(newTeam);
+      await api.createTeam(newTeam);
       setShowCreateForm(false);
       setNewTeam({ name: '', slug: '', description: '' });
-      // 重新加载团队列表
-    } catch (err) {
-      console.error('Failed to create team:', err);
+      await loadTeams();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : t('teams.createFailed'));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRemoveMember = async (teamId: string, userId: string) => {
+    try {
+      await api.removeTeamMember(teamId, userId);
+      await loadMembers(teamId);
+    } catch (err: unknown) {
+      console.error('Failed to remove member:', err);
     }
   };
 
@@ -104,6 +129,14 @@ export default function Teams() {
           {t('teams.createBtn')}
         </button>
       </div>
+
+      {/* 错误提示 */}
+      {error && (
+        <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg flex items-center gap-2 text-destructive">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <span className="text-sm">{error}</span>
+        </div>
+      )}
 
       {/* 创建团队表单 */}
       {showCreateForm && (
@@ -172,7 +205,12 @@ export default function Teams() {
 
       {/* 团队列表 */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {teams.length === 0 ? (
+        {loading && teams.length === 0 ? (
+          <div className="col-span-full text-center py-12">
+            <Loader2 className="w-8 h-8 mx-auto mb-4 animate-spin text-muted-foreground" />
+            <p className="text-muted-foreground">{t('common:loading')}</p>
+          </div>
+        ) : teams.length === 0 ? (
           <div className="col-span-full text-center py-12">
             <Users className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
             <p className="text-muted-foreground">{t('teams.empty')}</p>
@@ -211,7 +249,7 @@ export default function Teams() {
         )}
       </div>
 
-      {/* 团队详情侧边栏 */}
+      {/* 团队详情弹窗 */}
       {selectedTeam && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="w-full max-w-2xl max-h-[80vh] bg-card rounded-xl border border-border overflow-hidden">
@@ -274,6 +312,7 @@ export default function Teams() {
                     </div>
                     {member.role !== 'owner' && (
                       <button
+                        onClick={() => handleRemoveMember(selectedTeam.id, member.user_id)}
                         className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
                         title={t('teams.removeMember')}
                       >
