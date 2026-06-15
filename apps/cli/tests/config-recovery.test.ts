@@ -9,7 +9,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtemp, writeFile, readFile, rm } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { existsSync } from 'fs';
+
 
 describe('#10 配置文件损坏恢复', () => {
   let testDir: string;

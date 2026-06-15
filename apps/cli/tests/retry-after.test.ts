@@ -34,7 +34,7 @@ vi.mock('axios', () => ({
 }));
 
 describe('#14 429 响应 + Retry-After 头', () => {
-  let errorHandler: (error: any) => Promise<any>;
+  let errorHandler: (error: unknown) => Promise<unknown>;
 
   beforeEach(async () => {
     vi.clearAllMocks();

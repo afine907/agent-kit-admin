@@ -97,7 +97,7 @@ describe('FileLock', () => {
     const results: number[] = [];
     const concurrentOps = 5;
 
-    const operations = Array.from({ length: concurrentOps }, async (_, i) => {
+    const operations = Array.from({ length: concurrentOps }, async (_) => {
       const release = await lock.acquire();
       try {
         const data = JSON.parse(await fs.readFile(filePath, 'utf-8'));

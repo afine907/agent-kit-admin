@@ -64,6 +64,11 @@ export interface PackageResponse {
   updated_at: string;
 }
 
+export interface AdminPackageResponse extends PackageResponse {
+  admin_status: string;
+  deleted_at?: string;
+}
+
 export interface PackageListResponse {
   data: PackageResponse[];
   pagination: {
@@ -324,7 +329,7 @@ export const api = {
       role?: string;
       status?: string;
       keyword?: string;
-    }) => client.get<{ data: AdminUserResponse[]; pagination: any }>('/api/v1/admin/users', { params }).then((r) => r.data),
+    }) => client.get<{ data: AdminUserResponse[]; pagination: { page: number; per_page: number; total: number; total_pages: number } }>('/api/v1/admin/users', { params }).then((r) => r.data),
 
     getUser: (userId: string) =>
       client.get<AdminUserResponse>(`/api/v1/admin/users/${userId}`).then((r) => r.data),
@@ -344,7 +349,7 @@ export const api = {
       per_page?: number;
       type?: string;
       include_deleted?: boolean;
-    }) => client.get<{ data: any[]; pagination: any }>('/api/v1/admin/packages', { params }).then((r) => r.data),
+    }) => client.get<{ data: AdminPackageResponse[]; pagination: { page: number; per_page: number; total: number; total_pages: number } }>('/api/v1/admin/packages', { params }).then((r) => r.data),
 
     updatePackageStatus: (packageId: string, status: string, reason?: string) =>
       client.patch(`/api/v1/admin/packages/${packageId}/status`, { status, reason }).then((r) => r.data),

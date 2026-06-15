@@ -9,6 +9,7 @@ from sqlalchemy import text
 from app.config import get_settings
 from app.errors import AppError, app_error_handler
 from app.middleware import RequestIDMiddleware, LoggingMiddleware
+from app.middleware.rate_limit import RateLimitMiddleware
 from app.api import auth, packages, versions, admin, reviews, teams
 
 # 配置日志
@@ -73,8 +74,6 @@ app.add_middleware(
 )
 
 # 中间件 - 限流（在 CORS 之后、路由之前）
-from app.middleware.rate_limit import RateLimitMiddleware
-
 app.add_middleware(RateLimitMiddleware)
 
 # 路由注册
