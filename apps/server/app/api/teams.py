@@ -53,14 +53,15 @@ async def get_team(
 ):
     """获取团队详情（需为团队成员）"""
     service = TeamService(db)
-    # 权限检查：必须是团队成员才能查看详情
+    # 先检查团队是否存在（不存在会抛 404）
+    team = await service.get_team(team_id)
+    # 再检查权限
     if not await service.is_member(team_id, str(current_user.id)):
         raise AppError(
             code=ErrorCodes.AUTH_FORBIDDEN,
             message="You must be a team member to view team details",
             status_code=403,
         )
-    team = await service.get_team(team_id)
     return team
 
 
