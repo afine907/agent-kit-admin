@@ -375,7 +375,17 @@ class AuthService:
         """本地注册 - 用户名冲突时自动添加数字后缀
 
         如果用户名已存在，自动尝试 username-2, username-3, ... 直到找到可用名。
+        邮箱冲突仍然拒绝。
         """
+        # 检查邮箱是否已存在
+        result = await self.db.execute(select(User).where(User.email == email))
+        if result.scalar_one_or_none():
+            raise AppError(
+                code=ErrorCodes.USER_ALREADY_EXISTS,
+                message="Email already exists",
+                status_code=409,
+            )
+
         # 检查原始用户名
         final_username = username
         result = await self.db.execute(select(User).where(User.username == username))

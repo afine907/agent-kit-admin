@@ -32,7 +32,22 @@ async def list_reviews(
     """获取包的评价列表（支持 private 包的 owner 查看）"""
     package = await _get_package_for_review(scope, name, db, current_user)
     service = ReviewService(db)
-    return await service.list_reviews(str(package.id), page, per_page)
+    result = await service.list_reviews(str(package.id), page, per_page)
+    result["stats"] = await service.get_review_stats(str(package.id))
+    return result
+
+
+@router.get("/stats")
+async def get_review_stats(
+    scope: str,
+    name: str,
+    current_user: UserType | None = Depends(get_current_user_optional),
+    db: AsyncSession = Depends(get_db),
+):
+    """获取包的评价统计"""
+    package = await _get_package_for_review(scope, name, db, current_user)
+    service = ReviewService(db)
+    return await service.get_review_stats(str(package.id))
 
 
 @router.post("", response_model=ReviewResponse, status_code=201)

@@ -301,3 +301,62 @@ class TestDeleteReview:
             headers=auth_headers,
         )
         assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+class TestReviewStats:
+    """评价统计测试"""
+
+    async def test_stats_empty_reviews(self, client: AsyncClient, auth_headers: dict, test_package_with_version: dict):
+        """无评价时统计应返回零值"""
+        pkg = test_package_with_version
+        response = await client.get(
+            f"/api/v1/packages/{pkg['scope']}/{pkg['name']}/reviews/stats",
+            headers=auth_headers,
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["average_rating"] == 0.0
+        assert data["total_reviews"] == 0
+        assert data["rating_distribution"] == {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0}
+
+    async def test_stats_with_reviews(self, client: AsyncClient, auth_headers: dict, test_package_with_version: dict):
+        """有评价时应正确统计分布"""
+        pkg = test_package_with_version
+        # 创建多条评价（不同星级）
+        users_data = [
+            ("stats_user1", "stats1@test.com", 5),
+            ("stats_user2", "stats2@test.com", 4),
+            ("stats_user3", "stats3@test.com", 5),
+            ("stats_user4", "stats4@test.com", 3),
+        ]
+
+        for username, email, rating in users_data:
+            # 创建用户
+            resp = await client.post(
+                "/api/v1/auth/register",
+                json={
+                    "username": username,
+                    "email": email,
+                    "password": "StrongPass123!",
+                },
+            )
+            token = resp.json()["token"]
+            # 创建评价
+            await client.post(
+                f"/api/v1/packages/{pkg['scope']}/{pkg['name']}/reviews",
+                json={"rating": rating, "comment": f"Rating {rating}"},
+                headers={"Authorization": f"Bearer {token}"},
+            )
+
+        response = await client.get(
+            f"/api/v1/packages/{pkg['scope']}/{pkg['name']}/reviews/stats",
+            headers=auth_headers,
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total_reviews"] == 4
+        assert data["average_rating"] == 4.2  # round((5+4+5+3)/4, 1)
+        assert data["rating_distribution"]["5"] == 2
+        assert data["rating_distribution"]["4"] == 1
+        assert data["rating_distribution"]["3"] == 1
