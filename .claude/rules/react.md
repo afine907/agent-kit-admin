@@ -191,6 +191,47 @@ function cn(...inputs: ClassValue[]) {
 }
 ```
 
+## API 集成模式
+
+页面接入后端 API 时的标准模式：loading → data/error 三态 + useCallback + useEffect。
+
+```typescript
+// ✅ 标准 API 集成模式
+import { useState, useEffect, useCallback } from 'react';
+import { api, type Team } from '../lib/api';  // 类型从 api.ts 统一导出
+
+export default function Teams() {
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadTeams = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await api.listTeams();
+      setTeams(data);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : '加载失败');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadTeams(); }, [loadTeams]);
+
+  // loading/error/data 三态渲染
+  if (loading && teams.length === 0) return <Loading />;
+  if (error) return <ErrorMessage message={error} />;
+  return <TeamList teams={teams} />;
+}
+```
+
+**规则**：
+- 类型定义统一在 `api.ts` 中导出，页面不内联类型
+- 使用 `useCallback` 包裹异步函数，避免 useEffect 无限循环
+- 错误用 `try/catch` 捕获，`err instanceof Error` 判断类型
+- 不使用 `alert()` 展示错误，使用内联 UI
+
 ## 错误处理
 
 ```typescript

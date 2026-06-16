@@ -76,6 +76,39 @@ export function createUser(data: CreateUserDTO): User {
 }
 ```
 
+## 可测试性设计
+
+### 依赖注入优于模块 Mock
+```typescript
+// ❌ 直接依赖模块 — 测试需要 vi.mock 整个模块
+import { apiClient } from '../api/client.js'
+export async function suggestNextVersion(scope: string, name: string) {
+  const response = await apiClient.getVersions(scope, name)
+  // ...
+}
+
+// ✅ 依赖注入 — 测试直接传入 mock 函数，无需 mock 模块
+export type VersionFetcher = (scope: string, name: string) => Promise<{ items: VersionItem[] }>
+
+async function defaultFetcher(scope: string, name: string) {
+  const { apiClient } = await import('../api/client.js')
+  return apiClient.getVersions(scope, name)
+}
+
+export async function suggestNextVersion(
+  scope: string,
+  name: string,
+  fetcher: VersionFetcher = defaultFetcher,
+): Promise<string> {
+  const response = await fetcher(scope, name)
+  // ...
+}
+// 测试：const mock = vi.fn().mockResolvedValue({ items: [] })
+//       await suggestNextVersion('@t', 'pkg', mock)
+```
+
+**规则**：当函数依赖外部服务（API、文件系统）时，通过参数注入依赖，提供默认实现。测试时传入 mock，无需 `vi.mock()` 模块级 mock。
+
 ## 常见陷阱
 
 ### 避免类型断言
