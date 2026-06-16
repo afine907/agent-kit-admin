@@ -93,7 +93,7 @@ class SlidingWindowLimiter:
 
         async with self._lock:
             # 定期清理过期数据（每 100 次检查清理一次）
-            self._cleanup_counter = getattr(self, '_cleanup_counter', 0) + 1
+            self._cleanup_counter = getattr(self, "_cleanup_counter", 0) + 1
             if self._cleanup_counter >= 100:
                 self._cleanup_counter = 0
                 self._cleanup_expired(cutoff)

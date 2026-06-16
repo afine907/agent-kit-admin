@@ -4,17 +4,13 @@ import uuid
 
 import pytest
 from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.models.user import User
 
 
 class TestCreateReview:
     """创建评价测试"""
 
     @pytest.mark.asyncio
-    async def test_create_review(
-        self, client: AsyncClient, auth_headers: dict, test_package_with_version: dict
-    ):
+    async def test_create_review(self, client: AsyncClient, auth_headers: dict, test_package_with_version: dict):
         """测试创建评价"""
         scope = test_package_with_version["scope"]
         name = test_package_with_version["name"]
@@ -31,9 +27,7 @@ class TestCreateReview:
         assert data["comment"] == "非常好用的工具！"
 
     @pytest.mark.asyncio
-    async def test_create_review_unauthorized(
-        self, client: AsyncClient, test_package_with_version: dict
-    ):
+    async def test_create_review_unauthorized(self, client: AsyncClient, test_package_with_version: dict):
         """测试未登录创建评价返回 401"""
         scope = test_package_with_version["scope"]
         name = test_package_with_version["name"]
@@ -94,9 +88,7 @@ class TestCreateReview:
         assert response.status_code == 409
 
     @pytest.mark.asyncio
-    async def test_create_review_deleted_package(
-        self, client: AsyncClient, auth_headers: dict, deleted_package: dict
-    ):
+    async def test_create_review_deleted_package(self, client: AsyncClient, auth_headers: dict, deleted_package: dict):
         """测试对已删除包创建评价返回 410"""
         scope = deleted_package["scope"]
         name = deleted_package["name"]
@@ -109,9 +101,7 @@ class TestCreateReview:
         assert response.status_code == 410
 
     @pytest.mark.asyncio
-    async def test_create_review_package_not_found(
-        self, client: AsyncClient, auth_headers: dict
-    ):
+    async def test_create_review_package_not_found(self, client: AsyncClient, auth_headers: dict):
         """测试对不存在的包创建评价返回 404"""
         response = await client.post(
             "/api/v1/packages/@nonexistent/pkg/reviews",
@@ -125,9 +115,7 @@ class TestListReviews:
     """获取评价列表测试"""
 
     @pytest.mark.asyncio
-    async def test_list_reviews_empty(
-        self, client: AsyncClient, test_package_with_version: dict
-    ):
+    async def test_list_reviews_empty(self, client: AsyncClient, test_package_with_version: dict):
         """测试获取空评价列表"""
         scope = test_package_with_version["scope"]
         name = test_package_with_version["name"]
@@ -140,9 +128,7 @@ class TestListReviews:
         assert len(data["data"]) == 0
 
     @pytest.mark.asyncio
-    async def test_list_reviews_with_data(
-        self, client: AsyncClient, test_package_with_version: dict
-    ):
+    async def test_list_reviews_with_data(self, client: AsyncClient, test_package_with_version: dict):
         """测试获取有评价的列表"""
         scope = test_package_with_version["scope"]
         name = test_package_with_version["name"]
@@ -166,9 +152,7 @@ class TestUpdateReview:
     """更新评价测试"""
 
     @pytest.mark.asyncio
-    async def test_update_review(
-        self, client: AsyncClient, auth_headers: dict, test_package_with_version: dict
-    ):
+    async def test_update_review(self, client: AsyncClient, auth_headers: dict, test_package_with_version: dict):
         """测试更新自己的评价"""
         scope = test_package_with_version["scope"]
         name = test_package_with_version["name"]
@@ -196,7 +180,10 @@ class TestUpdateReview:
 
     @pytest.mark.asyncio
     async def test_update_review_not_owner(
-        self, client: AsyncClient, auth_headers: dict, another_auth_headers: dict,
+        self,
+        client: AsyncClient,
+        auth_headers: dict,
+        another_auth_headers: dict,
         test_package_with_version: dict,
     ):
         """测试更新别人的评价返回 403"""
@@ -221,9 +208,7 @@ class TestUpdateReview:
         assert response.status_code == 403
 
     @pytest.mark.asyncio
-    async def test_update_review_unauthorized(
-        self, client: AsyncClient, test_package_with_version: dict
-    ):
+    async def test_update_review_unauthorized(self, client: AsyncClient, test_package_with_version: dict):
         """测试未登录更新评价返回 401"""
         scope = test_package_with_version["scope"]
         name = test_package_with_version["name"]
@@ -254,9 +239,7 @@ class TestDeleteReview:
     """删除评价测试"""
 
     @pytest.mark.asyncio
-    async def test_delete_review(
-        self, client: AsyncClient, auth_headers: dict, test_package_with_version: dict
-    ):
+    async def test_delete_review(self, client: AsyncClient, auth_headers: dict, test_package_with_version: dict):
         """测试删除自己的评价"""
         scope = test_package_with_version["scope"]
         name = test_package_with_version["name"]
@@ -279,7 +262,10 @@ class TestDeleteReview:
 
     @pytest.mark.asyncio
     async def test_delete_review_not_owner(
-        self, client: AsyncClient, auth_headers: dict, another_auth_headers: dict,
+        self,
+        client: AsyncClient,
+        auth_headers: dict,
+        another_auth_headers: dict,
         test_package_with_version: dict,
     ):
         """测试删除别人的评价返回 403"""
