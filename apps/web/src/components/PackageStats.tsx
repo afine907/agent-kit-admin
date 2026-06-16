@@ -4,7 +4,7 @@
 
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { api, PackageStatsResponse } from '../lib/api';
+import { api, PackageStatsResponse, DownloadTrend } from '../lib/api';
 import { Download, TrendingUp } from 'lucide-react';
 
 interface PackageStatsProps {
@@ -38,7 +38,7 @@ export function PackageStats({ scope, name }: PackageStatsProps) {
   }
 
   // 计算趋势图的最大值
-  const maxDownloads = Math.max(...stats.trends.map((t) => t.downloads), 1);
+  const maxDownloads = Math.max(...stats.trends.map((t: DownloadTrend) => t.downloads), 1);
 
   return (
     <div className="p-4 bg-muted/30 rounded-lg border border-border/50">
@@ -73,7 +73,7 @@ export function PackageStats({ scope, name }: PackageStatsProps) {
             {t('packageDetail.stats.last30Days')}
           </div>
           <div className="flex items-end gap-1 h-24">
-            {stats.trends.map((item, index) => {
+            {stats.trends.map((item: DownloadTrend, index: number) => {
               const height = maxDownloads > 0
                 ? (item.downloads / maxDownloads) * 100
                 : 0;
