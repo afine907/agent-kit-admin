@@ -5,27 +5,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { api } from '../../lib/api';
+import { api, type AdminPackageResponse } from '../../lib/api';
 import { ArrowLeft, Trash2, Pause, Play } from 'lucide-react';
-
-interface AdminPackage {
-  id: string;
-  name: string;
-  scope: string;
-  full_name: string;
-  type: string;
-  description?: string;
-  visibility: string;
-  admin_status: string;
-  downloads_count: number;
-  latest_version?: string;
-  deleted_at?: string;
-  created_at?: string;
-}
 
 export default function AdminPackages() {
   const { t, i18n } = useTranslation(['admin', 'common']);
-  const [packages, setPackages] = useState<AdminPackage[]>([]);
+  const [packages, setPackages] = useState<AdminPackageResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState({ page: 1, per_page: 20, total: 0, total_pages: 0 });
@@ -91,7 +76,7 @@ export default function AdminPackages() {
     );
   };
 
-  const getStatusBadge = (pkg: AdminPackage) => {
+  const getStatusBadge = (pkg: AdminPackageResponse) => {
     if (pkg.deleted_at) {
       return <span className="px-2 py-1 rounded-full text-xs border bg-gray-500/10 text-gray-500 border-gray-500/20">{t('packages.status.deleted')}</span>;
     }

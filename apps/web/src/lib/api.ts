@@ -46,6 +46,11 @@ client.interceptors.response.use(
 );
 
 // 类型定义
+export interface AdminPackageResponse extends PackageResponse {
+  admin_status: string;
+  deleted_at?: string;
+}
+
 export interface Pagination {
   page: number;
   per_page: number;
@@ -351,7 +356,7 @@ export const api = {
       per_page?: number;
       type?: string;
       include_deleted?: boolean;
-    }) => client.get<{ data: PackageResponse[]; pagination: Pagination }>('/api/v1/admin/packages', { params }).then((r) => r.data),
+    }) => client.get<{ data: AdminPackageResponse[]; pagination: Pagination }>('/api/v1/admin/packages', { params }).then((r) => r.data),
 
     updatePackageStatus: (packageId: string, status: string, reason?: string) =>
       client.patch(`/api/v1/admin/packages/${packageId}/status`, { status, reason }).then((r) => r.data),
