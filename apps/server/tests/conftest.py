@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sess
 from app.main import app
 from app.database import Base, get_db
 from app.models.user import User
+from app.middleware.rate_limit import _rate_limiter
 from app.models.package import Package
 from app.models.version import Version
 from app.config import get_settings
@@ -499,3 +500,18 @@ def mock_storage_service():
         patch("app.services.storage.StorageService", return_value=mock_service),
     ):
         yield mock_service
+
+
+@pytest.fixture(autouse=True)
+def disable_rate_limit(request):
+    """禁用限流中间件，避免测试被 429 拦截
+
+    test_rate_limit.py 中的测试专门测试限流逻辑，不自动 mock。
+    """
+    if "test_rate_limit" in request.fspath.basename:
+        _rate_limiter.reset()
+        yield
+        return
+    _rate_limiter.reset()
+    with patch.object(_rate_limiter, "check", return_value=(True, 0)):
+        yield

@@ -122,7 +122,7 @@ export class ConfigManager {
       this.config = new Conf<ConfigData>({
         configFilePath: configPath,
         defaults: DEFAULT_CONFIG,
-      } as unknown as ConstructorParameters<typeof Conf>[0]);
+      } as Conf<ConfigData> extends { options: infer O } ? O : never);
     } else {
       this.config = new Conf<ConfigData>({
         projectName: 'akit',

@@ -73,7 +73,7 @@ app.add_middleware(
 )
 
 # 中间件 - 限流（在 CORS 之后、路由之前）
-from app.middleware.rate_limit import RateLimitMiddleware
+from app.middleware.rate_limit import RateLimitMiddleware  # noqa: E402
 
 app.add_middleware(RateLimitMiddleware)
 

@@ -41,7 +41,7 @@ class TestAPIKeyAuthentication:
     @pytest.mark.asyncio
     async def test_api_key_expired(self, client: AsyncClient, db: AsyncSession, test_user: User):
         """测试过期 API Key 返回 401"""
-        from app.services.api_key import APIKeyService, generate_api_key
+        from app.services.api_key import generate_api_key
         from app.models.api_key import APIKey
         from datetime import datetime, timedelta, timezone
 
@@ -66,9 +66,7 @@ class TestAPIKeyAuthentication:
         assert response.status_code == 401
 
     @pytest.mark.asyncio
-    async def test_api_key_access_protected_endpoint(
-        self, client: AsyncClient, db: AsyncSession, test_user: User
-    ):
+    async def test_api_key_access_protected_endpoint(self, client: AsyncClient, db: AsyncSession, test_user: User):
         """测试使用 API Key 访问受保护端点（创建包）"""
         from app.services.api_key import APIKeyService
 

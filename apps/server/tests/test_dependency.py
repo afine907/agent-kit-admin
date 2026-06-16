@@ -11,7 +11,6 @@
 - get_all_dependencies 正确返回所有依赖
 """
 
-import pytest
 from app.services.dependency import DependencyResolver
 
 
@@ -26,22 +25,26 @@ class TestDependencyResolver:
 
     def test_simple_chain(self):
         """A->B->C 应返回 [C, B, A]"""
-        resolver = DependencyResolver({
-            "A": ["B"],
-            "B": ["C"],
-            "C": [],
-        })
+        resolver = DependencyResolver(
+            {
+                "A": ["B"],
+                "B": ["C"],
+                "C": [],
+            }
+        )
         result = resolver.resolve()
         assert result == ["C", "B", "A"]
 
     def test_diamond_dependency(self):
         """钻石依赖: A->B,C; B->D; C->D 应正确排序"""
-        resolver = DependencyResolver({
-            "A": ["B", "C"],
-            "B": ["D"],
-            "C": ["D"],
-            "D": [],
-        })
+        resolver = DependencyResolver(
+            {
+                "A": ["B", "C"],
+                "B": ["D"],
+                "C": ["D"],
+                "D": [],
+            }
+        )
         result = resolver.resolve()
         assert result.index("D") < result.index("B")
         assert result.index("D") < result.index("C")
@@ -50,35 +53,43 @@ class TestDependencyResolver:
 
     def test_self_cycle(self):
         """自循环 A->A 应被检测到"""
-        resolver = DependencyResolver({
-            "A": ["A"],
-        })
+        resolver = DependencyResolver(
+            {
+                "A": ["A"],
+            }
+        )
         assert resolver.has_cycle() is True
 
     def test_two_node_cycle(self):
         """两节点循环 A->B->A 应被检测到"""
-        resolver = DependencyResolver({
-            "A": ["B"],
-            "B": ["A"],
-        })
+        resolver = DependencyResolver(
+            {
+                "A": ["B"],
+                "B": ["A"],
+            }
+        )
         assert resolver.has_cycle() is True
 
     def test_three_node_cycle(self):
         """三节点循环 A->B->C->A 应被检测到"""
-        resolver = DependencyResolver({
-            "A": ["B"],
-            "B": ["C"],
-            "C": ["A"],
-        })
+        resolver = DependencyResolver(
+            {
+                "A": ["B"],
+                "B": ["C"],
+                "C": ["A"],
+            }
+        )
         assert resolver.has_cycle() is True
 
     def test_cycle_path(self):
         """循环路径应正确返回"""
-        resolver = DependencyResolver({
-            "A": ["B"],
-            "B": ["C"],
-            "C": ["A"],
-        })
+        resolver = DependencyResolver(
+            {
+                "A": ["B"],
+                "B": ["C"],
+                "C": ["A"],
+            }
+        )
         cycle = resolver.find_cycle()
         assert cycle is not None
         # 循环路径应以同一节点开始和结束
@@ -86,22 +97,26 @@ class TestDependencyResolver:
 
     def test_unknown_dependency_skipped(self):
         """未知依赖（不在包列表中）应被跳过"""
-        resolver = DependencyResolver({
-            "A": ["unknown-pkg"],
-            "B": [],
-        })
+        resolver = DependencyResolver(
+            {
+                "A": ["unknown-pkg"],
+                "B": [],
+            }
+        )
         result = resolver.resolve()
         assert "A" in result
         assert "B" in result
 
     def test_get_all_dependencies(self):
         """应正确返回包的所有依赖"""
-        resolver = DependencyResolver({
-            "A": ["B", "C"],
-            "B": ["D"],
-            "C": [],
-            "D": [],
-        })
+        resolver = DependencyResolver(
+            {
+                "A": ["B", "C"],
+                "B": ["D"],
+                "C": [],
+                "D": [],
+            }
+        )
         deps = resolver.get_all_dependencies("A")
         assert "B" in deps
         assert "C" in deps
@@ -110,9 +125,11 @@ class TestDependencyResolver:
 
     def test_get_all_dependencies_empty(self):
         """无依赖的包应返回空列表"""
-        resolver = DependencyResolver({
-            "A": [],
-        })
+        resolver = DependencyResolver(
+            {
+                "A": [],
+            }
+        )
         deps = resolver.get_all_dependencies("A")
         assert deps == []
 
@@ -124,13 +141,15 @@ class TestDependencyResolver:
 
     def test_no_cycle_in_complex_graph(self):
         """复杂无环图应正确识别"""
-        resolver = DependencyResolver({
-            "A": ["B", "C"],
-            "B": ["D"],
-            "C": ["D"],
-            "D": [],
-            "E": ["A"],
-        })
+        resolver = DependencyResolver(
+            {
+                "A": ["B", "C"],
+                "B": ["D"],
+                "C": ["D"],
+                "D": [],
+                "E": ["A"],
+            }
+        )
         assert resolver.has_cycle() is False
         result = resolver.resolve()
         assert len(result) == 5

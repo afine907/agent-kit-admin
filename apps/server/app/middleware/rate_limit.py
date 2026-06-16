@@ -47,6 +47,7 @@ class SlidingWindowLimiter:
 
     def __init__(self, limits: dict[str, dict[str, int]] | None = None):
         self.limits = limits or RATE_LIMITS
+        self._sorted_prefixes = sorted(self.limits.keys(), key=len, reverse=True)
         self.store: dict[str, list[float]] = {}
         self._lock = asyncio.Lock()
 
@@ -56,14 +57,14 @@ class SlidingWindowLimiter:
 
     def _match_endpoint(self, path: str) -> dict[str, int] | None:
         """匹配端点限流配置，取最长前缀"""
-        for prefix in _SORTED_PREFIXES:
+        for prefix in self._sorted_prefixes:
             if path.startswith(prefix):
                 return self.limits[prefix]
         return None
 
     def _get_matched_prefix(self, path: str) -> str:
         """获取匹配到的前缀，用于限流 key"""
-        for prefix in _SORTED_PREFIXES:
+        for prefix in self._sorted_prefixes:
             if path.startswith(prefix):
                 return prefix
         return path
@@ -92,7 +93,7 @@ class SlidingWindowLimiter:
 
         async with self._lock:
             # 定期清理过期数据（每 100 次检查清理一次）
-            self._cleanup_counter = getattr(self, '_cleanup_counter', 0) + 1
+            self._cleanup_counter = getattr(self, "_cleanup_counter", 0) + 1
             if self._cleanup_counter >= 100:
                 self._cleanup_counter = 0
                 self._cleanup_expired(cutoff)
@@ -133,9 +134,14 @@ _rate_limiter = SlidingWindowLimiter()
 def _get_client_ip(request: Request) -> str:
     """获取客户端 IP
 
-    优先使用 request.client.host（直接连接）。
-    仅在配置了反向代理信任时才使用 X-Forwarded-For。
+    优先使用 X-Forwarded-For（反向代理场景）。
+    回退到 request.client.host（直接连接）。
     """
+    # 反向代理透传
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        # 取第一个 IP（客户端真实 IP）
+        return forwarded.split(",")[0].strip()
     # 直接连接的 IP
     if request.client:
         return request.client.host
