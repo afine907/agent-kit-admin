@@ -242,9 +242,7 @@ class TeamService:
         await self.get_team(team_id)
 
         result = await self.db.execute(
-            select(TeamMember)
-            .where(TeamMember.team_id == team_id)
-            .order_by(TeamMember.role, TeamMember.joined_at)
+            select(TeamMember).where(TeamMember.team_id == team_id).order_by(TeamMember.role, TeamMember.joined_at)
         )
         members = result.scalars().all()
 

@@ -56,7 +56,7 @@ export function ReviewList({ scope, name, onEdit }: ReviewListProps) {
   return (
     <div className="space-y-4">
       {/* 评价列表 */}
-      {data.data.map((review) => (
+      {data.data.map((review: ReviewResponse) => (
         <div
           key={review.id}
           className="p-4 bg-muted/30 rounded-lg border border-border/50"
