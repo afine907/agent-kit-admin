@@ -77,6 +77,7 @@ class PackageService:
         # 排序
         if sort == "rating":
             from app.models.review import Review
+
             rating_subq = (
                 select(Review.package_id, func.avg(Review.rating).label("avg_rating"))
                 .group_by(Review.package_id)
@@ -243,24 +244,28 @@ class PackageService:
                 scope, pkg_name = parts
             else:
                 # 非标准格式，视为不存在
-                results.append({
-                    "name": dep_name,
-                    "constraint": constraint,
-                    "exists": False,
-                    "latest_version": None,
-                })
+                results.append(
+                    {
+                        "name": dep_name,
+                        "constraint": constraint,
+                        "exists": False,
+                        "latest_version": None,
+                    }
+                )
                 continue
 
             package = await self.get_by_full_name(scope, pkg_name)
             exists = package is not None and package.deleted_at is None
             latest = package.latest_version if exists else None
 
-            results.append({
-                "name": dep_name,
-                "constraint": constraint,
-                "exists": exists,
-                "latest_version": latest,
-            })
+            results.append(
+                {
+                    "name": dep_name,
+                    "constraint": constraint,
+                    "exists": exists,
+                    "latest_version": latest,
+                }
+            )
 
         return results
 

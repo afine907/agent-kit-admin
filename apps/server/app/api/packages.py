@@ -15,7 +15,6 @@ from app.schemas.package import (
     PackageResponse,
     PackageListResponse,
     DependencyCheckRequest,
-    DependencyCheckResponse,
 )
 
 logger = logging.getLogger("akit.download")
