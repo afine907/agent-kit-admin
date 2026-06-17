@@ -10,7 +10,7 @@ from app.errors import AppError, ErrorCodes
 class PackageService:
     """包管理服务"""
 
-    ALLOWED_SORT_FIELDS = {"updated_at", "created_at", "name", "downloads", "scope"}
+    ALLOWED_SORT_FIELDS = {"updated_at", "created_at", "name", "downloads", "scope", "rating"}
 
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -75,11 +75,24 @@ class PackageService:
         total = (await self.db.execute(count_query)).scalar() or 0
 
         # 排序
-        sort_column = getattr(Package, sort, Package.updated_at)
-        if order == "desc":
-            query = query.order_by(sort_column.desc())
+        if sort == "rating":
+            # 按评分排序需要 join reviews 表
+            from app.models.review import Review
+            rating_subq = (
+                select(Review.package_id, func.avg(Review.rating).label("avg_rating"))
+                .group_by(Review.package_id)
+                .subquery()
+            )
+            query = query.outerjoin(rating_subq, Package.id == rating_subq.c.package_id)
+            sort_col = func.coalesce(rating_subq.c.avg_rating, 0)
+        elif sort == "downloads":
+            sort_col = Package.downloads_count
         else:
-            query = query.order_by(sort_column.asc())
+            sort_col = getattr(Package, sort, Package.updated_at)
+        if order == "desc":
+            query = query.order_by(sort_col.desc())
+        else:
+            query = query.order_by(sort_col.asc())
 
         # 分页
         query = query.offset((page - 1) * per_page).limit(per_page)
@@ -171,6 +184,29 @@ class PackageService:
             visibility=visibility,
         )
         self.db.add(package)
+        await self.db.commit()
+        await self.db.refresh(package)
+        return package
+
+    async def update_package(
+        self,
+        scope: str,
+        name: str,
+        owner_id: str,
+        **fields,
+    ) -> Package:
+        """编辑包 (仅 owner 可操作)"""
+        package = await self.get_package(scope, name)
+
+        # 权限检查
+        if str(package.owner_id) != str(owner_id):
+            raise AppError(code=ErrorCodes.AUTH_FORBIDDEN, message="只有包的所有者才能编辑", status_code=403)
+
+        # 更新字段
+        for key, value in fields.items():
+            if value is not None and hasattr(package, key):
+                setattr(package, key, value)
+
         await self.db.commit()
         await self.db.refresh(package)
         return package

@@ -104,3 +104,87 @@ async def publish_version(
     )
 
     return ver
+
+
+@router.post("/{version}/deprecate", response_model=VersionResponse)
+async def deprecate_version(
+    scope: str,
+    name: str,
+    version: str,
+    current_user: UserType = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """标记版本为 deprecated"""
+    package_service = PackageService(db)
+    package = await package_service.get_package(scope, name)
+
+    if str(package.owner_id) != str(current_user.id):
+        from app.errors import AppError, ErrorCodes
+        raise AppError(code=ErrorCodes.AUTH_FORBIDDEN, message="只有包的所有者才能操作", status_code=403)
+
+    version_service = VersionService(db)
+    ver = await version_service.set_deprecated(str(package.id), version, True)
+    return ver
+
+
+@router.delete("/{version}/deprecate", response_model=VersionResponse)
+async def undeprecate_version(
+    scope: str,
+    name: str,
+    version: str,
+    current_user: UserType = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """取消版本废弃标记"""
+    package_service = PackageService(db)
+    package = await package_service.get_package(scope, name)
+
+    if str(package.owner_id) != str(current_user.id):
+        from app.errors import AppError, ErrorCodes
+        raise AppError(code=ErrorCodes.AUTH_FORBIDDEN, message="只有包的所有者才能操作", status_code=403)
+
+    version_service = VersionService(db)
+    ver = await version_service.set_deprecated(str(package.id), version, False)
+    return ver
+
+
+@router.post("/{version}/yank", response_model=VersionResponse)
+async def yank_version(
+    scope: str,
+    name: str,
+    version: str,
+    current_user: UserType = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """撤回版本（yank）"""
+    package_service = PackageService(db)
+    package = await package_service.get_package(scope, name)
+
+    if str(package.owner_id) != str(current_user.id):
+        from app.errors import AppError, ErrorCodes
+        raise AppError(code=ErrorCodes.AUTH_FORBIDDEN, message="只有包的所有者才能操作", status_code=403)
+
+    version_service = VersionService(db)
+    ver = await version_service.set_yanked(str(package.id), version, True)
+    return ver
+
+
+@router.delete("/{version}/yank", response_model=VersionResponse)
+async def unyank_version(
+    scope: str,
+    name: str,
+    version: str,
+    current_user: UserType = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """取消撤回"""
+    package_service = PackageService(db)
+    package = await package_service.get_package(scope, name)
+
+    if str(package.owner_id) != str(current_user.id):
+        from app.errors import AppError, ErrorCodes
+        raise AppError(code=ErrorCodes.AUTH_FORBIDDEN, message="只有包的所有者才能操作", status_code=403)
+
+    version_service = VersionService(db)
+    ver = await version_service.set_yanked(str(package.id), version, False)
+    return ver
