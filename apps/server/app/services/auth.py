@@ -8,6 +8,7 @@ import httpx
 from cachetools import TTLCache
 from jose import jwt, JWTError
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
@@ -400,7 +401,7 @@ class AuthService:
                     break
                 counter += 1
 
-        # 创建用户
+        # 创建用户（处理并发竞态：数据库唯一约束兜底）
         user = User(
             username=final_username,
             email=email,
@@ -412,7 +413,15 @@ class AuthService:
             status="active",
         )
         self.db.add(user)
-        await self.db.commit()
+        try:
+            await self.db.commit()
+        except IntegrityError:
+            await self.db.rollback()
+            raise AppError(
+                code=ErrorCodes.USER_ALREADY_EXISTS,
+                message="Username or email already exists",
+                status_code=409,
+            )
         await self.db.refresh(user)
 
         # 生成 Token
