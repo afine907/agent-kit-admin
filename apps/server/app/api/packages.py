@@ -9,7 +9,7 @@ from app.database import get_db
 from app.services.package import PackageService
 from app.services.storage import get_storage_service
 from app.api.deps import get_current_user, get_current_user_optional, UserType
-from app.schemas.package import PackageCreate, PackageResponse, PackageListResponse
+from app.schemas.package import PackageCreate, PackageUpdate, PackageResponse, PackageListResponse
 
 logger = logging.getLogger("akit.download")
 
@@ -87,6 +87,26 @@ async def create_package(
         repository=data.repository,
         homepage=data.homepage,
         visibility=data.visibility,
+    )
+    return package
+
+
+@router.patch("/{scope}/{name}", response_model=PackageResponse)
+async def update_package(
+    scope: str,
+    name: str,
+    data: PackageUpdate,
+    current_user: UserType = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """编辑包 (需要认证且为 owner)"""
+    service = PackageService(db)
+    update_data = data.model_dump(exclude_unset=True)
+    package = await service.update_package(
+        scope=scope,
+        name=name,
+        owner_id=str(current_user.id),
+        **update_data,
     )
     return package
 

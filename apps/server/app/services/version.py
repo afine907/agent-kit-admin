@@ -245,6 +245,34 @@ class VersionService:
             published_by=published_by,
         )
 
+    async def set_deprecated(self, package_id: str, version: str, deprecated: bool) -> Version:
+        """设置版本废弃标记"""
+        ver = await self.get_version(package_id, version)
+        if not ver:
+            raise AppError(
+                code=ErrorCodes.VERSION_NOT_FOUND,
+                message=f"Version {version} not found",
+                status_code=404,
+            )
+        ver.deprecated = deprecated  # type: ignore[assignment]
+        await self.db.commit()
+        await self.db.refresh(ver)
+        return ver
+
+    async def set_yanked(self, package_id: str, version: str, yanked: bool) -> Version:
+        """设置版本撤回标记"""
+        ver = await self.get_version(package_id, version)
+        if not ver:
+            raise AppError(
+                code=ErrorCodes.VERSION_NOT_FOUND,
+                message=f"Version {version} not found",
+                status_code=404,
+            )
+        ver.yanked = yanked  # type: ignore[assignment]
+        await self.db.commit()
+        await self.db.refresh(ver)
+        return ver
+
     def _validate_manifest(self, manifest: dict) -> None:
         """验证 manifest 格式"""
         # 检查必填字段

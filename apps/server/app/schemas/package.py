@@ -18,6 +18,17 @@ class PackageCreate(BaseModel):
     visibility: str = Field("public", pattern=r"^(public|team|private)$")
 
 
+class PackageUpdate(BaseModel):
+    """编辑包请求 - 所有字段可选"""
+
+    description: str | None = Field(None, max_length=500)
+    license: str | None = None
+    repository: str | None = None
+    homepage: str | None = None
+    tags: list[str] | None = None
+    visibility: str | None = Field(None, pattern=r"^(public|team|private)$")
+
+
 class PackageResponse(BaseModel):
     """包响应"""
 
