@@ -8,6 +8,7 @@ import httpx
 from cachetools import TTLCache
 from jose import jwt, JWTError
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
@@ -375,7 +376,17 @@ class AuthService:
         """本地注册 - 用户名冲突时自动添加数字后缀
 
         如果用户名已存在，自动尝试 username-2, username-3, ... 直到找到可用名。
+        邮箱冲突仍然拒绝。
         """
+        # 检查邮箱是否已存在
+        result = await self.db.execute(select(User).where(User.email == email))
+        if result.scalar_one_or_none():
+            raise AppError(
+                code=ErrorCodes.USER_ALREADY_EXISTS,
+                message="Email already exists",
+                status_code=409,
+            )
+
         # 检查原始用户名
         final_username = username
         result = await self.db.execute(select(User).where(User.username == username))
@@ -390,7 +401,7 @@ class AuthService:
                     break
                 counter += 1
 
-        # 创建用户
+        # 创建用户（处理并发竞态：数据库唯一约束兜底）
         user = User(
             username=final_username,
             email=email,
@@ -402,7 +413,15 @@ class AuthService:
             status="active",
         )
         self.db.add(user)
-        await self.db.commit()
+        try:
+            await self.db.commit()
+        except IntegrityError:
+            await self.db.rollback()
+            raise AppError(
+                code=ErrorCodes.USER_ALREADY_EXISTS,
+                message="Username or email already exists",
+                status_code=409,
+            )
         await self.db.refresh(user)
 
         # 生成 Token

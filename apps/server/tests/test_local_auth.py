@@ -51,8 +51,8 @@ class TestLocalRegister:
         assert user.status == "active"
 
     @pytest.mark.asyncio
-    async def test_register_duplicate_username(self, client: AsyncClient, test_user: User):
-        """重复用户名应返回 409"""
+    async def test_register_duplicate_username_auto_number(self, client: AsyncClient, test_user: User):
+        """重复用户名应自动追加数字后缀"""
         response = await client.post(
             "/api/v1/auth/register",
             json={
@@ -61,9 +61,9 @@ class TestLocalRegister:
                 "password": "SecurePass123!",
             },
         )
-        assert response.status_code == 409
+        assert response.status_code == 201
         data = response.json()
-        assert data["error"]["code"] == 20004  # CONFLICT
+        assert data["user"]["username"] == f"{test_user.username}-2"
 
     @pytest.mark.asyncio
     async def test_register_duplicate_email(self, client: AsyncClient, test_user: User):

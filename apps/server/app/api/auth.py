@@ -51,9 +51,9 @@ async def register(
     data: RegisterRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """本地注册"""
+    """本地注册 - 用户名冲突时自动追加数字后缀"""
     auth_service = AuthService(db)
-    result = await auth_service.register(
+    result = await auth_service.register_with_auto_username(
         username=data.username,
         email=data.email,
         password=data.password,

@@ -145,3 +145,32 @@ class ReviewService:
             )
         )
         return result.scalar_one_or_none()
+
+    async def get_review_stats(self, package_id: str) -> dict:
+        """获取评价统计（平均分、总数、各星级分布）"""
+        # 总数和平均分
+        stats_query = select(
+            func.count().label("total"),
+            func.avg(Review.rating).label("average"),
+        ).where(Review.package_id == package_id)
+        stats_result = (await self.db.execute(stats_query)).one()
+        total = stats_result.total or 0
+        average = round(float(stats_result.average), 1) if stats_result.average else 0.0
+
+        # 各星级分布
+        distribution: dict[int, int] = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+        if total > 0:
+            dist_query = (
+                select(Review.rating, func.count().label("count"))
+                .where(Review.package_id == package_id)
+                .group_by(Review.rating)
+            )
+            dist_results = (await self.db.execute(dist_query)).all()
+            for row in dist_results:
+                distribution[row.rating] = row.count
+
+        return {
+            "average_rating": average,
+            "total_reviews": total,
+            "rating_distribution": distribution,
+        }
