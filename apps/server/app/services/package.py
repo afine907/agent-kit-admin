@@ -76,7 +76,6 @@ class PackageService:
 
         # 排序
         if sort == "rating":
-            # 按评分排序需要 join reviews 表
             from app.models.review import Review
 
             rating_subq = (
@@ -189,29 +188,6 @@ class PackageService:
         await self.db.refresh(package)
         return package
 
-    async def update_package(
-        self,
-        scope: str,
-        name: str,
-        owner_id: str,
-        **fields,
-    ) -> Package:
-        """编辑包 (仅 owner 可操作)"""
-        package = await self.get_package(scope, name)
-
-        # 权限检查
-        if str(package.owner_id) != str(owner_id):
-            raise AppError(code=ErrorCodes.AUTH_FORBIDDEN, message="只有包的所有者才能编辑", status_code=403)
-
-        # 更新字段
-        for key, value in fields.items():
-            if value is not None and hasattr(package, key):
-                setattr(package, key, value)
-
-        await self.db.commit()
-        await self.db.refresh(package)
-        return package
-
     async def get_by_full_name(self, scope: str, name: str) -> Package | None:
         """通过 full_name 获取包"""
         result = await self.db.execute(
@@ -221,6 +197,77 @@ class PackageService:
             )
         )
         return result.scalar_one_or_none()
+
+    async def update_package(
+        self,
+        scope: str,
+        name: str,
+        owner_id: str,
+        **fields,
+    ) -> Package:
+        """编辑包 (仅 owner 可操作)
+
+        fields 中的值:
+        - 存在且非 None → 更新为该值
+        - 存在且为 None → 清空该字段
+        - 不存在 → 不修改
+        """
+        package = await self.get_package(scope, name)
+
+        # 权限检查
+        if str(package.owner_id) != str(owner_id):
+            raise AppError(code=ErrorCodes.AUTH_FORBIDDEN, message="只有包的所有者才能编辑", status_code=403)
+
+        # 更新字段（None 表示清空）
+        for key, value in fields.items():
+            if hasattr(package, key):
+                setattr(package, key, value)
+
+        await self.db.commit()
+        await self.db.refresh(package)
+        return package
+
+    async def check_dependencies(self, dependencies: dict[str, str]) -> list[dict]:
+        """检查依赖是否存在
+
+        Args:
+            dependencies: {"@scope/name": "^1.0.0", ...}
+
+        Returns:
+            [{"name": "@scope/name", "constraint": "^1.0.0", "exists": True, "latest_version": "1.2.0"}, ...]
+        """
+        results = []
+        for dep_name, constraint in dependencies.items():
+            # 解析 @scope/name 格式
+            parts = dep_name.split("/")
+            if len(parts) == 2:
+                scope, pkg_name = parts
+            else:
+                # 非标准格式，视为不存在
+                results.append(
+                    {
+                        "name": dep_name,
+                        "constraint": constraint,
+                        "exists": False,
+                        "latest_version": None,
+                    }
+                )
+                continue
+
+            package = await self.get_by_full_name(scope, pkg_name)
+            exists = package is not None and package.deleted_at is None
+            latest = package.latest_version if exists else None
+
+            results.append(
+                {
+                    "name": dep_name,
+                    "constraint": constraint,
+                    "exists": exists,
+                    "latest_version": latest,
+                }
+            )
+
+        return results
 
     async def get_package_stats(self, scope: str, name: str, current_user: User | None = None) -> dict:
         """获取包下载统计"""

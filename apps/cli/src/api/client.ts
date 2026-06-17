@@ -327,6 +327,16 @@ export class ApiClient {
   }
 
   /**
+   * 检查依赖是否存在
+   */
+  async checkDependencies(
+    dependencies: Record<string, string>
+  ): Promise<{ all_exist: boolean; results: Array<{ name: string; constraint: string; exists: boolean; latest_version: string | null }> }> {
+    const response = await this.client.post('/api/v1/packages/check-dependencies', { dependencies });
+    return response.data;
+  }
+
+  /**
    * 搜索包
    */
   async searchPackages(query: string, type?: 'mcp' | 'skill'): Promise<PackageListResponse> {

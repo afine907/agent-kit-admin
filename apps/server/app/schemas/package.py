@@ -29,6 +29,28 @@ class PackageUpdate(BaseModel):
     visibility: str | None = Field(None, pattern=r"^(public|team|private)$")
 
 
+class DependencyCheckRequest(BaseModel):
+    """依赖检查请求"""
+
+    dependencies: dict[str, str] = Field(default_factory=dict, description="依赖列表 {包名: 版本约束}")
+
+
+class DependencyCheckResult(BaseModel):
+    """单个依赖检查结果"""
+
+    name: str
+    constraint: str
+    exists: bool
+    latest_version: str | None = None
+
+
+class DependencyCheckResponse(BaseModel):
+    """依赖检查响应"""
+
+    all_exist: bool
+    results: list[DependencyCheckResult]
+
+
 class PackageResponse(BaseModel):
     """包响应"""
 

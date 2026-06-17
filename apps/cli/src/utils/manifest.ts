@@ -12,6 +12,7 @@ export interface Manifest {
   description?: string;
   license?: string;
   scope?: string;
+  dependencies?: Record<string, string>;
   mcp?: {
     transport: string;
     command: string;

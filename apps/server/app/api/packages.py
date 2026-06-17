@@ -9,7 +9,13 @@ from app.database import get_db
 from app.services.package import PackageService
 from app.services.storage import get_storage_service
 from app.api.deps import get_current_user, get_current_user_optional, UserType
-from app.schemas.package import PackageCreate, PackageUpdate, PackageResponse, PackageListResponse
+from app.schemas.package import (
+    PackageCreate,
+    PackageUpdate,
+    PackageResponse,
+    PackageListResponse,
+    DependencyCheckRequest,
+)
 
 logger = logging.getLogger("akit.download")
 
@@ -67,6 +73,18 @@ async def get_package_stats(
     service = PackageService(db)
     stats = await service.get_package_stats(scope, name, current_user)
     return stats
+
+
+@router.post("/check-dependencies")
+async def check_dependencies(
+    data: DependencyCheckRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """检查依赖包是否存在"""
+    service = PackageService(db)
+    results = await service.check_dependencies(data.dependencies)
+    all_exist = all(r["exists"] for r in results)
+    return {"all_exist": all_exist, "results": results}
 
 
 @router.post("", response_model=PackageResponse, status_code=201)
