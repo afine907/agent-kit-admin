@@ -48,6 +48,7 @@ export const installCommand = new Command('install')
   .option('--tag <tag>', '版本标签', 'latest')
   .option('--global', '全局安装到 ~/.akit/packages')
   .option('--no-config', '仅下载包，不写入 Agent 配置')
+  .option('--no-deps', '跳过依赖检查')
   .action(async (packageName: string, options) => {
     try {
       console.log(chalk.bold('\n📥 安装包...\n'));
@@ -106,8 +107,29 @@ export const installCommand = new Command('install')
         process.exit(1);
       }
 
-      // 5. 读取 akit.json
+      // 5. 检查依赖
       const manifest = readManifest(packageDir);
+      if (manifest.dependencies && Object.keys(manifest.dependencies).length > 0) {
+        const spinner5 = ora('检查依赖...').start();
+        try {
+          const depCheck = await apiClient.checkDependencies(manifest.dependencies);
+          if (!depCheck.all_exist) {
+            const missing = depCheck.results.filter((r) => !r.exists);
+            spinner5.fail('依赖检查失败');
+            for (const dep of missing) {
+              console.log(chalk.red(`  ✖ ${dep.name} ${dep.constraint} — 不存在`));
+            }
+            console.log(chalk.yellow('\n请先安装缺失的依赖，或使用 --no-deps 跳过检查'));
+            if (!options.noDeps) {
+              process.exit(1);
+            }
+          } else {
+            spinner5.succeed('依赖检查通过');
+          }
+        } catch (error: unknown) {
+          spinner5.warn('依赖检查跳过（服务不可用）');
+        }
+      }
 
       // 6. 配置 Agent（--no-config 跳过）
       if (options.config === false) {
