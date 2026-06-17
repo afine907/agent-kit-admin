@@ -2,7 +2,6 @@
 
 import pytest
 from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession
 
 
 @pytest.mark.asyncio
@@ -123,7 +122,9 @@ class TestVersionDeprecate:
         data = response.json()
         assert data["deprecated"] is False
 
-    async def test_deprecate_not_owner(self, client: AsyncClient, another_auth_headers: dict, test_package_with_version: dict):
+    async def test_deprecate_not_owner(
+        self, client: AsyncClient, another_auth_headers: dict, test_package_with_version: dict
+    ):
         """非 owner 不能废弃"""
         pkg = test_package_with_version
         response = await client.post(
@@ -231,9 +232,7 @@ class TestPackageVisibility:
 class TestDependencyCheck:
     """依赖管理（基础）"""
 
-    async def test_version_has_manifest(
-        self, client: AsyncClient, test_package_with_version: dict
-    ):
+    async def test_version_has_manifest(self, client: AsyncClient, test_package_with_version: dict):
         """版本响应中包含 manifest（含 dependencies）"""
         pkg = test_package_with_version
         response = await client.get(

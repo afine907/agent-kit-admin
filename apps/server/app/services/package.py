@@ -78,6 +78,7 @@ class PackageService:
         if sort == "rating":
             # 按评分排序需要 join reviews 表
             from app.models.review import Review
+
             rating_subq = (
                 select(Review.package_id, func.avg(Review.rating).label("avg_rating"))
                 .group_by(Review.package_id)

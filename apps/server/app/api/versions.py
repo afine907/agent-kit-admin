@@ -120,6 +120,7 @@ async def deprecate_version(
 
     if str(package.owner_id) != str(current_user.id):
         from app.errors import AppError, ErrorCodes
+
         raise AppError(code=ErrorCodes.AUTH_FORBIDDEN, message="只有包的所有者才能操作", status_code=403)
 
     version_service = VersionService(db)
@@ -141,6 +142,7 @@ async def undeprecate_version(
 
     if str(package.owner_id) != str(current_user.id):
         from app.errors import AppError, ErrorCodes
+
         raise AppError(code=ErrorCodes.AUTH_FORBIDDEN, message="只有包的所有者才能操作", status_code=403)
 
     version_service = VersionService(db)
@@ -162,6 +164,7 @@ async def yank_version(
 
     if str(package.owner_id) != str(current_user.id):
         from app.errors import AppError, ErrorCodes
+
         raise AppError(code=ErrorCodes.AUTH_FORBIDDEN, message="只有包的所有者才能操作", status_code=403)
 
     version_service = VersionService(db)
@@ -183,6 +186,7 @@ async def unyank_version(
 
     if str(package.owner_id) != str(current_user.id):
         from app.errors import AppError, ErrorCodes
+
         raise AppError(code=ErrorCodes.AUTH_FORBIDDEN, message="只有包的所有者才能操作", status_code=403)
 
     version_service = VersionService(db)
