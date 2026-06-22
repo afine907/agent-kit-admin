@@ -146,7 +146,7 @@ export default function PackageDetail() {
             <h2 className="text-xs font-mono font-medium text-muted-foreground uppercase tracking-wider mb-3">
               {t('packageDetail.versionHistory')}
             </h2>
-            <VersionList versions={versions?.data || []} />
+            <VersionList versions={versions?.data || []} scope={scope} name={name} />
           </div>
 
           {/* 评价区域 */}
