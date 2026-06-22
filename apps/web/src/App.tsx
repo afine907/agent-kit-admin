@@ -12,6 +12,7 @@ const Profile = React.lazy(() => import('./pages/Profile'));
 const Publish = React.lazy(() => import('./pages/Publish'));
 const Teams = React.lazy(() => import('./pages/Teams'));
 const NotFound = React.lazy(() => import('./pages/NotFound'));
+const PackageEdit = React.lazy(() => import('./pages/PackageEdit'));
 
 // 管理后台页面
 const AdminDashboard = React.lazy(() => import('./pages/admin/Dashboard'));
@@ -54,6 +55,14 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/packages/:scope/:name" element={<PackageDetail />} />
+            <Route
+              path="/packages/:scope/:name/edit"
+              element={
+                <RequireAuth>
+                  <PackageEdit />
+                </RequireAuth>
+              }
+            />
             <Route
               path="/profile"
               element={
