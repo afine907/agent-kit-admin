@@ -25,12 +25,15 @@ import {
   AlertCircle,
   Loader2,
   Star,
+  Pencil,
 } from 'lucide-react';
+import { useAuthStore } from '../stores/authStore';
 
 export default function PackageDetail() {
   const { t, i18n } = useTranslation('pages');
   const { scope, name } = useParams<{ scope: string; name: string }>();
   const [editingReview, setEditingReview] = useState<ReviewResponse | null>(null);
+  const { isAuthenticated } = useAuthStore();
 
   const { data: pkg, isLoading, error } = usePackage(scope || '', name || '');
   const { data: versions } = useVersions(scope || '', name || '');
@@ -86,6 +89,15 @@ export default function PackageDetail() {
           <div className="animate-fade-in-up">
             <div className="flex items-center gap-3 flex-wrap">
               <h1 className="text-3xl font-extrabold tracking-tight">{pkg.full_name}</h1>
+              {isAuthenticated && (
+                <Link
+                  to={`/packages/${scope}/${name}/edit`}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono bg-secondary/50 text-muted-foreground rounded-md border border-border/30 hover:bg-secondary hover:text-foreground transition-colors"
+                >
+                  <Pencil className="w-3 h-3" />
+                  Edit
+                </Link>
+              )}
               <span
                 className={`inline-flex items-center px-2.5 py-0.5 text-xs font-mono font-medium rounded-md ${
                   isMCP
@@ -134,7 +146,7 @@ export default function PackageDetail() {
             <h2 className="text-xs font-mono font-medium text-muted-foreground uppercase tracking-wider mb-3">
               {t('packageDetail.versionHistory')}
             </h2>
-            <VersionList versions={versions?.data || []} />
+            <VersionList versions={versions?.data || []} scope={scope} name={name} />
           </div>
 
           {/* 评价区域 */}

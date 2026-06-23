@@ -267,6 +267,17 @@ export const api = {
     tags?: string[];
   }) => client.post<PackageResponse>('/api/v1/packages', data).then((r) => r.data),
 
+  updatePackage: (scope: string, name: string, data: {
+    description?: string;
+    tags?: string[];
+    visibility?: string;
+  }) => client.patch<PackageResponse>(`/api/v1/packages/${scope}/${name}`, data).then((r) => r.data),
+
+  updateVersion: (scope: string, name: string, version: string, data: {
+    deprecated?: boolean;
+    yanked?: boolean;
+  }) => client.patch(`/api/v1/packages/${scope}/${name}/versions/${version}`, data).then((r) => r.data),
+
   listVersions: (scope: string, name: string) =>
     client.get<VersionListResponse>(`/api/v1/packages/${scope}/${name}/versions`).then((r) => r.data),
 

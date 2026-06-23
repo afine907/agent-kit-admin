@@ -6,7 +6,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import ora from 'ora';
 import inquirer from 'inquirer';
-import { existsSync, mkdirSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 import { apiClient } from '../api/client.js';
@@ -17,6 +17,49 @@ import { FileLock } from '../utils/lock.js';
 
 // 包安装目录
 const PACKAGES_DIR = join(homedir(), '.akit', 'packages');
+const AKIT_CONFIG_PATH = join(homedir(), '.akit', 'config.json');
+
+interface InstalledPackage {
+  name: string;
+  scope: string;
+  version: string;
+  installedAt: string;
+  agent?: string;
+}
+
+interface AkitConfig {
+  installed: Record<string, InstalledPackage>;
+}
+
+function readAkitConfig(): AkitConfig {
+  if (!existsSync(AKIT_CONFIG_PATH)) {
+    return { installed: {} };
+  }
+  try {
+    return JSON.parse(readFileSync(AKIT_CONFIG_PATH, 'utf-8'));
+  } catch {
+    return { installed: {} };
+  }
+}
+
+function recordInstall(pkg: { scope: string; name: string; version: string; agent?: string }): void {
+  const configDir = AKIT_CONFIG_PATH.substring(0, AKIT_CONFIG_PATH.lastIndexOf('/'));
+  if (!existsSync(configDir)) {
+    mkdirSync(configDir, { recursive: true });
+  }
+
+  const config = readAkitConfig();
+  const key = `${pkg.scope}/${pkg.name}`;
+  config.installed[key] = {
+    name: pkg.name,
+    scope: pkg.scope,
+    version: pkg.version,
+    installedAt: new Date().toISOString(),
+    agent: pkg.agent,
+  };
+
+  writeFileSync(AKIT_CONFIG_PATH, JSON.stringify(config, null, 2));
+}
 
 /**
  * 带指数退避的下载重试
@@ -208,10 +251,10 @@ export const installCommand = new Command('install')
         }
 
         // 7. 更新已安装记录
-        // TODO: 更新 ~/.akit/config.json 的已安装记录
+        const version = pkg.latest_version || 'unknown';
+        recordInstall({ scope, name, version, agent: options.agent });
 
         // 显示成功信息
-        const version = pkg.latest_version || 'unknown';
         console.log(chalk.green(`\n✔ 已安装 ${fullName}@${version}`));
         console.log(chalk.gray(`  Agent: ${adapter.name}`));
         console.log(chalk.gray(`  Config: ${adapter.getConfigPath()} 已更新`));
