@@ -3,6 +3,7 @@
  */
 
 import { useState, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { SearchBar } from '../components/SearchBar';
 import { PackageCard } from '../components/PackageCard';
@@ -13,12 +14,15 @@ import { Boxes, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react';
 export default function Home() {
   const { t } = useTranslation('pages');
   const [search, setSearch] = useState('');
+  const [searchParams] = useSearchParams();
+  const workspaceScope = searchParams.get('scope') || undefined;
   const [type, setType] = useState<string | undefined>();
   const [page, setPage] = useState(1);
 
   const { data, isLoading, error } = usePackages({
     search: search || undefined,
     type,
+    scope: workspaceScope,
     page,
     per_page: 20,
   });

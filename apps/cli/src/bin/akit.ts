@@ -21,6 +21,7 @@ import { listCommand } from '../commands/list.js';
 import { searchCommand } from '../commands/search.js';
 import { infoCommand } from '../commands/info.js';
 import { configCommand } from '../commands/config.js';
+import { workspaceCommand } from '../commands/workspace.js';
 import { tokenCommand } from '../commands/token.js';
 import { setupSkillCommand } from '../commands/setup-skill.js';
 
@@ -63,6 +64,7 @@ async function main() {
   program.addCommand(searchCommand);
   program.addCommand(infoCommand);
   program.addCommand(configCommand);
+  program.addCommand(workspaceCommand);
 
   // 注册 setup-claude-skill 命令（函数式注册）
   setupSkillCommand(program);

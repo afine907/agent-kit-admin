@@ -257,7 +257,7 @@ class TestPublishInstallFlow:
             "/api/v1/packages/@test/error-test-mcp",
             headers=auth_headers,
         )
-        assert delete_response.status_code == 200
+        assert delete_response.status_code == 204
 
         # 7. 验证包已被软删除
         deleted_response = await client.get("/api/v1/packages/@test/error-test-mcp")
@@ -312,7 +312,7 @@ class TestMultiUserFlow:
             "/api/v1/packages/@test/owned-mcp",
             headers=auth_headers,
         )
-        assert delete_own_response.status_code == 200
+        assert delete_own_response.status_code == 204
 
     @pytest.mark.skip(reason="并发测试在 CI 中不稳定，Session flushing 冲突")
     @pytest.mark.asyncio

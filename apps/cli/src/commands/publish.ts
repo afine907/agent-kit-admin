@@ -18,6 +18,7 @@ export const publishCommand = new Command('publish')
   .option('--tag <tag>', '版本标签 (latest/beta/alpha/rc)')
   .option('--token <token>', 'API token (用于 CI/CD)')
   .option('--dry-run', '仅验证，不实际发布')
+  .option('--scope <scope>', '发布范围 (默认使用当前 workspace 或个人范围)')
   .action(async (options) => {
     try {
       // 使用指定 token 或配置中的 token
@@ -79,8 +80,18 @@ export const publishCommand = new Command('publish')
         process.exit(1);
       }
 
-      // 4. 创建包 (如果不存在)
-      const scope = manifest.scope || `@${configManager.getUser()?.username || 'unknown'}`;
+      // 4. 确定发布范围
+      // 优先级: --scope > manifest.scope > 当前 workspace > @username
+      const defaultScope = `@${configManager.getUser()?.username || 'unknown'}`;
+      const scope = options.scope || manifest.scope || configManager.getWorkspace() || defaultScope;
+
+      // 判断是团队包还是个人包
+      const currentUsername = configManager.getUser()?.username;
+      const scopeName = scope.startsWith('@') ? scope.slice(1) : scope;
+      const isTeamScope = scopeName !== currentUsername;
+      const ownerType: 'user' | 'team' = isTeamScope ? 'team' : 'user';
+
+      // 5. 创建包 (如果不存在)
       const spinner4 = ora('创建包记录...').start();
 
       try {
@@ -90,6 +101,7 @@ export const publishCommand = new Command('publish')
           type: manifest.type as 'mcp' | 'skill',
           description: manifest.description,
           license: manifest.license,
+          owner_type: ownerType,
         });
         spinner4.succeed('包记录创建成功');
       } catch (error: unknown) {

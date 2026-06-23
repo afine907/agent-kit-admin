@@ -1,9 +1,10 @@
-"""包管理服务"""
+"""包管理服务 — Workspace 隔离版本"""
 
-from sqlalchemy import select, func, or_
+from sqlalchemy import select, func, or_, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.package import Package
 from app.models.user import User
+from app.models.team import TeamMember
 from app.errors import AppError, ErrorCodes
 
 
@@ -14,6 +15,70 @@ class PackageService:
 
     def __init__(self, db: AsyncSession):
         self.db = db
+
+    # -------------------------------------------------------------------------
+    # 辅助方法
+    # -------------------------------------------------------------------------
+
+    async def _get_user_team_ids(self, user_id) -> list:
+        """获取用户所在所有团队的 ID"""
+        result = await self.db.execute(select(TeamMember.team_id).where(TeamMember.user_id == user_id))
+        return [row[0] for row in result.fetchall()]
+
+    async def _is_team_member(self, team_id, user_id) -> bool:
+        """检查用户是否是团队成员"""
+        result = await self.db.execute(
+            select(TeamMember).where(
+                TeamMember.team_id == team_id,
+                TeamMember.user_id == user_id,
+            )
+        )
+        return result.scalar_one_or_none() is not None
+
+    async def _is_team_admin(self, team_id, user_id) -> bool:
+        """检查用户是否是团队 admin/owner"""
+        result = await self.db.execute(
+            select(TeamMember).where(
+                TeamMember.team_id == team_id,
+                TeamMember.user_id == user_id,
+                TeamMember.role.in_(["owner", "admin"]),
+            )
+        )
+        return result.scalar_one_or_none() is not None
+
+    async def _get_package_raw(self, scope: str, name: str) -> Package | None:
+        """获取包原始记录（含 deleted_at），不抛 404/410"""
+        result = await self.db.execute(
+            select(Package).where(
+                Package.scope == scope,
+                Package.name == name,
+            )
+        )
+        return result.scalar_one_or_none()
+
+    async def _can_access_package(self, package: Package, current_user: User | None) -> bool:
+        """判断当前用户是否可以访问包"""
+        if package.visibility == "public":
+            return True
+
+        if not current_user:
+            return False
+
+        # user 包：owner_id 是用户 UUID
+        if package.owner_type == "user":
+            return str(package.owner_id) == str(current_user.id)
+
+        # team 包：owner_id 是团队 UUID
+        if package.visibility == "team":
+            # team 可见性：任何团队成员可读
+            return await self._is_team_member(package.owner_id, current_user.id)
+
+        # visibility == "private" + team 包：仅 owner/admin 可读（不是普通 member）
+        return await self._is_team_admin(package.owner_id, current_user.id)
+
+    # -------------------------------------------------------------------------
+    # 列表
+    # -------------------------------------------------------------------------
 
     async def list_packages(
         self,
@@ -26,8 +91,13 @@ class PackageService:
         per_page: int = 20,
         current_user: User | None = None,
     ) -> dict:
-        """列出包 (支持搜索、筛选、分页)"""
-        # sort 字段白名单校验
+        """列出包 (支持搜索、筛选、分页)
+
+        可见性规则:
+          public  — 任何人可见
+          team    — 仅团队成员可见（owner_type=team 的团队）
+          private — 仅包 owner 可见
+        """
         if sort not in self.ALLOWED_SORT_FIELDS:
             raise AppError(
                 code=ErrorCodes.INVALID_PARAM,
@@ -37,44 +107,56 @@ class PackageService:
 
         query = select(Package).where(Package.deleted_at.is_(None))
 
-        # 可见性过滤
+        # --- 可见性过滤 ---
         if current_user:
-            # 已登录: public + 所属团队 team 包 + 自己的 private 包
-            query = query.where(
-                or_(
-                    Package.visibility == "public",
+            user_id = str(current_user.id)
+            user_team_ids = await self._get_user_team_ids(user_id)
+
+            conditions = [Package.visibility == "public"]
+
+            # private 包：仅 owner 本人
+            conditions.append(
+                and_(
+                    Package.visibility == "private",
                     Package.owner_id == current_user.id,
                 )
             )
+
+            # team 包（owner_type=team）：团队成员 OR owner/admin 本人
+            if user_team_ids:
+                conditions.append(
+                    and_(
+                        Package.owner_type == "team",
+                        Package.owner_id.in_(user_team_ids),
+                    )
+                )
+
+            query = query.where(or_(*conditions))
         else:
-            # 未登录: 仅 public
             query = query.where(Package.visibility == "public")
 
-        # 搜索 - 转义 ILIKE 通配符以防止注入
+        # --- 搜索 ---
         if search:
-            # 转义用户输入中的 % 和 _ 字符
-            escaped_search = search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-            search_pattern = f"%{escaped_search}%"
+            escaped = search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+            pattern = f"%{escaped}%"
             query = query.where(
                 or_(
-                    Package.name.ilike(search_pattern, escape="\\"),
-                    Package.description.ilike(search_pattern, escape="\\"),
+                    Package.name.ilike(pattern, escape="\\"),
+                    Package.description.ilike(pattern, escape="\\"),
                 )
             )
 
-        # 类型筛选
+        # --- 筛选 ---
         if type:
             query = query.where(Package.type == type)
-
-        # Scope 筛选
         if scope:
             query = query.where(Package.scope == scope)
 
-        # 总数
-        count_query = select(func.count()).select_from(query.subquery())
-        total = (await self.db.execute(count_query)).scalar() or 0
+        # --- 总数 ---
+        count_q = select(func.count()).select_from(query.subquery())
+        total = (await self.db.execute(count_q)).scalar() or 0
 
-        # 排序
+        # --- 排序 ---
         if sort == "rating":
             from app.models.review import Review
 
@@ -89,12 +171,13 @@ class PackageService:
             sort_col = Package.downloads_count
         else:
             sort_col = getattr(Package, sort, Package.updated_at)
+
         if order == "desc":
             query = query.order_by(sort_col.desc())
         else:
             query = query.order_by(sort_col.asc())
 
-        # 分页
+        # --- 分页 ---
         query = query.offset((page - 1) * per_page).limit(per_page)
 
         result = await self.db.execute(query)
@@ -110,36 +193,40 @@ class PackageService:
             },
         }
 
+    # -------------------------------------------------------------------------
+    # 详情
+    # -------------------------------------------------------------------------
+
     async def get_package(self, scope: str, name: str, current_user: User | None = None) -> Package:
-        """获取包详情"""
-        # 先查所有（包括已删除），用于区分 404 和 410
-        result = await self.db.execute(
-            select(Package).where(
-                Package.scope == scope,
-                Package.name == name,
-            )
-        )
-        package = result.scalar_one_or_none()
+        """获取包详情（带可见性检查）"""
+        package = await self._get_package_raw(scope, name)
 
         if not package:
             raise AppError(
-                code=ErrorCodes.PACKAGE_NOT_FOUND, message=f"Package {scope}/{name} not found", status_code=404
+                code=ErrorCodes.PACKAGE_NOT_FOUND,
+                message=f"Package {scope}/{name} not found",
+                status_code=404,
             )
 
-        # 已删除的包返回 410 Gone
         if package.deleted_at:
             raise AppError(
-                code=ErrorCodes.PACKAGE_DELETED, message=f"Package {scope}/{name} has been deleted", status_code=410
+                code=ErrorCodes.PACKAGE_DELETED,
+                message=f"Package {scope}/{name} has been deleted",
+                status_code=410,
             )
 
-        # 可见性检查
-        if package.visibility == "private":
-            if not current_user or package.owner_id != current_user.id:
-                raise AppError(
-                    code=ErrorCodes.PACKAGE_NOT_FOUND, message=f"Package {scope}/{name} not found", status_code=404
-                )
+        if not await self._can_access_package(package, current_user):
+            raise AppError(
+                code=ErrorCodes.PACKAGE_NOT_FOUND,
+                message=f"Package {scope}/{name} not found",
+                status_code=404,
+            )
 
         return package
+
+    # -------------------------------------------------------------------------
+    # 创建
+    # -------------------------------------------------------------------------
 
     async def create_package(
         self,
@@ -152,8 +239,47 @@ class PackageService:
         repository: str | None = None,
         homepage: str | None = None,
         visibility: str = "public",
+        owner_type: str = "user",
     ) -> Package:
-        """创建包"""
+        """创建包
+
+        Args:
+            owner_type: "user" 或 "team"
+            visibility: "public", "team", "private"
+
+        权限规则:
+            - 创建 @username scope 包：必须是该 username 对应的用户本人
+            - 创建 @team-slug scope 包：必须是该团队的成员
+        """
+        # visibility=team 时 owner_type 必须=team
+        if visibility == "team" and owner_type != "team":
+            raise AppError(
+                code=ErrorCodes.INVALID_PARAM,
+                message="visibility=team requires owner_type=team",
+                status_code=400,
+            )
+
+        # scope 格式检查：@ 开头
+        if scope.startswith("@"):
+            # 解析 scope slug（去掉 @）
+            scope_slug = scope[1:]
+            # 如果 scope 对应的 owner 不是当前用户，检查团队成员身份
+            if str(owner_id) != scope_slug:
+                # 非用户 scope，需要验证团队成员身份
+                # 先查团队
+                from app.models.team import Team
+
+                team_result = await self.db.execute(select(Team).where(Team.slug == scope_slug))
+                team_obj = team_result.scalar_one_or_none()
+                if team_obj:
+                    if not await self._is_team_member(str(team_obj.id), owner_id):
+                        raise AppError(
+                            code=ErrorCodes.AUTH_FORBIDDEN,
+                            message=f"Must be a member of @{scope_slug} to create packages in this scope",
+                            status_code=403,
+                        )
+                # 如果 team 不存在（scope slug 不对），后续唯一约束会报 409
+
         # 检查包名是否已存在
         existing = await self.get_by_full_name(scope, name)
         if existing:
@@ -169,24 +295,27 @@ class PackageService:
                 status_code=409,
             )
 
-        # 创建包
         package = Package(
             name=name,
             scope=scope,
             type=type,
-            full_name=f"{scope}/{name}",  # SQLite 不支持 GENERATED ALWAYS AS，显式设置
+            full_name=f"{scope}/{name}",
             description=description,
             license=license,
             repository=repository,
             homepage=homepage,
             owner_id=owner_id,
-            owner_type="user",
+            owner_type=owner_type,
             visibility=visibility,
         )
         self.db.add(package)
         await self.db.commit()
         await self.db.refresh(package)
         return package
+
+    # -------------------------------------------------------------------------
+    # 辅助
+    # -------------------------------------------------------------------------
 
     async def get_by_full_name(self, scope: str, name: str) -> Package | None:
         """通过 full_name 获取包"""
@@ -198,27 +327,68 @@ class PackageService:
         )
         return result.scalar_one_or_none()
 
+    # -------------------------------------------------------------------------
+    # 更新
+    # -------------------------------------------------------------------------
+
     async def update_package(
         self,
         scope: str,
         name: str,
-        owner_id: str,
+        user_id: str,
         **fields,
     ) -> Package:
-        """编辑包 (仅 owner 可操作)
+        """编辑包
 
-        fields 中的值:
-        - 存在且非 None → 更新为该值
-        - 存在且为 None → 清空该字段
-        - 不存在 → 不修改
+        权限规则:
+            - user 包：仅 owner 可编辑
+            - team 包：owner（用户本人）或 admin/owner 角色的团队成员可编辑
         """
-        package = await self.get_package(scope, name)
+        package = await self._get_package_raw(scope, name)
+        if not package or package.deleted_at:
+            raise AppError(
+                code=ErrorCodes.PACKAGE_NOT_FOUND,
+                message=f"Package {scope}/{name} not found",
+                status_code=404,
+            )
 
-        # 权限检查
-        if str(package.owner_id) != str(owner_id):
-            raise AppError(code=ErrorCodes.AUTH_FORBIDDEN, message="只有包的所有者才能编辑", status_code=403)
+        if package.visibility == "private":
+            if str(package.owner_id) != user_id:
+                raise AppError(
+                    code=ErrorCodes.AUTH_FORBIDDEN,
+                    message="Only the package owner can edit this package",
+                    status_code=403,
+                )
+        elif package.visibility == "team" and package.owner_type == "team":
+            # team 包：owner 本人或团队 admin/owner 可编辑
+            is_owner = str(package.owner_id) == user_id
+            is_admin = await self._is_team_admin(package.owner_id, user_id)
+            if is_owner or is_admin:
+                pass  # 有权限
+            elif await self._is_team_member(package.owner_id, user_id):
+                # 是团队成员但不是 owner/admin：禁止编辑（403）而非 404（能看到包）
+                raise AppError(
+                    code=ErrorCodes.AUTH_FORBIDDEN,
+                    message="Only team owner or admin can edit this package",
+                    status_code=403,
+                )
+            else:
+                # 非团队成员：不可见（404）
+                raise AppError(
+                    code=ErrorCodes.PACKAGE_NOT_FOUND,
+                    message=f"Package {scope}/{name} not found",
+                    status_code=404,
+                )
+        else:
+            # public 包：仅 owner
+            if str(package.owner_id) != user_id:
+                raise AppError(
+                    code=ErrorCodes.AUTH_FORBIDDEN,
+                    message="Only the package owner can edit this package",
+                    status_code=403,
+                )
 
-        # 更新字段（None 表示清空）
+        # 更新字段
         for key, value in fields.items():
             if hasattr(package, key):
                 setattr(package, key, value)
@@ -227,23 +397,18 @@ class PackageService:
         await self.db.refresh(package)
         return package
 
+    # -------------------------------------------------------------------------
+    # 依赖检查
+    # -------------------------------------------------------------------------
+
     async def check_dependencies(self, dependencies: dict[str, str]) -> list[dict]:
-        """检查依赖是否存在
-
-        Args:
-            dependencies: {"@scope/name": "^1.0.0", ...}
-
-        Returns:
-            [{"name": "@scope/name", "constraint": "^1.0.0", "exists": True, "latest_version": "1.2.0"}, ...]
-        """
+        """检查依赖是否存在（不做权限检查，仅检查包是否存在）"""
         results = []
         for dep_name, constraint in dependencies.items():
-            # 解析 @scope/name 格式
             parts = dep_name.split("/")
             if len(parts) == 2:
                 scope, pkg_name = parts
             else:
-                # 非标准格式，视为不存在
                 results.append(
                     {
                         "name": dep_name,
@@ -269,6 +434,10 @@ class PackageService:
 
         return results
 
+    # -------------------------------------------------------------------------
+    # 统计
+    # -------------------------------------------------------------------------
+
     async def get_package_stats(self, scope: str, name: str, current_user: User | None = None) -> dict:
         """获取包下载统计"""
         package = await self.get_package(scope, name, current_user)
@@ -276,7 +445,6 @@ class PackageService:
         from app.models.download import Download
         from app.models.version import Version
 
-        # 按版本统计下载量（限制 top 50）
         version_stats_query = (
             select(
                 Version.version,

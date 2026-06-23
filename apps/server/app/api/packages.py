@@ -100,6 +100,7 @@ async def create_package(
         scope=data.scope,
         type=data.type,
         owner_id=str(current_user.id),
+        owner_type=data.owner_type,
         description=data.description,
         license=data.license,
         repository=data.repository,
@@ -123,7 +124,7 @@ async def update_package(
     package = await service.update_package(
         scope=scope,
         name=name,
-        owner_id=str(current_user.id),
+        user_id=str(current_user.id),
         **update_data,
     )
     return package
@@ -143,15 +144,23 @@ async def delete_package(
     service = PackageService(db)
     package = await service.get_package(scope, name, current_user)
 
-    # 权限检查
-    if str(package.owner_id) != str(current_user.id):
-        raise AppError(code=ErrorCodes.AUTH_FORBIDDEN, message="只有包的所有者才能删除", status_code=403)
+    # 软删除权限检查（使用服务层统一权限逻辑）
+    if package.owner_type == "team":
+        # team 包：需是团队 admin/owner
+        if not await service._is_team_admin(package.owner_id, str(current_user.id)):
+            raise AppError(code=ErrorCodes.AUTH_FORBIDDEN, message="只有团队管理员可以删除", status_code=403)
+    else:
+        # user 包：仅 owner 可删除
+        if str(package.owner_id) != str(current_user.id):
+            raise AppError(code=ErrorCodes.AUTH_FORBIDDEN, message="只有包的所有者才能删除", status_code=403)
 
     # 软删除
     package.deleted_at = datetime.now(timezone.utc)  # type: ignore[assignment]
     await db.commit()
 
-    return {"message": f"包 {scope}/{name} 已删除"}
+    from fastapi.responses import Response
+
+    return Response(status_code=204)
 
 
 @router.get("/{scope}/{name}/download")

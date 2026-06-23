@@ -7,6 +7,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { Terminal, LogOut, User, Boxes, Shield, Languages, Plus, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 
 export const Header = React.memo(function Header() {
   const { t, i18n } = useTranslation('common');
@@ -53,6 +54,9 @@ export const Header = React.memo(function Header() {
             Agent<span className="text-primary">Kit</span>
           </span>
         </Link>
+
+        {/* Workspace 切换器 */}
+        <WorkspaceSwitcher />
 
         {/* 导航 */}
         <nav className="flex items-center gap-1">

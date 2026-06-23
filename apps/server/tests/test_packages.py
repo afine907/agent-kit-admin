@@ -302,7 +302,7 @@ class TestPackageDelete:
             f"/api/v1/packages/{scope}/{name}",
             headers=auth_headers,
         )
-        assert response.status_code == 200
+        assert response.status_code == 204
 
         # 验证包已被软删除
         get_response = await client.get(f"/api/v1/packages/{scope}/{name}")
