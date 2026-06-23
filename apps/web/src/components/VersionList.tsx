@@ -22,7 +22,7 @@ export const VersionList = React.memo(function VersionList({ versions, scope, na
   const locale = i18n.language === 'zh' ? 'zh-CN' : 'en-US';
   const { isAuthenticated } = useAuthStore();
 
-  const showActions = isAuthenticated && scope && name;
+  const showActions = isAuthenticated && !!scope && !!name;
 
   if (versions.length === 0) {
     return (

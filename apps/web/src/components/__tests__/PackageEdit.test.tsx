@@ -62,7 +62,7 @@ describe('PackageEdit', () => {
       isLoading: false,
       error: null,
       refetch: mockRefetch,
-    } as ReturnType<typeof usePackage>);
+    } as unknown as ReturnType<typeof usePackage>);
     mockUpdatePackage.mockResolvedValue({});
   });
 
@@ -77,7 +77,7 @@ describe('PackageEdit', () => {
       data: undefined,
       isLoading: true,
       error: null,
-    } as ReturnType<typeof usePackage>);
+    } as unknown as ReturnType<typeof usePackage>);
     render(<PackageEdit />);
     expect(screen.getByText(/loading/i)).toBeInTheDocument();
   });
