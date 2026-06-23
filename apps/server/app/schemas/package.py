@@ -16,6 +16,7 @@ class PackageCreate(BaseModel):
     repository: str | None = None
     homepage: str | None = None
     visibility: str = Field("public", pattern=r"^(public|team|private)$")
+    owner_type: str = Field("user", pattern=r"^(user|team)$")
 
 
 class PackageUpdate(BaseModel):

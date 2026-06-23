@@ -56,5 +56,12 @@
     "label": "Language",
     "zh": "中文",
     "en": "English"
+  },
+  "workspace": {
+    "personal": "Personal",
+    "team": "Team",
+    "teams": "Teams",
+    "loading": "Loading…",
+    "createTeam": "Create Team"
   }
 }

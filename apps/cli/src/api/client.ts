@@ -78,6 +78,16 @@ export interface APIKeyResponse {
   created_at: string;
 }
 
+export interface TeamInfo {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  avatar_url?: string;
+  member_count: number;
+  created_at: string;
+}
+
 export interface ListPackagesParams {
   search?: string;
   type?: 'mcp' | 'skill';
@@ -272,6 +282,7 @@ export class ApiClient {
     license?: string;
     visibility?: string;
     tags?: string[];
+    owner_type?: 'user' | 'team';
   }): Promise<PackageResponse> {
     const response = await this.client.post<PackageResponse>(
       '/api/v1/packages',
@@ -373,6 +384,14 @@ export class ApiClient {
    */
   async deleteAPIKey(keyId: string): Promise<void> {
     await this.client.delete(`/api/v1/auth/api-keys/${keyId}`);
+  }
+
+  /**
+   * 获取当前用户所属团队列表
+   */
+  async listTeams(): Promise<TeamInfo[]> {
+    const response = await this.client.get<TeamInfo[]>('/api/v1/teams');
+    return response.data;
   }
 }
 

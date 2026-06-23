@@ -31,6 +31,8 @@ export interface ConfigData {
   registry: string;
   updated_at?: string;
   installed_packages?: InstalledPackage[];
+  /** 当前 workspace scope，格式为 @username 或 @team-slug */
+  workspace?: string;
 }
 
 const DEFAULT_CONFIG: ConfigData = {
@@ -274,6 +276,27 @@ export class ConfigManager {
     this.config.clear();
     this.config.set('registry', DEFAULT_CONFIG.registry);
     this.config.set('installed_packages', []);
+  }
+
+  /**
+   * 获取当前 workspace scope（无时返回 null）
+   */
+  getWorkspace(): string | null {
+    return this.get('workspace') ?? null;
+  }
+
+  /**
+   * 设置当前 workspace scope
+   */
+  setWorkspace(scope: string): void {
+    this.set('workspace', scope);
+  }
+
+  /**
+   * 清除当前 workspace
+   */
+  clearWorkspace(): void {
+    this.config.delete('workspace');
   }
 
   /**
