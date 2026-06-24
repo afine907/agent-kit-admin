@@ -33,7 +33,10 @@ class PackageUpdate(BaseModel):
 class DependencyCheckRequest(BaseModel):
     """依赖检查请求"""
 
+    # 扁平依赖列表 {包名: 版本约束}
     dependencies: dict[str, str] = Field(default_factory=dict, description="依赖列表 {包名: 版本约束}")
+    # 可选：嵌套依赖图 {包名: [其依赖列表]}，用于循环检测
+    dependency_graph: dict[str, list[str]] | None = Field(default=None, description="依赖图 {包名: [依赖包列表]}")
 
 
 class DependencyCheckResult(BaseModel):
@@ -50,6 +53,7 @@ class DependencyCheckResponse(BaseModel):
 
     all_exist: bool
     results: list[DependencyCheckResult]
+    circular_error: str | None = None
 
 
 class PackageResponse(BaseModel):

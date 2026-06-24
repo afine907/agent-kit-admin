@@ -2,11 +2,11 @@
  * Web 发布向导 - 多步骤表单
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
-import { api } from '../lib/api';
+import { api, Team } from '../lib/api';
 import {
   Package,
   Upload,
@@ -73,6 +73,28 @@ export default function Publish() {
   const [tagInput, setTagInput] = useState('');
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // P3#21: 团队 scope 动态加载
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [teamsLoading, setTeamsLoading] = useState(false);
+
+  useEffect(() => {
+    // P3#21: 加载用户团队列表用于 scope 选择
+    const loadTeams = async () => {
+      setTeamsLoading(true);
+      try {
+        const userTeams = await api.listTeams();
+        setTeams(userTeams || []);
+      } catch {
+        // 忽略错误，用户仍可用个人 scope
+      } finally {
+        setTeamsLoading(false);
+      }
+    };
+    if (user) {
+      loadTeams();
+    }
+  }, [user]);
 
   if (!user) {
     return (
@@ -171,11 +193,23 @@ export default function Publish() {
         }
       }
 
-      // 2. 上传版本
+      // 2. 构建 manifest（从表单数据生成）
+      const manifest = {
+        name: form.name,
+        version: form.version,
+        type: form.type,
+        description: form.description || undefined,
+        license: form.license || undefined,
+        repository: form.repository || undefined,
+        homepage: form.homepage || undefined,
+      };
+
+      // 3. 上传版本
       const formData = new FormData();
       formData.append('file', form.file);
       formData.append('version', form.version);
-      formData.append('tag', form.tag);
+      formData.append('manifest', JSON.stringify(manifest));
+      formData.append('tag', form.tag || 'latest');
 
       await api.publishVersion(form.scope, form.name, formData);
 
@@ -248,7 +282,18 @@ export default function Publish() {
                 >
                   <option value="">{t('publish.step1.selectScope')}</option>
                   <option value={`@${user.username}`}>@{user.username}</option>
-                  {/* TODO: 添加团队 scope */}
+                  {teamsLoading ? (
+                    <option value="" disabled>Loading teams...</option>
+                  ) : (
+                    teams.map((team) => {
+                      const teamScope = `@${team.slug}`;
+                      return (
+                        <option key={team.id} value={teamScope}>
+                          {teamScope} ({team.name})
+                        </option>
+                      );
+                    })
+                  )}
                 </select>
               </div>
 

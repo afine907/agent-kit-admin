@@ -5,6 +5,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import ora from 'ora';
+import inquirer from 'inquirer';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { mkdtemp, rm } from 'fs/promises';
@@ -12,6 +13,8 @@ import { configManager } from '../config/manager.js';
 import { apiClient } from '../api/client.js';
 import { readManifest, validateManifest } from '../utils/manifest.js';
 import { createTarball, formatSize } from '../utils/tarball.js';
+import { checkPackageSize } from '../utils/package-size.js';
+import { suggestNextVersion } from '../utils/version-suggest.js';
 
 export const publishCommand = new Command('publish')
   .description('发布包到 Registry')
@@ -56,6 +59,24 @@ export const publishCommand = new Command('publish')
       }
       spinner2.succeed('manifest 验证通过');
 
+      // 确定发布范围（尽早确定，避免后续变量未定义）
+      const defaultScope = `@${configManager.getUser()?.username || 'unknown'}`;
+      const scope = options.scope || manifest.scope || configManager.getWorkspace() || defaultScope;
+
+      // P2#13: 版本号自动递增建议（交互式提示）
+      const suggestedVersion = await suggestNextVersion(scope, manifest.name);
+      if (manifest.version !== suggestedVersion && suggestedVersion !== '0.0.1') {
+        const { useSuggested } = await inquirer.prompt([{
+          type: 'confirm',
+          name: 'useSuggested',
+          message: `最新版本为 ${suggestedVersion}，是否使用该版本而非 ${manifest.version}？`,
+          default: true,
+        }]);
+        if (useSuggested) {
+          manifest.version = suggestedVersion;
+        }
+      }
+
       // dry-run 模式
       if (options.dryRun) {
         console.log(chalk.green('\n✔ Dry run - manifest 验证通过'));
@@ -74,16 +95,19 @@ export const publishCommand = new Command('publish')
       try {
         const { size } = await createTarball(process.cwd(), tarballPath, manifest.name);
         spinner3.succeed(`创建 tarball 成功 (${formatSize(size)})`);
+
+        // P2#11: 包大小预检（服务端限制 50MB，CLI 预检 100MB）
+        const sizeCheck = checkPackageSize(size, `${scope}/${manifest.name}`);
+        if (!sizeCheck.ok) {
+          console.error(chalk.red(`\n✖ ${sizeCheck.message}`));
+          await rm(tmpDir, { recursive: true, force: true });
+          process.exit(1);
+        }
       } catch (error: unknown) {
         spinner3.fail('创建 tarball 失败');
         console.error(chalk.red(`\n✖ ${error instanceof Error ? error.message : String(error)}`));
         process.exit(1);
       }
-
-      // 4. 确定发布范围
-      // 优先级: --scope > manifest.scope > 当前 workspace > @username
-      const defaultScope = `@${configManager.getUser()?.username || 'unknown'}`;
-      const scope = options.scope || manifest.scope || configManager.getWorkspace() || defaultScope;
 
       // 判断是团队包还是个人包
       const currentUsername = configManager.getUser()?.username;

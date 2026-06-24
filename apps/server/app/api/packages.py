@@ -16,6 +16,7 @@ from app.schemas.package import (
     PackageListResponse,
     DependencyCheckRequest,
 )
+from app.services.dependency import DependencyResolver
 
 logger = logging.getLogger("akit.download")
 
@@ -80,11 +81,31 @@ async def check_dependencies(
     data: DependencyCheckRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """检查依赖包是否存在"""
+    """检查依赖包是否存在，并检测循环依赖"""
     service = PackageService(db)
     results = await service.check_dependencies(data.dependencies)
     all_exist = all(r["exists"] for r in results)
-    return {"all_exist": all_exist, "results": results}
+
+    # P2#15: 循环依赖检测
+    circular_error: str | None = None
+    if data.dependencies:
+        # 优先使用传入的 dependency_graph，否则从扁平 dependencies 构造
+        dep_graph = data.dependency_graph
+        if not dep_graph:
+            # 从 {包名: 版本约束} 构造图（假设无嵌套依赖）
+            dep_graph = {name: [] for name in data.dependencies}
+
+        resolver = DependencyResolver(dep_graph)
+        if resolver.has_cycle():
+            cycle_path = resolver.find_cycle()
+            if cycle_path:
+                circular_error = f"Circular dependency detected: {' -> '.join(cycle_path)}"
+
+    return {
+        "all_exist": all_exist,
+        "results": results,
+        "circular_error": circular_error,
+    }
 
 
 @router.post("", response_model=PackageResponse, status_code=201)

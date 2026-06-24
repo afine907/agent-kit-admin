@@ -50,6 +50,8 @@
     "registerSuccess": "Registration successful",
     "registerFailed": "Registration failed",
     "user": "User",
+    "originalUsername": "Original username",
+    "usernameAdjusted": "Username was automatically adjusted to avoid conflicts",
     "tokenSaved": "Token saved to"
   },
   "logout": {

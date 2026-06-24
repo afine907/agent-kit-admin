@@ -50,6 +50,8 @@
     "registerSuccess": "注册成功",
     "registerFailed": "注册失败",
     "user": "用户",
+    "originalUsername": "原始用户名",
+    "usernameAdjusted": "用户名已被自动调整为避免冲突",
     "tokenSaved": "Token 已保存到"
   },
   "logout": {
