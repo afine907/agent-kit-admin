@@ -13,7 +13,7 @@
     "start": "node dist/bin/akit.js",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "oxlint src",
+    "lint": "oxlint src --deny-warnings",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
