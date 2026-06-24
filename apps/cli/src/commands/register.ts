@@ -86,6 +86,10 @@ export const registerCommand = new Command('register')
 
         console.log(chalk.green(`\n✔ ${t('commands:register.registerSuccess')}\n`));
         console.log(chalk.gray(`  ${t('commands:register.user')}: ${result.user.username}`));
+        if (result.user.username !== username) {
+          console.log(chalk.gray(`  ${t('commands:register.originalUsername')}: ${username}`));
+          console.log(chalk.yellow(`  ⚠ ${t('commands:register.usernameAdjusted')}`));
+        }
         console.log(chalk.gray(`  ${t('commands:login.tokenSaved')}: ${configManager.getConfigPath()}`));
         console.log('');
       } catch (error: unknown) {

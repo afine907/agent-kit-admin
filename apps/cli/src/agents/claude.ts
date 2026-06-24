@@ -38,6 +38,11 @@ export class ClaudeAdapter implements AgentAdapter {
       const content = readFileSync(this.configPath, 'utf-8');
       return JSON.parse(content);
     } catch {
+      // 配置文件损坏，备份并创建新的
+      const backupPath = this.configPath + '.corrupt.' + Date.now();
+      const backupContent = readFileSync(this.configPath, 'utf-8');
+      writeFileSync(backupPath, backupContent);
+      writeFileSync(this.configPath, JSON.stringify({ mcpServers: {} }, null, 2));
       return { mcpServers: {} };
     }
   }

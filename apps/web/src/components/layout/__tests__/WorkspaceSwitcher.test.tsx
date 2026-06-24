@@ -9,7 +9,7 @@ import { WorkspaceSwitcher } from '../WorkspaceSwitcher';
 
 // Mock zustand/middleware before any store imports
 vi.mock('zustand/middleware', () => ({
-  persist: vi.fn(() => (fn: any) => fn),
+  persist: vi.fn(() => (fn: unknown) => fn as typeof fn),
 }));
 
 // Mock i18next
@@ -20,30 +20,38 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-// Mock authStore
+// Mock authStore - properly mock as Zustand hook (accepts selector function)
+const mockAuthState = {
+  user: { id: '1', username: 'testuser', display_name: 'Test User', avatar_url: undefined },
+  isAuthenticated: true,
+  isAdmin: false,
+  clearAuth: vi.fn(),
+};
 vi.mock('../../../stores/authStore', () => ({
-  useAuthStore: vi.fn(() => ({
-    user: { id: '1', username: 'testuser', display_name: 'Test User', avatar_url: undefined },
-    isAuthenticated: true,
-    isAdmin: false,
-    clearAuth: vi.fn(),
-  })),
+  useAuthStore: vi.fn((selector?: (s: typeof mockAuthState) => unknown) => {
+    if (selector) return selector(mockAuthState);
+    return mockAuthState;
+  }),
 }));
 
-// Mock workspaceStore
+// Mock workspaceStore - properly mock as Zustand hook (accepts selector function)
+const mockWorkspaceState = {
+  current: null as { scope: string; type: string; name: string; slug: string; avatar?: string } | null,
+  workspaces: [] as Array<{ scope: string; type: string; name: string; slug: string; avatar?: string }>,
+  isLoading: false,
+  setCurrent: vi.fn(),
+  addWorkspace: vi.fn(),
+  removeWorkspace: vi.fn(),
+  setWorkspaces: vi.fn(),
+  setLoading: vi.fn(),
+  getScope: vi.fn(() => null),
+  isTeamWorkspace: vi.fn(() => false),
+};
 vi.mock('../../../stores/workspaceStore', () => ({
-  useWorkspaceStore: vi.fn(() => ({
-    current: null,
-    workspaces: [],
-    isLoading: false,
-    setCurrent: vi.fn(),
-    addWorkspace: vi.fn(),
-    removeWorkspace: vi.fn(),
-    setWorkspaces: vi.fn(),
-    setLoading: vi.fn(),
-    getScope: () => null,
-    isTeamWorkspace: () => false,
-  })),
+  useWorkspaceStore: vi.fn((selector?: (s: typeof mockWorkspaceState) => unknown) => {
+    if (selector) return selector(mockWorkspaceState);
+    return mockWorkspaceState;
+  }),
 }));
 
 // Mock api
@@ -78,7 +86,9 @@ describe('WorkspaceSwitcher', () => {
     fireEvent.click(screen.getByText('@testuser'));
 
     await waitFor(() => {
-      expect(screen.getByText(/personal/i)).toBeInTheDocument();
+      // 下拉展开后有"Personal"标签和多选标记
+      expect(screen.getAllByText(/personal/i).length).toBeGreaterThanOrEqual(1);
+      expect(screen.getByRole('option', { selected: true })).toBeInTheDocument();
     });
   });
 
