@@ -73,7 +73,7 @@ workspaceCommand
           );
         }
       }
-    } catch (error) {
+    } catch {
       console.log(chalk.gray('  无法获取团队列表'));
     }
 
@@ -89,9 +89,6 @@ workspaceCommand
     if (!scope.startsWith('@')) {
       scope = '@' + scope;
     }
-
-    const user = configManager.getUser();
-    const username = user?.username;
 
     // 简单验证：如果是团队 scope，不做额外检查（由服务端验证权限）
     configManager.setWorkspace(scope);

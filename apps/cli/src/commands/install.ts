@@ -169,7 +169,7 @@ export const installCommand = new Command('install')
           } else {
             spinner5.succeed('依赖检查通过');
           }
-        } catch (_error: unknown) {
+        } catch {
           spinner5.warn('依赖检查跳过（服务不可用）');
         }
       }
