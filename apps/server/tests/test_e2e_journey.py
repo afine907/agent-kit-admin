@@ -6,7 +6,6 @@ from app.models.user import User
 from app.models.package import Package
 from app.models.version import Version
 from app.core.security import hash_password
-from .helpers import create_test_tarball
 
 
 # =============================================================================
@@ -184,7 +183,7 @@ async def test_get_package_versions(client: AsyncClient, db, test_user: User):
         db.add(Version(
             package_id=pkg.id, version=v,
             manifest={"name": "ver-test", "version": v, "type": "mcp"},
-            tarball_hash=f"sha256:v{v.replace(".","")}", tarball_size=1024,
+            tarball_hash=f"sha256:v{v.replace('.','')}", tarball_size=1024,
             tarball_path=f"packages/@test/ver-test/{v}.tar.gz",
             tag="latest" if v == "2.0.0" else None,
             published_by=test_user.id,
@@ -396,7 +395,6 @@ async def test_download_nonexistent_version(client: AsyncClient, db, auth_header
 @pytest.mark.asyncio
 async def test_full_journey(client: AsyncClient, db, auth_headers, test_user: User):
     """完整旅程：注册 -> 创建包 -> 发布版本 -> 搜索 -> 详情 -> 下载"""
-    import json
 
     # 1. 创建包
     resp = await client.post(
