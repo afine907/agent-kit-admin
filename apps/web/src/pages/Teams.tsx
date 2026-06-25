@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../stores/authStore';
 import { api, type Team, type TeamMember } from '../lib/api';
+import TeamPackagesTab from '../components/TeamPackagesTab';
 import {
   Users,
   Plus,
@@ -17,7 +18,10 @@ import {
   User,
   Loader2,
   AlertCircle,
+  Package,
 } from 'lucide-react';
+
+type Tab = 'members' | 'packages';
 
 export default function Teams() {
   const { t } = useTranslation('pages');
@@ -29,6 +33,7 @@ export default function Teams() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newTeam, setNewTeam] = useState({ name: '', slug: '', description: '' });
   const [error, setError] = useState<string | null>(null);
+  const [selectedTab, setSelectedTab] = useState<Tab>('members');
 
   const loadTeams = useCallback(async () => {
     try {
@@ -116,6 +121,10 @@ export default function Teams() {
     };
     return roles[role] || role;
   };
+
+  const canManageTeam = members.some(
+    (m) => m.user_id === user?.id && (m.role === 'owner' || m.role === 'admin')
+  );
 
   return (
     <div className="container mx-auto py-8">
@@ -221,7 +230,10 @@ export default function Teams() {
             <div
               key={team.id}
               className="p-6 bg-card rounded-xl border border-border hover:border-primary/50 transition-colors cursor-pointer"
-              onClick={() => setSelectedTeam(team)}
+              onClick={() => {
+                setSelectedTeam(team);
+                setSelectedTab('members');
+              }}
             >
               <div className="flex items-start justify-between mb-4">
                 <div>
@@ -252,76 +264,113 @@ export default function Teams() {
       {/* 团队详情弹窗 */}
       {selectedTeam && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-2xl max-h-[80vh] bg-card rounded-xl border border-border overflow-hidden">
-            <div className="p-6 border-b border-border">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-semibold">{selectedTeam.name}</h2>
-                  <p className="text-sm text-muted-foreground font-mono">@{selectedTeam.slug}</p>
-                </div>
-                <button
-                  onClick={() => setSelectedTeam(null)}
-                  className="p-2 hover:bg-muted rounded-lg"
-                >
-                  ×
-                </button>
+          <div className="w-full max-w-2xl max-h-[85vh] bg-card rounded-xl border border-border overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="p-6 border-b border-border flex items-center justify-between flex-shrink-0">
+              <div>
+                <h2 className="text-xl font-semibold">{selectedTeam.name}</h2>
+                <p className="text-sm text-muted-foreground font-mono">@{selectedTeam.slug}</p>
               </div>
+              <button
+                onClick={() => setSelectedTeam(null)}
+                className="p-2 hover:bg-muted rounded-lg text-xl leading-none"
+              >
+                ×
+              </button>
             </div>
 
-            <div className="p-6 overflow-y-auto max-h-[60vh]">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-medium">{t('teams.members')}</h3>
-                <button className="flex items-center gap-2 px-3 py-1.5 text-sm bg-muted rounded-lg hover:bg-muted/80">
-                  <UserPlus className="w-4 h-4" />
-                  {t('teams.addMember')}
-                </button>
-              </div>
+            {/* Tabs */}
+            <div className="flex items-center gap-1 px-6 border-b border-border bg-muted/30 flex-shrink-0">
+              <button
+                onClick={() => setSelectedTab('members')}
+                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                  selectedTab === 'members'
+                    ? 'border-primary text-foreground'
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Users className="w-4 h-4" />
+                {t('teams.members')}
+              </button>
+              <button
+                onClick={() => setSelectedTab('packages')}
+                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                  selectedTab === 'packages'
+                    ? 'border-primary text-foreground'
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Package className="w-4 h-4" />
+                {t('teams.packages.title')}
+              </button>
+            </div>
 
-              <div className="space-y-3">
-                {members.map((member) => (
-                  <div
-                    key={member.user_id}
-                    className="flex items-center justify-between p-3 bg-muted/30 rounded-lg"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        {member.avatar_url ? (
-                          <img
-                            src={member.avatar_url}
-                            alt={member.username}
-                            className="w-10 h-10 rounded-full"
-                          />
-                        ) : (
-                          <User className="w-5 h-5 text-primary" />
-                        )}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">
-                            {member.display_name || member.username}
-                          </span>
-                          {getRoleIcon(member.role)}
-                          <span className="text-xs text-muted-foreground">
-                            {getRoleLabel(member.role)}
-                          </span>
-                        </div>
-                        <span className="text-xs text-muted-foreground">
-                          @{member.username}
-                        </span>
-                      </div>
-                    </div>
-                    {member.role !== 'owner' && (
-                      <button
-                        onClick={() => handleRemoveMember(selectedTeam.id, member.user_id)}
-                        className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
-                        title={t('teams.removeMember')}
-                      >
-                        <UserMinus className="w-4 h-4" />
+            {/* Tab Content */}
+            <div className="p-6 overflow-y-auto flex-1 min-h-0">
+              {selectedTab === 'members' ? (
+                <>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-medium">{t('teams.members')}</h3>
+                    {canManageTeam && (
+                      <button className="flex items-center gap-2 px-3 py-1.5 text-sm bg-muted rounded-lg hover:bg-muted/80">
+                        <UserPlus className="w-4 h-4" />
+                        {t('teams.addMember')}
                       </button>
                     )}
                   </div>
-                ))}
-              </div>
+
+                  <div className="space-y-3">
+                    {members.map((member) => (
+                      <div
+                        key={member.user_id}
+                        className="flex items-center justify-between p-3 bg-muted/30 rounded-lg"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                            {member.avatar_url ? (
+                              <img
+                                src={member.avatar_url}
+                                alt={member.username}
+                                className="w-10 h-10 rounded-full"
+                              />
+                            ) : (
+                              <User className="w-5 h-5 text-primary" />
+                            )}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">
+                                {member.display_name || member.username}
+                              </span>
+                              {getRoleIcon(member.role)}
+                              <span className="text-xs text-muted-foreground">
+                                {getRoleLabel(member.role)}
+                              </span>
+                            </div>
+                            <span className="text-xs text-muted-foreground">
+                              @{member.username}
+                            </span>
+                          </div>
+                        </div>
+                        {member.role !== 'owner' && canManageTeam && (
+                          <button
+                            onClick={() => handleRemoveMember(selectedTeam.id, member.user_id)}
+                            className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
+                            title={t('teams.removeMember')}
+                          >
+                            <UserMinus className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <TeamPackagesTab
+                  teamId={selectedTeam.id}
+                  canManage={canManageTeam}
+                />
+              )}
             </div>
           </div>
         </div>
