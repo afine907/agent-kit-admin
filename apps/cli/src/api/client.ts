@@ -359,11 +359,22 @@ export class ApiClient {
     version?: string
   ): Promise<string> {
     const params = version ? { version } : {};
-    const response = await this.client.get<{ url: string }>(
+    // API returns 302 redirect to MinIO presigned URL; accept non-2xx as valid
+    const response = await this.client.get(
       `/api/v1/packages/${scope}/${name}/download`,
-      { params }
+      { params, maxRedirects: 0, validateStatus: (status) => status < 500 }
     );
-    return response.data.url;
+    if (response.status === 302 || response.status === 301) {
+      const location = response.headers['location'] as string | undefined;
+      if (!location) throw new Error('No Location header in redirect response');
+      return location;
+    }
+    if (response.status >= 400) {
+      throw new Error(`Download URL request failed: ${response.status}`);
+    }
+    // Some APIs return URL in body
+    const data = response.data as { url?: string };
+    return data.url || (typeof data === 'string' ? data : '');
   }
 
   /**
@@ -500,6 +511,31 @@ export class ApiClient {
       `/api/v1/teams/${teamId}/packages/${packageId}/versions`
     );
     return { items: response.data.data, total: response.data.total };
+  }
+
+  /**
+   * 获取团队包下载链接（302 redirect to MinIO presigned URL）
+   * GET /api/v1/teams/{team_id}/packages/{package_id}/download
+   */
+  async getTeamPackageDownloadUrl(
+    teamId: string,
+    packageId: string,
+    version?: string
+  ): Promise<string> {
+    const path = version
+      ? `/api/v1/teams/${teamId}/packages/${packageId}/versions/${version}/download`
+      : `/api/v1/teams/${teamId}/packages/${packageId}/download`;
+    // API returns 302 redirect, follow Location header
+    const response = await this.client.get<string>(path, {
+      headers: { Accept: 'application/json' },
+      maxRedirects: 0,
+    });
+    // Location header contains the actual download URL
+    const location = response.headers['location'] as string | undefined;
+    if (!location) {
+      throw new Error('No download URL in response');
+    }
+    return location;
   }
 }
 

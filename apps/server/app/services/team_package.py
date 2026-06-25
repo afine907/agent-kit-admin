@@ -320,6 +320,46 @@ class TeamPackageService:
     # 版本列表
     # -------------------------------------------------------------------------
 
+    async def get_latest_version(self, team_id: str, package_id: str, user_id: str) -> Version | None:
+        """获取包的最新版本"""
+        await self._get_team(team_id)
+        if not await self._is_member(team_id, user_id):
+            raise AppError(code=ErrorCodes.AUTH_FORBIDDEN, message="Not a team member", status_code=403)
+
+        pkg = await self._get_package(package_id)
+        if not pkg or pkg.deleted_at:
+            raise AppError(code=ErrorCodes.PACKAGE_NOT_FOUND, message="Package not found", status_code=404)
+        if str(pkg.owner_id) != team_id or pkg.owner_type != "team":
+            raise AppError(code=ErrorCodes.PACKAGE_NOT_FOUND, message="Package not found in this team", status_code=404)
+
+        versions = await self.db.execute(
+            select(Version)
+            .where(Version.package_id == package_id)
+            .order_by(Version.published_at.desc())
+        )
+        return versions.scalars().first()
+
+    async def get_version_by_tag(self, team_id: str, package_id: str, user_id: str, tag: str) -> Version | None:
+        """按 tag 或 version 获取版本"""
+        await self._get_team(team_id)
+        if not await self._is_member(team_id, user_id):
+            raise AppError(code=ErrorCodes.AUTH_FORBIDDEN, message="Not a team member", status_code=403)
+
+        pkg = await self._get_package(package_id)
+        if not pkg or pkg.deleted_at:
+            raise AppError(code=ErrorCodes.PACKAGE_NOT_FOUND, message="Package not found", status_code=404)
+        if str(pkg.owner_id) != team_id or pkg.owner_type != "team":
+            raise AppError(code=ErrorCodes.PACKAGE_NOT_FOUND, message="Package not found in this team", status_code=404)
+
+        # tag=latest 或具体 version
+        if tag == "latest":
+            return await self.get_latest_version(team_id, package_id, user_id)
+
+        result = await self.db.execute(
+            select(Version).where(Version.package_id == package_id, Version.version == tag)
+        )
+        return result.scalars().first()
+
     async def list_versions(self, team_id: str, package_id: str, user_id: str) -> tuple[list[Version], int]:
         """列出包的所有版本"""
         await self._get_team(team_id)

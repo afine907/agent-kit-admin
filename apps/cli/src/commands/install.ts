@@ -14,6 +14,7 @@ import { agentRegistry } from '../agents/registry.js';
 import { readManifest } from '../utils/manifest.js';
 import { parsePackageName } from '../utils/package-name.js';
 import { FileLock } from '../utils/lock.js';
+import { t } from '../i18n.js';
 
 // 包安装目录
 const PACKAGES_DIR = join(homedir(), '.akit', 'packages');
@@ -84,8 +85,9 @@ async function downloadWithRetry(url: string, maxRetries: number): Promise<Buffe
   throw lastError;
 }
 
-export const installCommand = new Command('install')
-  .description('安装包到本地')
+export const installCommand = new Command('install');
+installCommand
+  .description(t('commands:install.description'))
   .argument('<package>', '包名 (例如: @scope/name)')
   .option('--agent <name>', '目标 Agent (claude/codex)')
   .option('--tag <tag>', '版本标签', 'latest')
@@ -100,31 +102,58 @@ export const installCommand = new Command('install')
       const { scope, name } = parsePackageName(packageName);
       const fullName = `${scope}/${name}`;
 
-      // 2. 获取包信息
+      // 2. 获取包信息 + 下载 URL（团队包或普通包）
       const spinner1 = ora('获取包信息...').start();
-      let pkg;
+      let pkg: { latest_version?: string; name?: string } | null = null;
+      let downloadUrl: string = '';
+      let isTeamPackage = false;
+      let teamId: string | undefined;
+      let packageId: string | undefined;
+
       try {
+        // 先尝试普通包
         pkg = await apiClient.getPackage(scope, name);
         spinner1.succeed(`找到包: ${fullName}`);
+        // 获取普通包下载链接
+        const dUrl = await apiClient.getDownloadUrl(scope, name, options.tag === 'latest' ? undefined : options.tag);
+        downloadUrl = dUrl;
       } catch (error: unknown) {
-        spinner1.fail('获取包信息失败');
-        console.error(chalk.red(`\n✖ ${error instanceof Error ? error.message : String(error)}`));
-        process.exit(1);
+        // 如果是 404，且 scope 看起来是团队名，尝试团队包
+        const errMsg = error instanceof Error ? error.message : String(error);
+        if (errMsg.includes('404') || errMsg.includes('Not Found') || errMsg.includes('not found')) {
+          // 遍历用户团队查找这个包
+          spinner1.info(`个人包未找到，查找团队包...`);
+          const teams = await apiClient.listTeams();
+          for (const team of teams) {
+            try {
+              const pkgs = await apiClient.listTeamPackages(team.id);
+              const found = pkgs.find((p) => p.name === name || p.full_name === fullName);
+              if (found) {
+                isTeamPackage = true;
+                teamId = team.id;
+                packageId = found.id;
+                downloadUrl = await apiClient.getTeamPackageDownloadUrl(teamId, packageId as string, options.tag === 'latest' ? undefined : options.tag);
+                spinner1.succeed(`找到团队包: ${team.name}/${fullName}`);
+                break;
+              }
+            } catch {
+              // continue
+            }
+          }
+          if (!downloadUrl) {
+            spinner1.fail('获取包信息失败');
+            console.error(chalk.red(`\n✖ 包 ${fullName} 不存在`));
+            process.exit(1);
+          }
+        } else {
+          spinner1.fail('获取包信息失败');
+          console.error(chalk.red(`\n✖ ${errMsg}`));
+          process.exit(1);
+        }
       }
 
-      // 3. 获取下载 URL
-      const spinner2 = ora('获取下载链接...').start();
-      let downloadUrl: string;
-      try {
-        downloadUrl = await apiClient.getDownloadUrl(scope, name, options.tag === 'latest' ? undefined : options.tag);
-        spinner2.succeed('获取下载链接成功');
-      } catch (error: unknown) {
-        spinner2.fail('获取下载链接失败');
-        console.error(chalk.red(`\n✖ ${error instanceof Error ? error.message : String(error)}`));
-        process.exit(1);
-      }
+      // 3. 下载已获取到 URL，开始下载
 
-      // 4. 下载并解压
       const spinner3 = ora('下载中...').start();
       const installDir = options.global ? PACKAGES_DIR : join(process.cwd(), '.akit', 'packages');
       const packageDir = join(installDir, scope, name);
@@ -177,7 +206,7 @@ export const installCommand = new Command('install')
       // 6. 配置 Agent（--no-config 跳过）
       if (options.config === false) {
         // 跳过 Agent 配置
-        const version = pkg.latest_version || 'unknown';
+        const version = pkg!.latest_version || 'unknown';
         console.log(chalk.green(`\n✔ 已下载 ${fullName}@${version}`));
         console.log(chalk.gray(`  目录: ${packageDir}`));
         console.log('');
@@ -251,7 +280,7 @@ export const installCommand = new Command('install')
         }
 
         // 7. 更新已安装记录
-        const version = pkg.latest_version || 'unknown';
+        const version = pkg!.latest_version || 'unknown';
         recordInstall({ scope, name, version, agent: options.agent });
 
         // 显示成功信息

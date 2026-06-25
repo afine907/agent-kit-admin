@@ -1,6 +1,8 @@
 """团队管理 API 路由"""
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, BackgroundTasks
+from fastapi.responses import RedirectResponse
+from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.services.team import TeamService
@@ -323,6 +325,81 @@ async def publish_team_package_version(
         "yanked": ver.yanked,
         "published_at": str(ver.published_at),
     }
+
+
+@router.get("/{team_id}/packages/{package_id}/download")
+async def download_team_package_latest(
+    team_id: str,
+    package_id: str,
+    background_tasks: BackgroundTasks,
+    current_user: UserType = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """下载团队包最新版本 (302 重定向到 MinIO 预签名 URL)"""
+    from app.services.storage import get_storage_service
+
+    service = TeamPackageService(db)
+    version = await service.get_latest_version(team_id, package_id, str(current_user.id))
+
+    if not version or not version.tarball_path:
+        from app.errors import AppError, ErrorCodes
+        raise AppError(code=ErrorCodes.VERSION_NOT_FOUND, message="没有可用的版本", status_code=404)
+
+    storage = get_storage_service()
+    url = await storage.get_presigned_url(str(version.tarball_path))
+
+    background_tasks.add_task(
+        _record_team_download,
+        team_id,
+        package_id,
+        str(version.id),
+    )
+
+    return RedirectResponse(url=url, status_code=302)
+
+
+@router.get("/{team_id}/packages/{package_id}/versions/{version}/download")
+async def download_team_package_version(
+    team_id: str,
+    package_id: str,
+    version: str,
+    background_tasks: BackgroundTasks,
+    current_user: UserType = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """下载团队包指定版本 (302 重定向到 MinIO 预签名 URL)"""
+    from app.services.storage import get_storage_service
+
+    service = TeamPackageService(db)
+    ver = await service.get_version_by_tag(team_id, package_id, str(current_user.id), version)
+
+    if not ver or not ver.tarball_path:
+        from app.errors import AppError, ErrorCodes
+        raise AppError(code=ErrorCodes.VERSION_NOT_FOUND, message=f"版本 {version} 不存在", status_code=404)
+
+    storage = get_storage_service()
+    url = await storage.get_presigned_url(str(ver.tarball_path))
+
+    background_tasks.add_task(
+        _record_team_download,
+        team_id,
+        package_id,
+        str(ver.id),
+    )
+
+    return RedirectResponse(url=url, status_code=302)
+
+
+async def _record_team_download(team_id: str, package_id: str, version_id: str):
+    """后台任务：记录团队包下载计数"""
+    from app.database import AsyncSessionLocal
+    from app.models.package import Package
+
+    async with AsyncSessionLocal() as db:
+        await db.execute(
+            update(Package).where(Package.id == package_id).values(downloads_count=Package.downloads_count + 1)
+        )
+        await db.commit()
 
 
 @router.post("/{team_id}/packages/{package_id}/install", status_code=201)
