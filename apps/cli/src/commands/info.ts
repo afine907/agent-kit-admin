@@ -36,13 +36,33 @@ export const infoCommand = new Command('info')
         console.log(`  Repository: ${pkg.repository}`);
       }
 
-      // 获取版本列表
+      // 获取版本列表（团队包或普通包）
       const spinner2 = ora('获取版本列表...').start();
       try {
-        const versions = await apiClient.getVersions(scope, name);
+        let versions;
+        // 尝试普通包版本 API
+        try {
+          versions = await apiClient.getVersions(scope, name);
+        } catch {
+          // 尝试团队包版本 API
+          const teams = await apiClient.listTeams();
+          for (const team of teams) {
+            try {
+              const pkgs = await apiClient.listTeamPackages(team.id);
+              const found = pkgs.find((p) => p.name === name || p.full_name === fullName);
+              if (found) {
+                const verResp = await apiClient.getTeamPackageVersions(team.id, found.id);
+                versions = verResp;
+                break;
+              }
+            } catch {
+              // continue
+            }
+          }
+        }
         spinner2.stop();
 
-        if (versions.items.length > 0) {
+        if (versions && versions.items.length > 0) {
           console.log(chalk.bold('\n  Versions:'));
           for (const ver of versions.items.slice(0, 10)) {
             const tag = ver.tag ? ` (${ver.tag})` : '';
