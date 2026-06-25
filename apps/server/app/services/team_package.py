@@ -15,6 +15,8 @@ from app.models.version import Version
 from app.models.team import Team, TeamMember
 from app.models.installed_package import InstalledPackage
 from app.services.storage import get_storage_service
+from packaging.version import parse as parse_version
+
 from app.errors import AppError, ErrorCodes
 
 
@@ -290,10 +292,13 @@ class TeamPackageService:
             tarball_size = len(tarball_data)
 
         # 更新 latest_version（如果版本号更大）
-        current_latest = pkg.latest_version or "v0.0.0"
-        # 简单字符串比较：v1.2.3 > v1.2.2
-        if version > current_latest:
-            pkg.latest_version = version
+        try:
+            if parse_version(version) > parse_version(pkg.latest_version or "v0.0.0"):
+                pkg.latest_version = version
+        except Exception:
+            # fallback: 语义版本解析失败时用字符串比较
+            if version > (pkg.latest_version or ""):
+                pkg.latest_version = version
 
         # 创建版本
         ver = Version(
@@ -427,10 +432,15 @@ class TeamPackageService:
     # -------------------------------------------------------------------------
 
     async def delete_package(self, team_id: str, package_id: str, user_id: str) -> None:
-        """删除团队包（仅 owner/admin，MVP 先不做权限检查）"""
+        """删除团队包（仅 owner/admin）"""
         await self._get_team(team_id)
-        if not await self._is_member(team_id, user_id):
+        member = await self._get_member(team_id, user_id)
+        if not member:
             raise AppError(code=ErrorCodes.AUTH_FORBIDDEN, message="Not a team member", status_code=403)
+        if member.role not in ("owner", "admin"):
+            raise AppError(
+                code=ErrorCodes.AUTH_FORBIDDEN, message="Only owner or admin can delete packages", status_code=403
+            )
 
         pkg = await self._get_package(package_id)
         if not pkg or pkg.deleted_at:
