@@ -24,6 +24,7 @@ from app.models.installed_package import InstalledPackage
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 async def team(db, test_user):
     """创建测试团队，test_user 为 owner"""
@@ -77,7 +78,7 @@ async def team_package_v1(db, team, test_user):
         manifest={"name": "web-search-mcp", "version": "v1.0.0", "type": "mcp"},
         tarball_hash="sha256:abc123",
         tarball_size=1024,
-        tarball_path=f"packages/@frontend/web-search-mcp/v1.0.0.tar.gz",
+        tarball_path="packages/@frontend/web-search-mcp/v1.0.0.tar.gz",
         tag="latest",
         published_by=test_user.id,
     )
@@ -97,7 +98,7 @@ async def team_package_v2(db, team_package_v1, test_user):
         manifest={"name": "web-search-mcp", "version": "v1.1.0", "type": "mcp"},
         tarball_hash="sha256:def456",
         tarball_size=1024,
-        tarball_path=f"packages/@frontend/web-search-mcp/v1.1.0.tar.gz",
+        tarball_path="packages/@frontend/web-search-mcp/v1.1.0.tar.gz",
         tag="latest",
         published_by=test_user.id,
     )
@@ -124,13 +125,12 @@ async def installed_package_v1(db, test_user, team_package_v1):
 # AC-01: 发布工具包到团队（Web）
 # =============================================================================
 
+
 class TestPublishTeamPackage:
     """AC-01 / AC-02: 发布包到团队"""
 
     @pytest.mark.asyncio
-    async def test_publish_team_package_success(
-        self, client: AsyncClient, auth_headers: dict, team
-    ):
+    async def test_publish_team_package_success(self, client: AsyncClient, auth_headers: dict, team):
         """发布新包到团队 → 201"""
         response = await client.post(
             f"/api/v1/teams/{team.id}/packages",
@@ -153,9 +153,7 @@ class TestPublishTeamPackage:
         assert data["visibility"] == "team"
 
     @pytest.mark.asyncio
-    async def test_publish_team_package_duplicate(
-        self, client: AsyncClient, auth_headers: dict, team, team_package_v1
-    ):
+    async def test_publish_team_package_duplicate(self, client: AsyncClient, auth_headers: dict, team, team_package_v1):
         """同名包重复发布 → 409"""
         response = await client.post(
             f"/api/v1/teams/{team.id}/packages",
@@ -173,9 +171,7 @@ class TestPublishTeamPackage:
         assert response.status_code == 409, response.json()
 
     @pytest.mark.asyncio
-    async def test_publish_team_package_unauthorized(
-        self, client: AsyncClient, team
-    ):
+    async def test_publish_team_package_unauthorized(self, client: AsyncClient, team):
         """未登录发布 → 401"""
         response = await client.post(
             f"/api/v1/teams/{team.id}/packages",
@@ -189,9 +185,7 @@ class TestPublishTeamPackage:
         assert response.status_code == 401
 
     @pytest.mark.asyncio
-    async def test_publish_to_non_member_team(
-        self, client: AsyncClient, another_auth_headers: dict, team
-    ):
+    async def test_publish_to_non_member_team(self, client: AsyncClient, another_auth_headers: dict, team):
         """非团队成员发布 → 403"""
         response = await client.post(
             f"/api/v1/teams/{team.id}/packages",
@@ -209,6 +203,7 @@ class TestPublishTeamPackage:
 # =============================================================================
 # AC-07 / AC-08: 团队包列表（含安装状态）
 # =============================================================================
+
 
 class TestTeamPackageList:
     """AC-07: 团队包列表显示安装状态"""
@@ -269,9 +264,7 @@ class TestTeamPackageList:
         assert data[0]["has_update"] is False
 
     @pytest.mark.asyncio
-    async def test_list_team_packages_non_member_forbidden(
-        self, client: AsyncClient, another_auth_headers: dict, team
-    ):
+    async def test_list_team_packages_non_member_forbidden(self, client: AsyncClient, another_auth_headers: dict, team):
         """非团队成员 → 403"""
         response = await client.get(
             f"/api/v1/teams/{team.id}/packages",
@@ -280,9 +273,7 @@ class TestTeamPackageList:
         assert response.status_code == 403
 
     @pytest.mark.asyncio
-    async def test_list_other_team_packages_forbidden(
-        self, client: AsyncClient, auth_headers: dict, another_team
-    ):
+    async def test_list_other_team_packages_forbidden(self, client: AsyncClient, auth_headers: dict, another_team):
         """访问其他团队包列表 → 403"""
         response = await client.get(
             f"/api/v1/teams/{another_team.id}/packages",
@@ -295,13 +286,12 @@ class TestTeamPackageList:
 # 团队包详情
 # =============================================================================
 
+
 class TestTeamPackageDetail:
     """AC-05: 团队包详情"""
 
     @pytest.mark.asyncio
-    async def test_get_team_package_detail(
-        self, client: AsyncClient, auth_headers: dict, team, team_package_v1
-    ):
+    async def test_get_team_package_detail(self, client: AsyncClient, auth_headers: dict, team, team_package_v1):
         """获取团队包详情 → 200"""
         response = await client.get(
             f"/api/v1/teams/{team.id}/packages/{team_package_v1.id}",
@@ -341,13 +331,12 @@ class TestTeamPackageDetail:
 # 团队包版本历史
 # =============================================================================
 
+
 class TestTeamPackageVersions:
     """AC-01: 版本历史"""
 
     @pytest.mark.asyncio
-    async def test_list_team_package_versions(
-        self, client: AsyncClient, auth_headers: dict, team, team_package_v2
-    ):
+    async def test_list_team_package_versions(self, client: AsyncClient, auth_headers: dict, team, team_package_v2):
         """列出团队包所有版本 → 200，含 v1.0.0 + v1.1.0"""
         response = await client.get(
             f"/api/v1/teams/{team.id}/packages/{team_package_v2.id}/versions",
@@ -361,9 +350,7 @@ class TestTeamPackageVersions:
         assert "v1.1.0" in versions
 
     @pytest.mark.asyncio
-    async def test_publish_new_version(
-        self, client: AsyncClient, auth_headers: dict, team, team_package_v1
-    ):
+    async def test_publish_new_version(self, client: AsyncClient, auth_headers: dict, team, team_package_v1):
         """发布新版本 → 201"""
         response = await client.post(
             f"/api/v1/teams/{team.id}/packages/{team_package_v1.id}/versions",
@@ -383,6 +370,7 @@ class TestTeamPackageVersions:
 # AC-10: 团队隔离
 # =============================================================================
 
+
 class TestTeamIsolation:
     """AC-10: 非团队成员无法访问"""
 
@@ -399,9 +387,7 @@ class TestTeamIsolation:
         assert response.status_code == 403
 
     @pytest.mark.asyncio
-    async def test_non_member_cannot_see_team_package_list(
-        self, client: AsyncClient, another_auth_headers: dict, team
-    ):
+    async def test_non_member_cannot_see_team_package_list(self, client: AsyncClient, another_auth_headers: dict, team):
         """非成员查看团队包列表 → 403"""
         response = await client.get(
             f"/api/v1/teams/{team.id}/packages",
@@ -413,6 +399,7 @@ class TestTeamIsolation:
 # =============================================================================
 # AC-11: 成员管理（已在 team_api 测试，这里补充团队包发布权限）
 # =============================================================================
+
 
 class TestTeamMemberPermissions:
     """补充：团队成员工具包发布权限"""
@@ -428,8 +415,9 @@ class TestTeamMemberPermissions:
         await db.flush()
 
         # 用 another_user 的 token
-        from tests.conftest import _generate_token
+        # Token 由 fixture auth_headers_another_user 提供
         from app.config import get_settings
+
         settings = get_settings()
         payload = {
             "sub": str(another_user.id),
