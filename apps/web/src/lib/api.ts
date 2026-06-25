@@ -210,6 +210,33 @@ export interface TeamMember {
   joined_at: string;
 }
 
+export interface TeamPackage {
+  id: string;
+  name: string;
+  scope: string;
+  full_name: string;
+  type: 'mcp' | 'skill';
+  description?: string;
+  visibility: 'team' | 'public';
+  owner_type: 'team' | 'user';
+  latest_version?: string;
+  my_installed_version: string | null;
+  has_update: boolean;
+  downloads_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PublishTeamPackageData {
+  name: string;
+  type: 'mcp' | 'skill';
+  description?: string;
+  visibility?: 'team' | 'public';
+  owner_type: 'team';
+  manifest: Record<string, unknown>;
+  tarball: string; // base64 encoded
+}
+
 // API 函数
 export const api = {
   // 配置
@@ -337,6 +364,28 @@ export const api = {
 
   updateTeamMemberRole: (teamId: string, userId: string, role: string) =>
     client.put<TeamMember>(`/api/v1/teams/${teamId}/members/${userId}`, { role }).then((r) => r.data),
+
+  // 团队包管理
+  listTeamPackages: (teamId: string) =>
+    client.get<TeamPackage[]>(`/api/v1/teams/${teamId}/packages`).then((r) => r.data),
+
+  publishTeamPackage: (teamId: string, data: PublishTeamPackageData) =>
+    client.post<TeamPackage>(`/api/v1/teams/${teamId}/packages`, data).then((r) => r.data),
+
+  getTeamPackage: (teamId: string, packageId: string) =>
+    client.get<TeamPackage>(`/api/v1/teams/${teamId}/packages/${packageId}`).then((r) => r.data),
+
+  deleteTeamPackage: (teamId: string, packageId: string) =>
+    client.delete(`/api/v1/teams/${teamId}/packages/${packageId}`).then((r) => r.data),
+
+  getTeamPackageVersions: (teamId: string, packageId: string) =>
+    client.get<VersionResponse[]>(`/api/v1/teams/${teamId}/packages/${packageId}/versions`).then((r) => r.data),
+
+  installTeamPackage: (teamId: string, packageId: string, version?: string) =>
+    client.post(
+      `/api/v1/teams/${teamId}/packages/${packageId}/install`,
+      version ? { version } : {}
+    ).then((r) => r.data),
 
   // 管理后台
   admin: {

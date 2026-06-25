@@ -141,6 +141,15 @@
       "owner": "Owner",
       "admin": "Admin",
       "member": "Member"
+    },
+    "packages": {
+      "title": "Packages",
+      "publish": "Publish Package",
+      "empty": "No packages yet",
+      "notInstalled": "Not installed",
+      "install": "Install",
+      "update": "Update",
+      "installed": "Installed"
     }
   },
   "publish": {

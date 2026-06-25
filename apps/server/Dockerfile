@@ -25,7 +25,8 @@ RUN pip install --no-cache-dir \
     python-multipart>=0.0.6 \
     httpx>=0.25.0 \
     cachetools>=5.3.0 \
-    email-validator>=2.0.0
+    email-validator>=2.0.0 \
+    packaging>=21.0
 
 # 复制应用代码
 COPY . .

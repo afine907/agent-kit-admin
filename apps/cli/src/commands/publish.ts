@@ -22,6 +22,7 @@ export const publishCommand = new Command('publish')
   .option('--token <token>', 'API token (用于 CI/CD)')
   .option('--dry-run', '仅验证，不实际发布')
   .option('--scope <scope>', '发布范围 (默认使用当前 workspace 或个人范围)')
+  .option('--team <slug>', '发布到指定团队（格式: @team-slug 或 team-slug）')
   .action(async (options) => {
     try {
       // 使用指定 token 或配置中的 token
@@ -59,9 +60,37 @@ export const publishCommand = new Command('publish')
       }
       spinner2.succeed('manifest 验证通过');
 
-      // 确定发布范围（尽早确定，避免后续变量未定义）
-      const defaultScope = `@${configManager.getUser()?.username || 'unknown'}`;
-      const scope = options.scope || manifest.scope || configManager.getWorkspace() || defaultScope;
+      // 确定发布范围
+      let scope: string;
+      let ownerType: 'user' | 'team';
+      let teamId: string | undefined;
+
+      if (options.team) {
+        // 显式指定团队
+        const slug = options.team.startsWith('@') ? options.team.slice(1) : options.team;
+        const teams = await apiClient.listTeams();
+        const team = teams.find((t) => t.slug === slug);
+        if (!team) {
+          console.error(chalk.red(`\n✖ 团队 @${slug} 不存在`));
+          process.exit(1);
+        }
+        teamId = team.id;
+        scope = `@${slug}`;
+        ownerType = 'team';
+      } else {
+        // 自动判断
+        const defaultScope = `@${configManager.getUser()?.username || 'unknown'}`;
+        scope = options.scope || manifest.scope || configManager.getWorkspace() || defaultScope;
+        const currentUsername = configManager.getUser()?.username;
+        const scopeName = scope.startsWith('@') ? scope.slice(1) : scope;
+        ownerType = scopeName !== currentUsername ? 'team' : 'user';
+        // 如果是团队 scope，获取 teamId
+        if (ownerType === 'team') {
+          const teams = await apiClient.listTeams();
+          const team = teams.find((t) => `@${t.slug}` === scope);
+          teamId = team?.id;
+        }
+      }
 
       // P2#13: 版本号自动递增建议（交互式提示）
       const suggestedVersion = await suggestNextVersion(scope, manifest.name);
@@ -109,33 +138,55 @@ export const publishCommand = new Command('publish')
         process.exit(1);
       }
 
-      // 判断是团队包还是个人包
-      const currentUsername = configManager.getUser()?.username;
-      const scopeName = scope.startsWith('@') ? scope.slice(1) : scope;
-      const isTeamScope = scopeName !== currentUsername;
-      const ownerType: 'user' | 'team' = isTeamScope ? 'team' : 'user';
-
       // 5. 创建包 (如果不存在)
       const spinner4 = ora('创建包记录...').start();
 
-      try {
-        await apiClient.createPackage({
-          name: manifest.name,
-          scope: scope,
-          type: manifest.type as 'mcp' | 'skill',
-          description: manifest.description,
-          license: manifest.license,
-          owner_type: ownerType,
-        });
-        spinner4.succeed('包记录创建成功');
-      } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        if (errorMessage.includes('409')) {
-          spinner4.info('包已存在，跳过创建');
-        } else {
-          spinner4.fail('创建包记录失败');
-          console.error(chalk.red(`\n✖ ${errorMessage}`));
-          process.exit(1);
+      if (teamId) {
+        // 团队包：使用团队发布 API
+        const tarballBuffer = await import('fs').then((fs) => fs.readFileSync(tarballPath));
+        const tarballB64 = tarballBuffer.toString('base64');
+        try {
+          await apiClient.publishTeamPackage(teamId, {
+            name: manifest.name,
+            type: manifest.type as 'mcp' | 'skill',
+            description: manifest.description,
+            visibility: 'team',
+            owner_type: 'team',
+            manifest,
+            tarball: tarballB64,
+          });
+          spinner4.succeed('团队包记录创建成功');
+        } catch (error: unknown) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          if (errorMessage.includes('409')) {
+            spinner4.info('包已存在，跳过创建');
+          } else {
+            spinner4.fail('创建团队包记录失败');
+            console.error(chalk.red(`\n✖ ${errorMessage}`));
+            process.exit(1);
+          }
+        }
+      } else {
+        // 个人包：使用原有 API
+        try {
+          await apiClient.createPackage({
+            name: manifest.name,
+            scope: scope,
+            type: manifest.type as 'mcp' | 'skill',
+            description: manifest.description,
+            license: manifest.license,
+            owner_type: ownerType,
+          });
+          spinner4.succeed('包记录创建成功');
+        } catch (error: unknown) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          if (errorMessage.includes('409')) {
+            spinner4.info('包已存在，跳过创建');
+          } else {
+            spinner4.fail('创建包记录失败');
+            console.error(chalk.red(`\n✖ ${errorMessage}`));
+            process.exit(1);
+          }
         }
       }
 
@@ -146,7 +197,7 @@ export const publishCommand = new Command('publish')
         const formData = new FormData();
         formData.append('version', manifest.version);
         formData.append('manifest', JSON.stringify(manifest));
-        formData.append('tarball', new Blob([await import('fs').then(fs => fs.readFileSync(tarballPath))]), `${manifest.name}-${manifest.version}.tar.gz`);
+        formData.append('tarball', new Blob([await import('fs').then((fs) => fs.readFileSync(tarballPath))]), `${manifest.name}-${manifest.version}.tar.gz`);
         if (options.tag) {
           formData.append('tag', options.tag);
         }

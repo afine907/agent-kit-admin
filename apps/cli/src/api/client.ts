@@ -88,6 +88,35 @@ export interface TeamInfo {
   created_at: string;
 }
 
+export interface TeamPackageInfo {
+  id: string;
+  name: string;
+  scope: string;
+  full_name: string;
+  type: 'mcp' | 'skill';
+  description?: string;
+  visibility: string;
+  owner_type: string;
+  downloads_count: number;
+  latest_version?: string;
+  created_at: string;
+  updated_at: string;
+  // 安装状态（仅 listTeamPackages 时返回）
+  my_installed_version?: string | null;
+  has_update?: boolean;
+}
+
+export interface InstalledPackageInfo {
+  package_id: string;
+  version_installed: string;
+  installed_at: string;
+  package_name?: string;
+  package_scope?: string;
+  package_type?: string;
+  latest_version?: string;
+  has_update?: boolean;
+}
+
 export interface ListPackagesParams {
   search?: string;
   type?: 'mcp' | 'skill';
@@ -392,6 +421,85 @@ export class ApiClient {
   async listTeams(): Promise<TeamInfo[]> {
     const response = await this.client.get<TeamInfo[]>('/api/v1/teams');
     return response.data;
+  }
+
+  // ============================================
+  // 团队包管理
+  // ============================================
+
+  /**
+   * 列出团队所有包（含当前用户安装状态）
+   * GET /api/v1/teams/{team_id}/packages
+   */
+  async listTeamPackages(teamId: string): Promise<TeamPackageInfo[]> {
+    const response = await this.client.get<TeamPackageInfo[]>(
+      `/api/v1/teams/${teamId}/packages`
+    );
+    return response.data;
+  }
+
+  /**
+   * 发布包到团队
+   * POST /api/v1/teams/{team_id}/packages
+   */
+  async publishTeamPackage(
+    teamId: string,
+    data: {
+      name: string;
+      type: 'mcp' | 'skill';
+      description?: string;
+      visibility?: string;
+      owner_type?: 'user' | 'team';
+      manifest?: Record<string, unknown>;
+      tarball?: string;
+    }
+  ): Promise<TeamPackageInfo> {
+    const response = await this.client.post<TeamPackageInfo>(
+      `/api/v1/teams/${teamId}/packages`,
+      data
+    );
+    return response.data;
+  }
+
+  /**
+   * 安装团队包（记录安装状态）
+   * POST /api/v1/teams/{team_id}/packages/{package_id}/install
+   */
+  async installTeamPackage(
+    teamId: string,
+    packageId: string
+  ): Promise<{ package_id: string; version_installed: string; installed_at: string }> {
+    const response = await this.client.post(
+      `/api/v1/teams/${teamId}/packages/${packageId}/install`
+    );
+    return response.data;
+  }
+
+  /**
+   * 获取我安装的包（支持按 team_id 筛选）
+   * GET /api/v1/me/installed?team_id=X
+   */
+  async getInstalledPackages(teamId?: string): Promise<InstalledPackageInfo[]> {
+    const params = teamId ? { team_id: teamId } : {};
+    const response = await this.client.get<{ data: InstalledPackageInfo[]; total: number }>(
+      '/api/v1/me/installed',
+      { params }
+    );
+    return response.data.data;
+  }
+
+  /**
+   * 列出包的所有版本
+   * GET /api/v1/teams/{team_id}/packages/{package_id}/versions
+   */
+  async getTeamPackageVersions(
+    teamId: string,
+    packageId: string
+  ): Promise<VersionListResponse> {
+    const response = await this.client.get<{ data: VersionResponse[]; total: number }>(
+      `/api/v1/teams/${teamId}/packages/${packageId}/versions`
+    );
+    return { items: response.data.data, total: response.data.total };
   }
 }
 

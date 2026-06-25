@@ -141,6 +141,15 @@
       "owner": "所有者",
       "admin": "管理员",
       "member": "成员"
+    },
+    "packages": {
+      "title": "工具包",
+      "publish": "发布工具包",
+      "empty": "暂无工具包",
+      "notInstalled": "未安装",
+      "install": "安装",
+      "update": "更新",
+      "installed": "已安装"
     }
   },
   "publish": {

@@ -1,0 +1,246 @@
+/**
+ * 团队包管理 Tab 组件
+ * 显示团队所有包，含安装状态
+ */
+
+import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import { api, type TeamPackage } from '../lib/api';
+import {
+  Package,
+  Download,
+  Trash2,
+  Plus,
+  Loader2,
+  AlertCircle,
+  RefreshCw,
+  CheckCircle2,
+  Bell,
+  Circle,
+} from 'lucide-react';
+
+interface TeamPackagesTabProps {
+  teamId: string;
+  canManage: boolean; // 只有 owner/admin 能发布/删除
+}
+
+export default function TeamPackagesTab({ teamId, canManage }: TeamPackagesTabProps) {
+  const { t } = useTranslation('pages');
+  const [packages, setPackages] = useState<TeamPackage[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [installingId, setInstallingId] = useState<string | null>(null);
+  const [installingVersion, setInstallingVersion] = useState<string | null>(null);
+
+  const loadPackages = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await api.listTeamPackages(teamId);
+      setPackages(data);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : '加载失败');
+    } finally {
+      setLoading(false);
+    }
+  }, [teamId]);
+
+  useEffect(() => {
+    loadPackages();
+  }, [loadPackages]);
+
+  const handleInstall = async (pkg: TeamPackage) => {
+    try {
+      setInstallingId(pkg.id);
+      setInstallingVersion(pkg.latest_version ?? null);
+      await api.installTeamPackage(teamId, pkg.id, pkg.latest_version);
+      // 刷新状态
+      await loadPackages();
+    } catch (err: unknown) {
+      console.error('Install failed:', err);
+      alert(`安装失败: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setInstallingId(null);
+      setInstallingVersion(null);
+    }
+  };
+
+  const getStatusIcon = (pkg: TeamPackage) => {
+    if (!pkg.my_installed_version) {
+      return <Circle className="w-4 h-4 text-muted-foreground" />;
+    }
+    if (pkg.has_update) {
+      return <Bell className="w-4 h-4 text-yellow-500" />;
+    }
+    return <CheckCircle2 className="w-4 h-4 text-green-500" />;
+  };
+
+  const getStatusText = (pkg: TeamPackage) => {
+    if (!pkg.my_installed_version) {
+      return t('teams.packages.notInstalled');
+    }
+    if (pkg.has_update) {
+      return `${pkg.my_installed_version} → ${pkg.latest_version}`;
+    }
+    return `${pkg.my_installed_version} 最新`;
+  };
+
+  return (
+    <div>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2">
+          <Package className="w-5 h-5 text-muted-foreground" />
+          <h3 className="font-semibold">
+            {t('teams.packages.title')} ({packages.length})
+          </h3>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={loadPackages}
+            disabled={loading}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            {t('common:refresh')}
+          </button>
+          {canManage && (
+            <button className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90">
+              <Plus className="w-4 h-4" />
+              {t('teams.packages.publish')}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Error */}
+      {error && (
+        <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-center gap-2 text-destructive text-sm">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <span>{error}</span>
+          <button onClick={loadPackages} className="ml-auto underline">
+            重试
+          </button>
+        </div>
+      )}
+
+      {/* Loading */}
+      {loading && packages.length === 0 && (
+        <div className="text-center py-12">
+          <Loader2 className="w-8 h-8 mx-auto mb-4 animate-spin text-muted-foreground" />
+          <p className="text-muted-foreground">{t('common:loading')}</p>
+        </div>
+      )}
+
+      {/* Empty */}
+      {!loading && packages.length === 0 && !error && (
+        <div className="text-center py-12">
+          <Package className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+          <p className="text-muted-foreground">{t('teams.packages.empty')}</p>
+          {canManage && (
+            <p className="text-sm text-muted-foreground mt-1">
+              团队还没有发布任何包
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Package List */}
+      {packages.length > 0 && (
+        <div className="space-y-3">
+          {packages.map((pkg) => (
+            <div
+              key={pkg.id}
+              className="flex items-center gap-4 p-4 bg-card border border-border rounded-xl hover:border-primary/30 transition-colors"
+            >
+              {/* Icon */}
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Package className="w-5 h-5 text-primary" />
+              </div>
+
+              {/* Info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-medium truncate">{pkg.full_name}</span>
+                  <span className="text-xs px-1.5 py-0.5 bg-muted rounded text-muted-foreground">
+                    {pkg.type}
+                  </span>
+                </div>
+                {pkg.description && (
+                  <p className="text-sm text-muted-foreground truncate mb-1">
+                    {pkg.description}
+                  </p>
+                )}
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <span>v{pkg.latest_version || '-'}</span>
+                  <span>下载 {pkg.downloads_count} 次</span>
+                  <span>{new Date(pkg.created_at).toLocaleDateString()}</span>
+                </div>
+              </div>
+
+              {/* Status */}
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="flex items-center gap-1.5 text-sm">
+                  {getStatusIcon(pkg)}
+                  <span className={pkg.has_update ? 'text-yellow-600' : pkg.my_installed_version ? 'text-green-600' : 'text-muted-foreground'}>
+                    {getStatusText(pkg)}
+                  </span>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-1 ml-2">
+                  {/* Install/Update button */}
+                  {pkg.my_installed_version ? (
+                    pkg.has_update ? (
+                      <button
+                        onClick={() => handleInstall(pkg)}
+                        disabled={installingId === pkg.id}
+                        className="flex items-center gap-1 px-2.5 py-1.5 text-xs bg-yellow-100 text-yellow-800 rounded-lg hover:bg-yellow-200 disabled:opacity-50"
+                        title={`更新到 ${pkg.latest_version}`}
+                      >
+                        {installingId === pkg.id ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Download className="w-3.5 h-3.5" />
+                        )}
+                        更新
+                      </button>
+                    ) : (
+                      <span className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-green-600 bg-green-50 rounded-lg">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        已安装
+                      </span>
+                    )
+                  ) : (
+                    <button
+                      onClick={() => handleInstall(pkg)}
+                      disabled={installingId === pkg.id}
+                      className="flex items-center gap-1 px-2.5 py-1.5 text-xs bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50"
+                    >
+                      {installingId === pkg.id ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Download className="w-3.5 h-3.5" />
+                      )}
+                      {installingId === pkg.id && installingVersion ? `安装中 ${installingVersion}` : '安装'}
+                    </button>
+                  )}
+
+                  {/* Delete (admin only) */}
+                  {canManage && (
+                    <button
+                      className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
+                      title="删除包"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.services.team import TeamService
+from app.services.team_package import TeamPackageService
 from app.api.deps import get_current_user, UserType
 from app.errors import AppError, ErrorCodes
 from app.schemas.team import (
@@ -12,6 +13,8 @@ from app.schemas.team import (
     TeamResponse,
     MemberAdd,
     MemberUpdateRole,
+    TeamPackagePublish,
+    TeamPackageVersionPublish,
 )
 
 router = APIRouter(prefix="/teams", tags=["teams"])
@@ -152,6 +155,19 @@ async def remove_member(
     await service.remove_member(team_id, user_id)
 
 
+# /me 端点（静态路径，优先于 /{team_id} 匹配）
+@router.get("/me/installed")
+async def list_my_installed(
+    team_id: str | None = None,
+    current_user: UserType = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """列出当前用户已安装的包（可按 team_id 筛选）"""
+    service = TeamPackageService(db)
+    packages = await service.list_installed(str(current_user.id), team_id)
+    return {"data": packages, "total": len(packages)}
+
+
 @router.put("/{team_id}/members/{user_id}")
 async def update_member_role(
     team_id: str,
@@ -170,3 +186,157 @@ async def update_member_role(
         role=data.role,
     )
     return member
+
+
+# =============================================================================
+# 团队包管理 API
+# =============================================================================
+
+
+@router.get("/{team_id}/packages")
+async def list_team_packages(
+    team_id: str,
+    current_user: UserType = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """列出团队所有包（含当前用户的安装状态）"""
+    service = TeamPackageService(db)
+    packages = await service.list_team_packages(team_id, str(current_user.id))
+    return packages
+
+
+@router.post("/{team_id}/packages", status_code=201)
+async def publish_team_package(
+    team_id: str,
+    data: TeamPackagePublish,
+    current_user: UserType = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """发布新包到团队"""
+    service = TeamPackageService(db)
+    pkg = await service.publish_package(
+        team_id=team_id,
+        user_id=str(current_user.id),
+        name=data.name,
+        type=data.type,
+        description=data.description,
+        manifest=data.manifest,
+        tarball_b64=data.tarball,
+    )
+    return {
+        "id": str(pkg.id),
+        "name": pkg.name,
+        "scope": pkg.scope,
+        "full_name": pkg.full_name,
+        "type": pkg.type,
+        "description": pkg.description,
+        "visibility": pkg.visibility,
+        "owner_type": pkg.owner_type,
+        "downloads_count": pkg.downloads_count,
+        "latest_version": pkg.latest_version,
+        "created_at": str(pkg.created_at),
+        "updated_at": str(pkg.updated_at),
+        "my_installed_version": None,
+        "has_update": False,
+    }
+
+
+@router.get("/{team_id}/packages/{package_id}")
+async def get_team_package(
+    team_id: str,
+    package_id: str,
+    current_user: UserType = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """获取团队包详情"""
+    service = TeamPackageService(db)
+    return await service.get_package(team_id, package_id, str(current_user.id))
+
+
+@router.delete("/{team_id}/packages/{package_id}", status_code=204)
+async def delete_team_package(
+    team_id: str,
+    package_id: str,
+    current_user: UserType = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """删除团队包"""
+    service = TeamPackageService(db)
+    await service.delete_package(team_id, package_id, str(current_user.id))
+
+
+@router.get("/{team_id}/packages/{package_id}/versions")
+async def list_team_package_versions(
+    team_id: str,
+    package_id: str,
+    current_user: UserType = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """列出包的所有版本"""
+    service = TeamPackageService(db)
+    versions, total = await service.list_versions(team_id, package_id, str(current_user.id))
+    return {
+        "data": [
+            {
+                "id": str(v.id),
+                "version": v.version,
+                "manifest": v.manifest,
+                "tarball_hash": v.tarball_hash,
+                "tarball_size": v.tarball_size,
+                "tag": v.tag,
+                "deprecated": v.deprecated,
+                "yanked": v.yanked,
+                "published_at": str(v.published_at),
+            }
+            for v in versions
+        ],
+        "total": total,
+    }
+
+
+@router.post("/{team_id}/packages/{package_id}/versions", status_code=201)
+async def publish_team_package_version(
+    team_id: str,
+    package_id: str,
+    data: TeamPackageVersionPublish,
+    current_user: UserType = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """发布新版本"""
+    service = TeamPackageService(db)
+    ver = await service.publish_version(
+        team_id=team_id,
+        package_id=package_id,
+        user_id=str(current_user.id),
+        version=data.version,
+        manifest=data.manifest,
+        tarball_b64=data.tarball,
+    )
+    return {
+        "id": str(ver.id),
+        "version": ver.version,
+        "manifest": ver.manifest,
+        "tarball_hash": ver.tarball_hash,
+        "tarball_size": ver.tarball_size,
+        "tag": ver.tag,
+        "deprecated": ver.deprecated,
+        "yanked": ver.yanked,
+        "published_at": str(ver.published_at),
+    }
+
+
+@router.post("/{team_id}/packages/{package_id}/install", status_code=201)
+async def install_team_package(
+    team_id: str,
+    package_id: str,
+    current_user: UserType = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """安装团队包（记录本地安装状态）"""
+    service = TeamPackageService(db)
+    installed = await service.install_package(team_id, package_id, str(current_user.id))
+    return {
+        "package_id": str(installed.package_id),
+        "version_installed": str(installed.version_installed),
+        "installed_at": str(installed.installed_at),
+    }
