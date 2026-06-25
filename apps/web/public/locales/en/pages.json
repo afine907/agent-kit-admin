@@ -27,14 +27,17 @@
       "wechat_work": "WeChat Work",
       "feishu": "Feishu",
       "dingtalk": "DingTalk"
-    }
+    },
+    "registerTitle": "Create account"
   },
   "home": {
     "title": "Agent Kit Registry",
     "subtitle": "Search and install AI Agent packages — MCP Servers and Agent Skills",
     "searchPlaceholder": "Search packages…",
     "filterAll": "All",
-    "noResults": "No matching packages found"
+    "noResults": "No matching packages found",
+    "noResultsHint": "Try different keywords or browse all packages",
+    "packages": "packages"
   },
   "packageDetail": {
     "loading": "Loading…",
@@ -210,5 +213,8 @@
     "title": "Something went wrong",
     "message": "An error occurred while loading the page. Please refresh or go back to the home page.",
     "backHome": "Back to Home"
+  },
+  "error": {
+    "loadFailed": "Failed to load"
   }
 }

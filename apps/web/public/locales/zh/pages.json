@@ -27,14 +27,17 @@
       "wechat_work": "企业微信",
       "feishu": "飞书",
       "dingtalk": "钉钉"
-    }
+    },
+    "registerTitle": "注册账号"
   },
   "home": {
     "title": "Agent Kit Registry",
     "subtitle": "搜索和安装 AI Agent 包 — MCP 服务器和 Agent Skills",
     "searchPlaceholder": "搜索包名或描述…",
     "filterAll": "全部",
-    "noResults": "未找到匹配的包"
+    "noResults": "未找到匹配的包",
+    "noResultsHint": "换个关键词试试，或浏览全部包",
+    "packages": "个包"
   },
   "packageDetail": {
     "loading": "正在加载…",
@@ -210,5 +213,8 @@
     "title": "页面出错了",
     "message": "页面加载时发生错误，请刷新页面或返回首页重试。",
     "backHome": "返回首页"
+  },
+  "error": {
+    "loadFailed": "加载失败"
   }
 }

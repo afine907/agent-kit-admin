@@ -1,23 +1,25 @@
 /**
- * Home 页面 - 包列表 + 搜索
+ * Home 页面 - shadcn 风格，质感升级
  */
 
-import { useState, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { SearchBar } from '../components/SearchBar';
-import { PackageCard } from '../components/PackageCard';
-import { usePackages } from '../hooks/usePackages';
-import { PackageResponse } from '../lib/api';
-import { Boxes, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react';
+import { useState, useCallback } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
+import { SearchBar } from '../components/SearchBar'
+import { PackageCard } from '../components/PackageCard'
+import { usePackages } from '../hooks/usePackages'
+import { PackageResponse } from '../lib/api'
+import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Boxes, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react'
 
 export default function Home() {
-  const { t } = useTranslation('pages');
-  const [search, setSearch] = useState('');
-  const [searchParams] = useSearchParams();
-  const workspaceScope = searchParams.get('scope') || undefined;
-  const [type, setType] = useState<string | undefined>();
-  const [page, setPage] = useState(1);
+  const { t } = useTranslation('pages')
+  const [search, setSearch] = useState('')
+  const [searchParams] = useSearchParams()
+  const workspaceScope = searchParams.get('scope') || undefined
+  const [type, setType] = useState<string | undefined>()
+  const [page, setPage] = useState(1)
 
   const { data, isLoading, error } = usePackages({
     search: search || undefined,
@@ -25,43 +27,78 @@ export default function Home() {
     scope: workspaceScope,
     page,
     per_page: 20,
-  });
+  })
 
   const handleSearch = useCallback((value: string) => {
-    setSearch(value);
-    setPage(1);
-  }, []);
+    setSearch(value)
+    setPage(1)
+  }, [])
 
   const handleTypeChange = useCallback((newType: string | undefined) => {
-    setType(newType);
-    setPage(1);
-  }, []);
+    setType(newType)
+    setPage(1)
+  }, [])
 
   const TYPE_FILTERS = [
     { value: undefined, label: t('home.filterAll') },
     { value: 'mcp', label: 'MCP' },
     { value: 'skill', label: 'Skill' },
-  ] as const;
+  ] as const
+
+  const mcpCount = data?.data.filter((p: PackageResponse) => p.type === 'mcp').length ?? 0
+  const skillCount = data?.data.filter((p: PackageResponse) => p.type === 'skill').length ?? 0
 
   return (
     <div className="container mx-auto py-10">
-      {/* Hero 区域 */}
-      <div className="mb-10 animate-fade-in-up">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 border border-primary/20">
-            <Boxes className="w-5 h-5 text-primary" />
+      {/* Hero */}
+      <Card className="relative mb-10 p-8 overflow-hidden border-primary/10 shadow-lg shadow-primary/5">
+        {/* 背景装饰 */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-transparent to-accent/8 rounded-inherit" />
+        <div className="absolute inset-0 bg-dot-grid opacity-30" />
+        <div className="absolute -top-16 -right-16 w-64 h-64 bg-primary/10 rounded-full blur-3xl" />
+        <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-accent/10 rounded-full blur-3xl" />
+
+        <div className="relative">
+          <div className="flex items-center gap-4 mb-5">
+            <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 shadow-lg shadow-primary/10">
+              <Boxes className="w-7 h-7 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
+                {t('home.title')}
+              </h1>
+              <p className="text-muted-foreground mt-0.5">{t('home.subtitle')}</p>
+            </div>
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight">
-            {t('home.title')}
-          </h1>
+
+          {/* 统计数据 */}
+          {data?.pagination && (
+            <div className="flex items-center gap-6 pt-4 border-t border-border/30">
+              <button className="flex items-center gap-2 group cursor-default">
+                <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
+                  <span className="font-mono font-semibold text-foreground">{data.pagination.total}</span> 全部
+                </span>
+              </button>
+              <button onClick={() => handleTypeChange('mcp')} className="flex items-center gap-2 group">
+                <div className="w-2 h-2 rounded-full bg-green-400" />
+                <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
+                  <span className="font-mono font-semibold text-foreground">{mcpCount}</span> MCP
+                </span>
+              </button>
+              <button onClick={() => handleTypeChange('skill')} className="flex items-center gap-2 group">
+                <div className="w-2 h-2 rounded-full bg-amber-400" />
+                <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
+                  <span className="font-mono font-semibold text-foreground">{skillCount}</span> Skills
+                </span>
+              </button>
+            </div>
+          )}
         </div>
-        <p className="text-muted-foreground text-base pl-[52px]">
-          {t('home.subtitle')}
-        </p>
-      </div>
+      </Card>
 
       {/* 搜索和筛选 */}
-      <div className="flex gap-3 mb-8 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
+      <div className="flex gap-3 mb-8">
         <div className="flex-1">
           <SearchBar
             value={search}
@@ -69,15 +106,15 @@ export default function Home() {
             placeholder={t('home.searchPlaceholder')}
           />
         </div>
-        <div className="flex gap-1 p-1 bg-secondary/50 rounded-lg border border-border/50">
+        <div className="flex gap-1 p-1 bg-muted rounded-xl border shadow-sm">
           {TYPE_FILTERS.map((f) => (
             <button
               key={f.label}
               onClick={() => handleTypeChange(f.value)}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+              className={`px-5 py-2 text-sm font-medium rounded-lg transition-all ${
                 type === f.value
                   ? 'bg-primary text-primary-foreground shadow-sm glow-cyan'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-background/80'
               }`}
             >
               {f.label}
@@ -86,36 +123,30 @@ export default function Home() {
         </div>
       </div>
 
-      {/* 加载状态 - Skeleton */}
+      {/* 加载 */}
       {isLoading && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div
-              key={i}
-              className="p-5 rounded-xl border border-border/30 animate-fade-in-up"
-              style={{ animationDelay: `${i * 60}ms` }}
-            >
-              <div className="h-5 w-3/4 rounded bg-secondary animate-shimmer mb-3" />
-              <div className="h-4 w-full rounded bg-secondary animate-shimmer mb-2" />
-              <div className="h-4 w-2/3 rounded bg-secondary animate-shimmer mb-4" />
+            <Card key={i} className="p-5 animate-pulse">
+              <div className="h-4 w-3/4 rounded bg-muted mb-3" />
+              <div className="h-3 w-full rounded bg-muted mb-2" />
+              <div className="h-3 w-2/3 rounded bg-muted mb-4" />
               <div className="flex gap-2">
-                <div className="h-3 w-12 rounded bg-secondary animate-shimmer" />
-                <div className="h-3 w-16 rounded bg-secondary animate-shimmer" />
+                <div className="h-5 w-16 rounded bg-muted" />
+                <div className="h-5 w-12 rounded bg-muted" />
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}
 
-      {/* 错误状态 */}
+      {/* 错误 */}
       {error && (
-        <div role="alert" aria-live="polite" className="flex flex-col items-center justify-center py-16 animate-fade-in-up">
-          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-destructive/10 border border-destructive/20 mb-4">
-            <AlertCircle className="w-6 h-6 text-destructive" />
-          </div>
-          <p className="text-destructive font-medium mb-1">{t('error.loadFailed')}</p>
+        <Card className="flex flex-col items-center justify-center py-16 border-destructive/20">
+          <AlertCircle className="w-8 h-8 text-destructive mb-3" />
+          <p className="text-destructive font-semibold text-lg mb-1">{t('error.loadFailed')}</p>
           <p className="text-sm text-muted-foreground">{(error as Error).message}</p>
-        </div>
+        </Card>
       )}
 
       {/* 包列表 */}
@@ -128,30 +159,31 @@ export default function Home() {
               ))}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-16 animate-fade-in-up">
-              <div className="text-4xl mb-3">📭</div>
-              <p className="text-muted-foreground">{t('home.noResults')}</p>
-            </div>
+            <Card className="flex flex-col items-center justify-center py-20 border-dashed">
+              <div className="text-6xl mb-4">📭</div>
+              <p className="text-muted-foreground text-base mb-1">{t('home.noResults')}</p>
+              <p className="text-sm text-muted-foreground/60">{t('home.noResultsHint')}</p>
+            </Card>
           )}
 
           {/* 分页 */}
           {data.pagination.total_pages > 1 && (
-            <div className="flex items-center justify-center gap-3 mt-10 animate-fade-in-up">
+            <div className="flex items-center justify-center gap-3 mt-10">
               <button
                 onClick={() => setPage(page - 1)}
                 disabled={page === 1}
-                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-border/50 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed hover:bg-secondary/50 transition-colors focus-visible:ring-2 focus-visible:ring-primary/20"
+                className="inline-flex items-center gap-1 px-4 py-2 text-sm border rounded-xl disabled:opacity-30 disabled:cursor-not-allowed hover:bg-muted transition-all"
               >
                 <ChevronLeft className="w-4 h-4" />
                 {t('pagination.prev')}
               </button>
-              <span className="px-4 py-1.5 text-sm font-mono text-muted-foreground bg-secondary/30 rounded-lg border border-border/30">
+              <span className="px-5 py-2 text-sm font-mono bg-muted rounded-xl border">
                 {t('pagination.pageInfo', { page, total: data.pagination.total_pages })}
               </span>
               <button
                 onClick={() => setPage(page + 1)}
                 disabled={page === data.pagination.total_pages}
-                className="flex items-center gap-1 px-3 py-1.5 text-sm border border-border/50 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed hover:bg-secondary/50 transition-colors focus-visible:ring-2 focus-visible:ring-primary/20"
+                className="inline-flex items-center gap-1 px-4 py-2 text-sm border rounded-xl disabled:opacity-30 disabled:cursor-not-allowed hover:bg-muted transition-all"
               >
                 {t('pagination.next')}
                 <ChevronRight className="w-4 h-4" />
@@ -161,5 +193,5 @@ export default function Home() {
         </>
       )}
     </div>
-  );
+  )
 }
