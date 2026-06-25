@@ -190,24 +190,26 @@ export const publishCommand = new Command('publish')
         }
       }
 
-      // 5. 上传版本
-      const spinner5 = ora('上传版本...').start();
-
-      try {
-        const formData = new FormData();
-        formData.append('version', manifest.version);
-        formData.append('manifest', JSON.stringify(manifest));
-        formData.append('tarball', new Blob([await import('fs').then((fs) => fs.readFileSync(tarballPath))]), `${manifest.name}-${manifest.version}.tar.gz`);
-        if (options.tag) {
-          formData.append('tag', options.tag);
+      // 5. 上传版本（团队包已在第4步完成上传，个人包需要单独上传）
+      if (!teamId) {
+        const spinner5 = ora('上传版本...').start();
+        try {
+          const formData = new FormData();
+          formData.append('version', manifest.version);
+          formData.append('manifest', JSON.stringify(manifest));
+          formData.append('tarball', new Blob([await import('fs').then((fs) => fs.readFileSync(tarballPath))]), `${manifest.name}-${manifest.version}.tar.gz`);
+          if (options.tag) {
+            formData.append('tag', options.tag);
+          }
+          await apiClient.publishVersion(scope, manifest.name, formData);
+          spinner5.succeed('版本上传成功');
+        } catch (error: unknown) {
+          spinner5.fail('版本上传失败');
+          console.error(chalk.red(`\n✖ ${error instanceof Error ? error.message : String(error)}`));
+          process.exit(1);
         }
-
-        await apiClient.publishVersion(scope, manifest.name, formData);
-        spinner5.succeed('版本上传成功');
-      } catch (error: unknown) {
-        spinner5.fail('版本上传失败');
-        console.error(chalk.red(`\n✖ ${error instanceof Error ? error.message : String(error)}`));
-        process.exit(1);
+      } else {
+        console.log(chalk.gray('  (团队包版本已随创建时一并上传)'));
       }
 
       // 清理临时文件

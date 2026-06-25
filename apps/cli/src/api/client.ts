@@ -283,11 +283,16 @@ export class ApiClient {
    * 列出包
    */
   async listPackages(params: ListPackagesParams = {}): Promise<PackageListResponse> {
-    const response = await this.client.get<PackageListResponse>(
+    const response = await this.client.get<{ data: PackageResponse[]; total: number }>(
       '/api/v1/packages',
       { params }
     );
-    return response.data;
+    return {
+      items: response.data.data,
+      total: response.data.total,
+      page: params.page ?? 1,
+      per_page: params.per_page ?? 20,
+    };
   }
 
   /**

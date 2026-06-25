@@ -9,11 +9,10 @@ import ora from 'ora';
 import express from 'express';
 import open from 'open';
 import type { Server } from 'http';
-import { i18n } from '../i18n.js';
+import { i18n, t } from '../i18n.js';
 import { configManager } from '../config/manager.js';
 import { apiClient } from '../api/client.js';
 
-const t = (key: string, options?: Record<string, unknown>): string => i18n.t(key, options) as string;
 
 // OAuth Provider 列表
 const OAUTH_PROVIDERS = () => [
@@ -25,13 +24,13 @@ const OAUTH_PROVIDERS = () => [
 // 本地回调服务器端口
 const CALLBACK_PORT = 3456;
 
-export const loginCommand = new Command('login')
-  .description(t('commands:login.description'))
-  .option('--registry <url>', 'Registry URL')
-  .option('--email <email>', t('commands:login.email'))
-  .option('--password <password>', t('commands:login.password'))
-  .option('--provider <provider>', 'OAuth Provider (wechat_work/feishu/dingtalk)')
-  .action(async (options) => {
+export const loginCommand = new Command('login');
+loginCommand.description(t('commands:login.description'));
+loginCommand.option('--registry <url>', 'Registry URL');
+loginCommand.option('--email <email>', t('commands:login.email'));
+loginCommand.option('--password <password>', t('commands:login.password'));
+loginCommand.option('--provider <provider>', 'OAuth Provider (wechat_work/feishu/dingtalk)');
+loginCommand.action(async (options) => {
     try {
       if (options.registry) {
         configManager.setRegistry(options.registry);

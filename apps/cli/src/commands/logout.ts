@@ -4,10 +4,9 @@
 
 import { Command } from 'commander';
 import chalk from 'chalk';
-import { i18n } from '../i18n.js';
+import { i18n, t } from '../i18n.js';
 import { configManager } from '../config/manager.js';
 
-const t = (key: string, options?: Record<string, unknown>): string => i18n.t(key, options) as string;
 
 export const logoutCommand = new Command('logout')
   .description(t('commands:logout.description'))

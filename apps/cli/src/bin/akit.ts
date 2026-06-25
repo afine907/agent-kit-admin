@@ -116,4 +116,4 @@ ${t('cli.examples')}
   program.parse();
 }
 
-main();
+main().catch(console.error);
