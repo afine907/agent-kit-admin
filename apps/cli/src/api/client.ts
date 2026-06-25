@@ -152,6 +152,20 @@ export class ApiClient {
     const RETRYABLE_STATUSES = [429, 502, 503, 504];
     const MAX_RETRIES = 3;
 
+    // 中文友好错误消息
+    const USER_FRIENDLY_ERRORS: Record<number, string> = {
+      400: '请求参数错误',
+      401: '未登录或登录已过期，请运行 akit login',
+      403: '没有权限执行此操作',
+      404: '找不到请求的资源',
+      409: '资源冲突，可能已存在',
+      422: '请求参数验证失败',
+      429: '请求过于频繁，请稍后再试',
+      500: '服务器内部错误，请稍后重试',
+      502: '服务暂时不可用，请稍后重试',
+      503: '服务暂时不可用，请稍后重试',
+    };
+
     this.client.interceptors.response.use(
       (response) => response,
       async (error) => {
@@ -182,11 +196,13 @@ export class ApiClient {
           return this.client(config);
         }
 
-        // 格式化错误消息
+        // 格式化错误消息（中文友好）
         if (error.response) {
           const { status, data } = error.response;
-          const message = data?.error?.message || data?.message || error.message;
-          throw new Error(`API Error (${status}): ${message}`);
+          const apiMessage = data?.error?.message || data?.message || error.message;
+          const friendlyMsg = USER_FRIENDLY_ERRORS[status];
+          const hint = friendlyMsg && friendlyMsg !== apiMessage ? ` → ${friendlyMsg}` : '';
+          throw new Error(`${apiMessage}${hint}`);
         }
         throw error;
       }
