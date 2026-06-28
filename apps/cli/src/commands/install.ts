@@ -16,6 +16,7 @@ import { parsePackageName } from '../utils/package-name.js';
 import { FileLock } from '../utils/lock.js';
 import { t } from '../i18n.js';
 import { recordInstall } from '../utils/install-record.js';
+import { satisfiesSemverConstraint } from '../utils/semver.js';
 
 // 包安装目录
 const PACKAGES_DIR = join(homedir(), '.akit', 'packages');
@@ -141,16 +142,35 @@ installCommand
         const spinner5 = ora('检查依赖...').start();
         try {
           const depCheck = await apiClient.checkDependencies(manifest.dependencies);
+          let hasBlocking = false;
           if (!depCheck.all_exist) {
             const missing = depCheck.results.filter((r) => !r.exists);
             spinner5.fail('依赖检查失败');
             for (const dep of missing) {
               console.log(chalk.red(`  ✖ ${dep.name} ${dep.constraint} — 不存在`));
             }
+            hasBlocking = true;
+          }
+
+          // 校验存在的依赖是否满足 semver 约束
+          const versionMismatch = depCheck.results.filter(
+            (r) => r.exists && r.latest_version && !satisfiesSemverConstraint(r.latest_version, r.constraint),
+          );
+          for (const dep of versionMismatch) {
+            console.log(
+              chalk.yellow(
+                `  ⚠ ${dep.name} ${dep.constraint} — 当前最新版本 ${dep.latest_version} 不满足约束`,
+              ),
+            );
+          }
+
+          if (hasBlocking) {
             console.log(chalk.yellow('\n请先安装缺失的依赖，或使用 --no-deps 跳过检查'));
             if (!options.noDeps) {
               process.exit(1);
             }
+          } else if (versionMismatch.length > 0) {
+            spinner5.warn('部分依赖版本不满足约束');
           } else {
             spinner5.succeed('依赖检查通过');
           }
