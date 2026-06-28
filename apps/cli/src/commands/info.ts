@@ -9,14 +9,144 @@ import { apiClient } from '../api/client.js';
 import { parsePackageName } from '../utils/package-name.js';
 import { formatNumber, formatDate } from '../utils/format.js';
 
+interface DiffEntry {
+  key: string;
+  oldValue: unknown;
+  newValue: unknown;
+  breaking: boolean;
+}
+
+export interface DiffResult {
+  added: string[];
+  removed: string[];
+  changed: DiffEntry[];
+}
+
+/**
+ * 递归比较两个 manifest 的差异
+ */
+export function diffManifests(
+  oldM: Record<string, unknown>,
+  newM: Record<string, unknown>,
+): DiffResult {
+  const allKeys = new Set([...Object.keys(oldM), ...Object.keys(newM)]);
+  const added: string[] = [];
+  const removed: string[] = [];
+  const changed: DiffEntry[] = [];
+
+  for (const key of allKeys) {
+    // 排除 version 变更（预期变化）
+    if (key === 'version') continue;
+
+    if (!(key in oldM)) {
+      added.push(key);
+    } else if (!(key in newM)) {
+      removed.push(key);
+    } else {
+      const oldVal = oldM[key];
+      const newVal = newM[key];
+
+      // 嵌套对象递归比较
+      if (
+        typeof oldVal === 'object' &&
+        oldVal !== null &&
+        typeof newVal === 'object' &&
+        newVal !== null &&
+        !Array.isArray(oldVal) &&
+        !Array.isArray(newVal)
+      ) {
+        const nested = diffManifests(
+          oldVal as Record<string, unknown>,
+          newVal as Record<string, unknown>,
+        );
+        for (const k of nested.added) {
+          added.push(`${key}.${k}`);
+        }
+        for (const k of nested.removed) {
+          removed.push(`${key}.${k}`);
+        }
+        for (const c of nested.changed) {
+          changed.push({ ...c, key: `${key}.${c.key}` });
+        }
+      } else if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
+        const isBreaking =
+          key === 'command' || key === 'transport';
+        changed.push({ key, oldValue: oldVal, newValue: newVal, breaking: isBreaking });
+      }
+    }
+  }
+
+  return { added, removed, changed };
+}
+
 export const infoCommand = new Command('info')
   .description('查看包详情')
   .argument('<package>', '包名 (例如: @scope/name)')
-  .action(async (packageName: string) => {
+  .option('--diff <versions>', '对比两个版本的差异，格式: oldVer,newVer')
+  .action(async (packageName: string, options) => {
     try {
       const { scope, name } = parsePackageName(packageName);
       const fullName = `${scope}/${name}`;
 
+      // --diff 模式
+      if (options.diff) {
+        const [oldVer, newVer] = options.diff.split(',');
+        if (!oldVer || !newVer) {
+          console.error(chalk.red('\n✖ --diff 参数格式: <oldVersion>,<newVersion>'));
+          process.exit(1);
+        }
+
+        console.log(chalk.bold(`\n📊 ${fullName} 版本对比: ${oldVer} → ${newVer}\n`));
+
+        // 获取两个版本的 manifest
+        try {
+          const oldVersionResp = await apiClient.getVersion(scope, name, oldVer);
+          const newVersionResp = await apiClient.getVersion(scope, name, newVer);
+
+          const diff = diffManifests(
+            oldVersionResp.manifest,
+            newVersionResp.manifest,
+          );
+
+          if (diff.added.length === 0 && diff.removed.length === 0 && diff.changed.length === 0) {
+            console.log(chalk.green('  两个版本无差异\n'));
+            return;
+          }
+
+          if (diff.added.length > 0) {
+            console.log(chalk.green('  ✚ 新增:'));
+            for (const k of diff.added) {
+              console.log(`    ${k}`);
+            }
+          }
+
+          if (diff.removed.length > 0) {
+            console.log(chalk.red('  ✖ 移除:'));
+            for (const k of diff.removed) {
+              console.log(`    ${k}`);
+            }
+          }
+
+          if (diff.changed.length > 0) {
+            console.log(chalk.yellow('  ⚡ 变更:'));
+            for (const c of diff.changed) {
+              const prefix = c.breaking ? chalk.red('⚠ ') : '  ';
+              const oldStr = typeof c.oldValue === 'string' ? c.oldValue : JSON.stringify(c.oldValue);
+              const newStr = typeof c.newValue === 'string' ? c.newValue : JSON.stringify(c.newValue);
+              console.log(`${prefix} ${c.key}: ${chalk.red(oldStr)} → ${chalk.green(newStr)}`);
+            }
+          }
+
+          console.log('');
+        } catch (error: unknown) {
+          console.error(
+            chalk.red(`\n✖ 版本对比失败: ${error instanceof Error ? error.message : String(error)}`),
+          );
+        }
+        return;
+      }
+
+      // 普通 info 模式
       console.log(chalk.bold(`\n📦 ${fullName}\n`));
 
       const spinner = ora('获取包信息...').start();

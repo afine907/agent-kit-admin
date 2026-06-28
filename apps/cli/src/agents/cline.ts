@@ -1,7 +1,8 @@
 /**
- * Claude Code 适配器
- * 配置路径: ~/.claude/mcp.json
+ * Cline 适配器
+ * 配置路径: ~/.cline/mcp.json
  * 格式: { "mcpServers": { "name": { "command": "...", "args": [...], "env": {} } } }
+ * (与 Cursor/Windsurf 格式相同)
  */
 
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
@@ -9,19 +10,18 @@ import { join } from 'path';
 import { homedir } from 'os';
 import { AgentAdapter, MCPConfig, MCPEntry } from './types.js';
 
-export class ClaudeAdapter implements AgentAdapter {
-  name = 'Claude Code';
+export class ClineAdapter implements AgentAdapter {
+  name = 'Cline';
 
   private configDir: string;
   private configPath: string;
 
   constructor(baseDir?: string) {
-    this.configDir = baseDir ? join(baseDir, '.claude') : join(homedir(), '.claude');
+    this.configDir = baseDir ? join(baseDir, '.cline') : join(homedir(), '.cline');
     this.configPath = join(this.configDir, 'mcp.json');
   }
 
   async detect(): Promise<boolean> {
-    // 检查 ~/.claude 目录是否存在
     return existsSync(this.configDir);
   }
 
@@ -54,7 +54,7 @@ export class ClaudeAdapter implements AgentAdapter {
   async writeConfig(entry: MCPEntry): Promise<void> {
     const config = await this.readConfig();
 
-    // 备份已有配置（constitution.md 要求）
+    // 备份将被覆盖的已有 entry 配置
     if (config.mcpServers && (config.mcpServers as Record<string, unknown>)[entry.name]) {
       const backupPath = this.configPath + '.bak';
       writeFileSync(backupPath, JSON.stringify(config, null, 2));

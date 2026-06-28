@@ -10,7 +10,6 @@ import { PackageCard } from '../components/PackageCard'
 import { usePackages } from '../hooks/usePackages'
 import { PackageResponse } from '../lib/api'
 import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Boxes, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react'
 
 export default function Home() {

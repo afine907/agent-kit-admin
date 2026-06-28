@@ -87,16 +87,20 @@ Primary language is Chinese (中文) for UI, CLI output, and error messages. Eng
 
 **代码提交前必须通过以下检查**：
 
-| 组件 | 工具 | 检查内容 |
-|------|------|----------|
-| Server (Python) | Ruff | Lint + 格式化 |
-| CLI (TypeScript) | oxlint | Lint |
-| Web (TypeScript) | oxlint | Lint |
+| 组件 | 工具 | 运行命令 | 检查内容 |
+|------|------|----------|----------|
+| Server (Python) | Ruff (lint) | `ruff check .` | Lint 规则 |
+| Server (Python) | Ruff (format) | `ruff format --check .` | 代码格式化（常见漏检） |
+| CLI (TypeScript) | oxlint | `pnpm --filter akit lint` | Lint（`--deny-warnings` 模式，警告即报错） |
+| CLI (TypeScript) | TypeCheck | `pnpm --filter akit typecheck` | 类型检查 |
+| Web (TypeScript) | oxlint | `pnpm --filter agent-kit-web lint` | Lint（`--deny-warnings` 模式，警告即报错） |
+| Web (TypeScript) | TypeCheck | `pnpm typecheck` | 类型检查（与 lint 是独立的步骤） |
 
 **提交前检查清单**：
-1. 运行对应的 lint 工具，确保无错误
-2. Python 代码使用 `ruff check --fix` 自动修复可修复的问题
-3. TypeScript 代码确保无 oxlint 警告
-4. 确保代码能正常构建（`pnpm build` / `python -m build`）
+1. ~~运行对应的 lint 工具~~ → 运行**完整命令**（见上表），不要只跑 lint 而跳过 format 和 typecheck
+2. Python 代码使用 `ruff check --fix && ruff format` 自动修复所有可修复的问题
+3. TypeScript 代码确保 oxlint **无任何警告**（`--deny-warnings` 模式下警告 = 错误）
+4. 确保 `pnpm typecheck` 通过（常见失败源：未使用的 import、类型不匹配）
+5. 运行 `pnpm test`（CLI）和 `pnpm test`（Web）确保测试通过
 
-**CI 门禁**：GitHub Actions 会在 PR 提交时自动运行以上检查，未通过的 PR 无法合并。
+**CI 门禁**：GitHub Actions 会在 PR 提交时自动运行以上检查，未通过的 PR 无法合并。本地未通过的检查在 CI 上也一定失败，不要抱有"CI 可能能过"的侥幸心理。

@@ -347,6 +347,16 @@ export class ApiClient {
   }
 
   /**
+   * 获取特定版本的 manifest
+   */
+  async getVersion(scope: string, name: string, version: string): Promise<VersionResponse> {
+    const response = await this.client.get<VersionResponse>(
+      `/api/v1/packages/${scope}/${name}/versions/${version}`
+    );
+    return response.data;
+  }
+
+  /**
    * 发布版本
    */
   async publishVersion(

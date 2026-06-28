@@ -116,3 +116,4 @@ apps/web/dist/
 # Orchestra (本地开发文档)
 # ============================================
 .claude/orchestra/
+.claude/worktrees/

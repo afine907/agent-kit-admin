@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next'
 import { PackageResponse } from '../lib/api'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Download, Tag, GitFork, Shield, Zap, Boxes } from 'lucide-react'
+import { Download, Tag, Zap, Boxes } from 'lucide-react'
 
 interface PackageCardProps {
   package: PackageResponse

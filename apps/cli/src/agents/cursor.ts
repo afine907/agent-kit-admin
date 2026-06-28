@@ -40,8 +40,12 @@ export class CursorAdapter implements AgentAdapter {
     } catch {
       // 配置文件损坏，备份并创建新的
       const backupPath = this.configPath + '.corrupt.' + Date.now();
-      const backupContent = readFileSync(this.configPath, 'utf-8');
-      writeFileSync(backupPath, backupContent);
+      try {
+        const backupContent = readFileSync(this.configPath, 'utf-8');
+        writeFileSync(backupPath, backupContent);
+      } catch {
+        // 文件已被删除或无法读取，跳过备份
+      }
       writeFileSync(this.configPath, JSON.stringify({ mcpServers: {} }, null, 2));
       return { mcpServers: {} };
     }
