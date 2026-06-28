@@ -343,6 +343,7 @@ async def download_team_package_latest(
 
     if not version or not version.tarball_path:
         from app.errors import AppError, ErrorCodes
+
         raise AppError(code=ErrorCodes.VERSION_NOT_FOUND, message="没有可用的版本", status_code=404)
 
     storage = get_storage_service()
@@ -375,6 +376,7 @@ async def download_team_package_version(
 
     if not ver or not ver.tarball_path:
         from app.errors import AppError, ErrorCodes
+
         raise AppError(code=ErrorCodes.VERSION_NOT_FOUND, message=f"版本 {version} 不存在", status_code=404)
 
     storage = get_storage_service()

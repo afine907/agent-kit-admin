@@ -333,9 +333,7 @@ class TeamPackageService:
             raise AppError(code=ErrorCodes.PACKAGE_NOT_FOUND, message="Package not found in this team", status_code=404)
 
         versions = await self.db.execute(
-            select(Version)
-            .where(Version.package_id == package_id)
-            .order_by(Version.published_at.desc())
+            select(Version).where(Version.package_id == package_id).order_by(Version.published_at.desc())
         )
         return versions.scalars().first()
 
@@ -355,9 +353,7 @@ class TeamPackageService:
         if tag == "latest":
             return await self.get_latest_version(team_id, package_id, user_id)
 
-        result = await self.db.execute(
-            select(Version).where(Version.package_id == package_id, Version.version == tag)
-        )
+        result = await self.db.execute(select(Version).where(Version.package_id == package_id, Version.version == tag))
         return result.scalars().first()
 
     async def list_versions(self, team_id: str, package_id: str, user_id: str) -> tuple[list[Version], int]:
