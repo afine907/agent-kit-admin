@@ -27,8 +27,8 @@ function Dialog({ open, onOpenChange, children }: DialogProps) {
   )
 }
 
-function DialogContent({ children, className }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("p-6", className)}>{children}</div>
+function DialogContent({ children, className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+  return <div role="dialog" aria-modal="true" className={cn("p-6", className)} {...props}>{children}</div>
 }
 function DialogHeader({ children, className }: React.HTMLAttributes<HTMLDivElement>) {
   return <div className={cn("flex flex-col space-y-1.5 text-center sm:text-left mb-4", className)}>{children}</div>

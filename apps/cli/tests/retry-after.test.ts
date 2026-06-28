@@ -128,6 +128,6 @@ describe('#14 429 响应 + Retry-After 头', () => {
       },
     };
 
-    await expect(errorHandler(error)).rejects.toThrow('API Error (429)');
+    await expect(errorHandler(error)).rejects.toThrow('Rate limited → 请求过于频繁，请稍后再试');
   });
 });

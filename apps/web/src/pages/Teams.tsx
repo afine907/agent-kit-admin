@@ -15,9 +15,16 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
 
 type Tab = 'members' | 'packages'
 
@@ -41,6 +48,10 @@ export default function Teams() {
   const [newTeam, setNewTeam] = useState({ name: '', slug: '', description: '' })
   const [error, setError] = useState<string | null>(null)
   const [selectedTab, setSelectedTab] = useState<Tab>('members')
+  const [showAddMember, setShowAddMember] = useState(false)
+  const [inviteUsername, setInviteUsername] = useState('')
+  const [inviteRole, setInviteRole] = useState('member')
+  const [addMemberLoading, setAddMemberLoading] = useState(false)
 
   const loadTeams = useCallback(async () => {
     try {
@@ -101,6 +112,25 @@ export default function Teams() {
       await loadMembers(teamId)
     } catch (err: unknown) {
       console.error('Failed to remove member:', err)
+    }
+  }
+
+  const handleAddMember = async () => {
+    if (!selectedTeam || !inviteUsername.trim()) return
+    setAddMemberLoading(true)
+    try {
+      await api.addTeamMember(selectedTeam.id, {
+        user_id: inviteUsername.trim(),
+        role: inviteRole,
+      })
+      setShowAddMember(false)
+      setInviteUsername('')
+      setInviteRole('member')
+      await loadMembers(selectedTeam.id)
+    } catch (err: unknown) {
+      console.error('Failed to add member:', err)
+    } finally {
+      setAddMemberLoading(false)
     }
   }
 
@@ -295,7 +325,12 @@ export default function Teams() {
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="font-medium text-sm text-muted-foreground">{t('teams.members')}</h3>
                     {canManageTeam && (
-                      <Button size="sm" variant="outline" className="gap-1.5 h-8">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1.5 h-8"
+                        onClick={() => setShowAddMember(true)}
+                      >
                         <UserPlus className="w-3.5 h-3.5" />
                         {t('teams.addMember')}
                       </Button>
@@ -339,6 +374,59 @@ export default function Teams() {
           </div>
         </div>
       )}
+
+      {/* 邀请成员 Dialog */}
+      <Dialog open={showAddMember} onOpenChange={setShowAddMember}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('teams.addMember')}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="invite-username-input">{t('teams.memberUsername')} *</Label>
+              <Input
+                id="invite-username-input"
+                data-testid="invite-username-input"
+                placeholder={t('teams.memberUsernamePlaceholder')}
+                value={inviteUsername}
+                onChange={e => setInviteUsername(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && inviteUsername.trim() && handleAddMember()}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t('teams.memberRole')}</Label>
+              <select
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                value={inviteRole}
+                onChange={e => setInviteRole(e.target.value)}
+              >
+                <option value="member">{t('teams.roles.member')}</option>
+                <option value="admin">{t('teams.roles.admin')}</option>
+              </select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowAddMember(false)}
+              disabled={addMemberLoading}
+            >
+              {t('common:actions.cancel')}
+            </Button>
+            <Button
+              onClick={handleAddMember}
+              disabled={!inviteUsername.trim() || addMemberLoading}
+            >
+              {addMemberLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <UserPlus className="w-4 h-4" />
+              )}
+              {t('teams.addMember')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

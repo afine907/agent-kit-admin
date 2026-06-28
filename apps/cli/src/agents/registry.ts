@@ -6,6 +6,7 @@ import { AgentAdapter } from './types.js';
 import { ClaudeAdapter } from './claude.js';
 import { CodexAdapter } from './codex.js';
 import { CursorAdapter } from './cursor.js';
+import { WindsurfAdapter } from './windsurf.js';
 
 export class AgentRegistry {
   private adapters: Map<string, AgentAdapter> = new Map();
@@ -38,3 +39,4 @@ export const agentRegistry = new AgentRegistry();
 agentRegistry.register(new ClaudeAdapter());
 agentRegistry.register(new CodexAdapter());
 agentRegistry.register(new CursorAdapter());
+agentRegistry.register(new WindsurfAdapter());
