@@ -13,3 +13,12 @@
 - **来源**: 2026-07-08
 
 ---
+
+### Monorepo 组件级验证
+- **错误**: 改了某个组件的代码后跑全量 `pnpm lint` 或 `pnpm typecheck`，耗时长且其他组件的噪音干扰排查
+- **原因**: monorepo 的 lint/typecheck 命令会遍历所有包
+- **正确做法**: 只跑改动的组件：`pnpm --filter <package> lint && pnpm --filter <package> typecheck && pnpm --filter <package> test`
+- **场景**: monorepo 中只修改了单个组件时
+- **来源**: 2026-07-08
+
+---
