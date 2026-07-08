@@ -28,7 +28,7 @@ Fix all critical bugs, complete missing features, and resolve quality issues acr
 - [x] [5. Fix server API Key flush + download recording](5.task_fix_server_apikey_flush_download.md)
 - [x] [6. Add web OAuth callback handler](6.task_add_web_oauth_callback.md)
 - [x] [7. Add web token refresh](7.task_add_web_token_refresh.md)
-- [ ] [8. Fix web TeamPackagesTab buttons](8.task_fix_web_teampackagestab_buttons.md)
+- [x] [8. Fix web TeamPackagesTab buttons](8.task_fix_web_teampackagestab_buttons.md)
 - [ ] [9. Add web sort controls](9.task_add_web_sort_controls.md)
 - [ ] [10. Complete web PackageEdit](10.task_complete_web_packageedit.md)
 - [ ] [11. Fix web i18n gaps](11.task_fix_web_i18n_gaps.md)

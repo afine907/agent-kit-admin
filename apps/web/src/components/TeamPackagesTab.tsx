@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { api, type TeamPackage } from '../lib/api';
 import {
@@ -26,11 +27,14 @@ interface TeamPackagesTabProps {
 
 export default function TeamPackagesTab({ teamId, canManage }: TeamPackagesTabProps) {
   const { t } = useTranslation('pages');
+  const navigate = useNavigate();
   const [packages, setPackages] = useState<TeamPackage[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [installingId, setInstallingId] = useState<string | null>(null);
   const [installingVersion, setInstallingVersion] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<TeamPackage | null>(null);
 
   const loadPackages = useCallback(async () => {
     try {
@@ -62,6 +66,20 @@ export default function TeamPackagesTab({ teamId, canManage }: TeamPackagesTabPr
     } finally {
       setInstallingId(null);
       setInstallingVersion(null);
+    }
+  };
+
+  const handleDelete = async (pkg: TeamPackage) => {
+    try {
+      setDeletingId(pkg.id);
+      await api.deleteTeamPackage(teamId, pkg.id);
+      setDeleteConfirm(null);
+      await loadPackages();
+    } catch (err: unknown) {
+      console.error('Delete failed:', err);
+      alert(`删除失败: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -105,7 +123,10 @@ export default function TeamPackagesTab({ teamId, canManage }: TeamPackagesTabPr
             {t('common:refresh')}
           </button>
           {canManage && (
-            <button className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90">
+            <button
+              onClick={() => navigate(`/publish?scope=team:${teamId}`)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
+            >
               <Plus className="w-4 h-4" />
               {t('teams.packages.publish')}
             </button>
@@ -229,16 +250,51 @@ export default function TeamPackagesTab({ teamId, canManage }: TeamPackagesTabPr
                   {/* Delete (admin only) */}
                   {canManage && (
                     <button
-                      className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
+                      onClick={() => setDeleteConfirm(pkg)}
+                      disabled={deletingId === pkg.id}
+                      className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg disabled:opacity-50"
                       title="删除包"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      {deletingId === pkg.id ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-3.5 h-3.5" />
+                      )}
                     </button>
                   )}
                 </div>
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-card border border-border rounded-xl p-6 max-w-md w-full mx-4 shadow-lg">
+            <h3 className="text-lg font-semibold mb-2">确认删除</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              确定要删除包 <span className="font-medium text-foreground">{deleteConfirm.full_name}</span> 吗？此操作不可撤销。
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                disabled={deletingId === deleteConfirm.id}
+                className="px-4 py-2 text-sm rounded-lg border border-border hover:bg-muted disabled:opacity-50"
+              >
+                取消
+              </button>
+              <button
+                onClick={() => handleDelete(deleteConfirm)}
+                disabled={deletingId === deleteConfirm.id}
+                className="px-4 py-2 text-sm rounded-lg bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50 flex items-center gap-2"
+              >
+                {deletingId === deleteConfirm.id && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                确认删除
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

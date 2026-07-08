@@ -11,7 +11,7 @@
 | 5 | Fix server API Key flush + download recording | ✅ Done | 2026-07-08 | 2026-07-08 | Periodic flush + ip/ua in download records |
 | 6 | Add web OAuth callback handler | ✅ Done | 2026-07-08 | 2026-07-08 | AuthCallback page + /auth/callback route |
 | 7 | Add web token refresh | ✅ Done | 2026-07-08 | 2026-07-08 | Auto token refresh with queue pattern |
-| 8 | Fix web TeamPackagesTab buttons | ⬜ Pending | — | — | — |
+| 8 | Fix web TeamPackagesTab buttons | ✅ Done | 2026-07-08 | 2026-07-08 | Publish navigates, Delete with confirm dialog |
 | 9 | Add web sort controls | ⬜ Pending | — | — | — |
 | 10 | Complete web PackageEdit | ⬜ Pending | — | — | — |
 | 11 | Fix web i18n gaps | ⬜ Pending | — | — | — |
