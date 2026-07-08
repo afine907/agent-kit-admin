@@ -556,3 +556,81 @@ async def test_full_journey(client: AsyncClient, db, auth_headers, test_user: Us
     resp = await client.get(f"/api/v1/packages/{pkg_name}/download", follow_redirects=False)
     assert resp.status_code == 302
     assert "location" in resp.headers
+
+
+# =============================================================================
+# 团队包管理旅程（v0.2.0 新功能）
+# =============================================================================
+
+
+@pytest.mark.asyncio
+async def test_team_package_management_journey(
+    client: AsyncClient, db, auth_headers, test_user: User, another_user: User, another_auth_headers
+):
+    """团队包管理旅程：创建团队 → 添加成员 → 发布团队包 → 安装 → 卸载 → 离开团队"""
+
+    # 1. 创建团队
+    resp = await client.post(
+        "/api/v1/teams",
+        json={"name": "E2E Team", "slug": "e2e-team", "description": "E2E test team"},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 201
+    team_id = resp.json()["id"]
+
+    # 2. 添加成员
+    resp = await client.post(
+        f"/api/v1/teams/{team_id}/members",
+        json={"user_id": str(another_user.id), "role": "member"},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 201
+
+    # 3. 创建团队包（通过团队端点发布）
+    resp = await client.post(
+        f"/api/v1/teams/{team_id}/packages",
+        json={
+            "name": "team-pkg",
+            "type": "mcp",
+            "description": "Team package for E2E",
+        },
+        headers=auth_headers,
+    )
+    assert resp.status_code == 201, f"创建团队包失败: {resp.status_code} {resp.text}"
+    package_id = resp.json()["id"]
+
+    # 4. 发布版本到团队包
+    resp = await client.post(
+        f"/api/v1/teams/{team_id}/packages/{package_id}/versions",
+        json={"version": "1.0.0", "manifest": {"name": "team-pkg", "version": "1.0.0", "type": "mcp"}},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 201, f"发布版本失败: {resp.status_code} {resp.text}"
+
+    # 5. 成员安装团队包
+    resp = await client.post(
+        f"/api/v1/teams/{team_id}/packages/{package_id}/install",
+        headers=another_auth_headers,
+    )
+    assert resp.status_code == 201
+
+    # 6. 成员卸载团队包
+    resp = await client.delete(
+        f"/api/v1/teams/{team_id}/packages/{package_id}/install",
+        headers=another_auth_headers,
+    )
+    assert resp.status_code == 204
+
+    # 7. 成员离开团队
+    resp = await client.post(
+        f"/api/v1/teams/{team_id}/leave",
+        headers=another_auth_headers,
+    )
+    assert resp.status_code == 204
+
+    # 8. 验证 owner 不能离开
+    resp = await client.post(
+        f"/api/v1/teams/{team_id}/leave",
+        headers=auth_headers,
+    )
+    assert resp.status_code == 400
