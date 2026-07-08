@@ -19,6 +19,9 @@ export function PackageEdit() {
   const [description, setDescription] = useState('');
   const [tags, setTags] = useState('');
   const [visibility, setVisibility] = useState('public');
+  const [license, setLicense] = useState('');
+  const [repository, setRepository] = useState('');
+  const [homepage, setHomepage] = useState('');
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [statusMessage, setStatusMessage] = useState('');
@@ -29,6 +32,9 @@ export function PackageEdit() {
       setDescription(pkg.description || '');
       setTags(pkg.tags.join(', '));
       setVisibility(pkg.visibility);
+      setLicense(pkg.license || '');
+      setRepository(pkg.repository || '');
+      setHomepage(pkg.homepage || '');
     }
   }, [pkg]);
 
@@ -44,6 +50,9 @@ export function PackageEdit() {
         description,
         tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
         visibility,
+        license: license || undefined,
+        repository: repository || undefined,
+        homepage: homepage || undefined,
       });
       setStatus('success');
       setStatusMessage(t('packageEdit.success', 'Package updated successfully'));
@@ -150,6 +159,51 @@ export function PackageEdit() {
             <option value="private">Private</option>
             <option value="team">Team</option>
           </select>
+        </div>
+
+        {/* 许可证 */}
+        <div>
+          <label htmlFor="license" className="block text-sm font-medium mb-2">
+            License
+          </label>
+          <input
+            id="license"
+            type="text"
+            value={license}
+            onChange={(e) => setLicense(e.target.value)}
+            className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 font-mono text-sm"
+            placeholder="MIT, Apache-2.0, etc."
+          />
+        </div>
+
+        {/* 仓库地址 */}
+        <div>
+          <label htmlFor="repository" className="block text-sm font-medium mb-2">
+            Repository URL
+          </label>
+          <input
+            id="repository"
+            type="url"
+            value={repository}
+            onChange={(e) => setRepository(e.target.value)}
+            className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 font-mono text-sm"
+            placeholder="https://github.com/user/repo"
+          />
+        </div>
+
+        {/* 主页 */}
+        <div>
+          <label htmlFor="homepage" className="block text-sm font-medium mb-2">
+            Homepage URL
+          </label>
+          <input
+            id="homepage"
+            type="url"
+            value={homepage}
+            onChange={(e) => setHomepage(e.target.value)}
+            className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 font-mono text-sm"
+            placeholder="https://example.com"
+          />
         </div>
 
         {/* 提交按钮 */}

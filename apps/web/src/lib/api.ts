@@ -354,6 +354,9 @@ export const api = {
     description?: string;
     tags?: string[];
     visibility?: string;
+    license?: string;
+    repository?: string;
+    homepage?: string;
   }) => client.patch<PackageResponse>(`/api/v1/packages/${scope}/${name}`, data).then((r) => r.data),
 
   updateVersion: (scope: string, name: string, version: string, data: {

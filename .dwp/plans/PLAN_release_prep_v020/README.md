@@ -30,7 +30,7 @@ Fix all critical bugs, complete missing features, and resolve quality issues acr
 - [x] [7. Add web token refresh](7.task_add_web_token_refresh.md)
 - [x] [8. Fix web TeamPackagesTab buttons](8.task_fix_web_teampackagestab_buttons.md)
 - [x] [9. Add web sort controls](9.task_add_web_sort_controls.md)
-- [ ] [10. Complete web PackageEdit](10.task_complete_web_packageedit.md)
+- [x] [10. Complete web PackageEdit](10.task_complete_web_packageedit.md)
 - [ ] [11. Fix web i18n gaps](11.task_fix_web_i18n_gaps.md)
 - [ ] [12. Security Review](12.task_security_review.md)
 - [ ] [13. Skills & Agents Discovery](13.task_skills_agents_discovery.md)
