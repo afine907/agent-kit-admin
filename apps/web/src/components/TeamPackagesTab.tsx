@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { api, type TeamPackage } from '../lib/api';
 import {
@@ -26,11 +27,14 @@ interface TeamPackagesTabProps {
 
 export default function TeamPackagesTab({ teamId, canManage }: TeamPackagesTabProps) {
   const { t } = useTranslation('pages');
+  const navigate = useNavigate();
   const [packages, setPackages] = useState<TeamPackage[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [installingId, setInstallingId] = useState<string | null>(null);
   const [installingVersion, setInstallingVersion] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<TeamPackage | null>(null);
 
   const loadPackages = useCallback(async () => {
     try {
@@ -39,11 +43,11 @@ export default function TeamPackagesTab({ teamId, canManage }: TeamPackagesTabPr
       const data = await api.listTeamPackages(teamId);
       setPackages(data);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : '加载失败');
+      setError(err instanceof Error ? err.message : t('teams.packages.loadFailed'));
     } finally {
       setLoading(false);
     }
-  }, [teamId]);
+  }, [teamId, t]);
 
   useEffect(() => {
     loadPackages();
@@ -58,10 +62,24 @@ export default function TeamPackagesTab({ teamId, canManage }: TeamPackagesTabPr
       await loadPackages();
     } catch (err: unknown) {
       console.error('Install failed:', err);
-      alert(`安装失败: ${err instanceof Error ? err.message : String(err)}`);
+      alert(`${t('teams.packages.installFailed')}: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setInstallingId(null);
       setInstallingVersion(null);
+    }
+  };
+
+  const handleDelete = async (pkg: TeamPackage) => {
+    try {
+      setDeletingId(pkg.id);
+      await api.deleteTeamPackage(teamId, pkg.id);
+      setDeleteConfirm(null);
+      await loadPackages();
+    } catch (err: unknown) {
+      console.error('Delete failed:', err);
+      alert(`${t('teams.packages.deleteFailed')}: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -82,7 +100,7 @@ export default function TeamPackagesTab({ teamId, canManage }: TeamPackagesTabPr
     if (pkg.has_update) {
       return `${pkg.my_installed_version} → ${pkg.latest_version}`;
     }
-    return `${pkg.my_installed_version} 最新`;
+    return `${pkg.my_installed_version} ${t('teams.packages.latest')}`;
   };
 
   return (
@@ -105,7 +123,10 @@ export default function TeamPackagesTab({ teamId, canManage }: TeamPackagesTabPr
             {t('common:refresh')}
           </button>
           {canManage && (
-            <button className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90">
+            <button
+              onClick={() => navigate(`/publish?scope=team:${teamId}`)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
+            >
               <Plus className="w-4 h-4" />
               {t('teams.packages.publish')}
             </button>
@@ -119,7 +140,7 @@ export default function TeamPackagesTab({ teamId, canManage }: TeamPackagesTabPr
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
           <span>{error}</span>
           <button onClick={loadPackages} className="ml-auto underline">
-            重试
+            {t('common:actions.retry')}
           </button>
         </div>
       )}
@@ -139,7 +160,7 @@ export default function TeamPackagesTab({ teamId, canManage }: TeamPackagesTabPr
           <p className="text-muted-foreground">{t('teams.packages.empty')}</p>
           {canManage && (
             <p className="text-sm text-muted-foreground mt-1">
-              团队还没有发布任何包
+              {t('teams.packages.emptyHint')}
             </p>
           )}
         </div>
@@ -173,7 +194,7 @@ export default function TeamPackagesTab({ teamId, canManage }: TeamPackagesTabPr
                 )}
                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
                   <span>v{pkg.latest_version || '-'}</span>
-                  <span>下载 {pkg.downloads_count} 次</span>
+                  <span>{t('teams.packages.downloading', { count: pkg.downloads_count })}</span>
                   <span>{new Date(pkg.created_at).toLocaleDateString()}</span>
                 </div>
               </div>
@@ -196,19 +217,19 @@ export default function TeamPackagesTab({ teamId, canManage }: TeamPackagesTabPr
                         onClick={() => handleInstall(pkg)}
                         disabled={installingId === pkg.id}
                         className="flex items-center gap-1 px-2.5 py-1.5 text-xs bg-yellow-100 text-yellow-800 rounded-lg hover:bg-yellow-200 disabled:opacity-50"
-                        title={`更新到 ${pkg.latest_version}`}
+                        title={t('teams.packages.updateTo', { version: pkg.latest_version })}
                       >
                         {installingId === pkg.id ? (
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
                         ) : (
                           <Download className="w-3.5 h-3.5" />
                         )}
-                        更新
+                        {t('teams.packages.update')}
                       </button>
                     ) : (
                       <span className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-green-600 bg-green-50 rounded-lg">
                         <CheckCircle2 className="w-3.5 h-3.5" />
-                        已安装
+                        {t('teams.packages.installed')}
                       </span>
                     )
                   ) : (
@@ -222,23 +243,58 @@ export default function TeamPackagesTab({ teamId, canManage }: TeamPackagesTabPr
                       ) : (
                         <Download className="w-3.5 h-3.5" />
                       )}
-                      {installingId === pkg.id && installingVersion ? `安装中 ${installingVersion}` : '安装'}
+                      {installingId === pkg.id && installingVersion ? `${t('teams.packages.installing')} ${installingVersion}` : t('teams.packages.install')}
                     </button>
                   )}
 
                   {/* Delete (admin only) */}
                   {canManage && (
                     <button
-                      className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg"
-                      title="删除包"
+                      onClick={() => setDeleteConfirm(pkg)}
+                      disabled={deletingId === pkg.id}
+                      className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg disabled:opacity-50"
+                      title={t('teams.packages.deletePackage')}
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      {deletingId === pkg.id ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-3.5 h-3.5" />
+                      )}
                     </button>
                   )}
                 </div>
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-card border border-border rounded-xl p-6 max-w-md w-full mx-4 shadow-lg">
+            <h3 className="text-lg font-semibold mb-2">{t('teams.packages.deleteConfirmTitle')}</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              {t('teams.packages.deleteConfirmMessage', { name: deleteConfirm.full_name })}
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                disabled={deletingId === deleteConfirm.id}
+                className="px-4 py-2 text-sm rounded-lg border border-border hover:bg-muted disabled:opacity-50"
+              >
+                {t('common:actions.cancel')}
+              </button>
+              <button
+                onClick={() => handleDelete(deleteConfirm)}
+                disabled={deletingId === deleteConfirm.id}
+                className="px-4 py-2 text-sm rounded-lg bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50 flex items-center gap-2"
+              >
+                {deletingId === deleteConfirm.id && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                {t('common:actions.confirmDelete')}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

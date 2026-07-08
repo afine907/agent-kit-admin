@@ -12,6 +12,7 @@ import { homedir } from 'os';
 import { apiClient } from '../api/client.js';
 import { agentRegistry } from '../agents/registry.js';
 import { readManifest } from '../utils/manifest.js';
+import { extractTarball } from '../utils/tarball.js';
 import { parsePackageName } from '../utils/package-name.js';
 import { FileLock } from '../utils/lock.js';
 import { t } from '../i18n.js';
@@ -124,10 +125,17 @@ installCommand
         // 下载文件（带重试）
         const buffer = await downloadWithRetry(downloadUrl, 3);
 
-        // 解压 (简化实现，实际需要 tar 解压)
+        // 保存 tarball
         const tarPath = join(packageDir, `${name}.tar.gz`);
         const fs = await import('fs');
         fs.writeFileSync(tarPath, buffer);
+
+        // 解压
+        spinner3.text = '解压中...';
+        await extractTarball(tarPath, packageDir);
+
+        // 清理 tarball
+        fs.unlinkSync(tarPath);
 
         spinner3.succeed(`下载完成`);
       } catch (error: unknown) {

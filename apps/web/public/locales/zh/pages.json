@@ -149,10 +149,21 @@
       "title": "工具包",
       "publish": "发布工具包",
       "empty": "暂无工具包",
+      "emptyHint": "团队还没有发布任何包",
       "notInstalled": "未安装",
       "install": "安装",
+      "installing": "安装中",
       "update": "更新",
-      "installed": "已安装"
+      "installed": "已安装",
+      "loadFailed": "加载失败",
+      "installFailed": "安装失败",
+      "deletePackage": "删除包",
+      "deleteConfirmTitle": "确认删除",
+      "deleteConfirmMessage": "确定要删除包 {{name}} 吗？此操作不可撤销。",
+      "deleteFailed": "删除失败",
+      "updateTo": "更新到 {{version}}",
+      "downloading": "下载 {{count}} 次",
+      "latest": "最新"
     }
   },
   "publish": {
@@ -216,5 +227,25 @@
   },
   "error": {
     "loadFailed": "加载失败"
+  },
+  "packageEdit": {
+    "title": "编辑包",
+    "loading": "加载中…",
+    "notFound": "包不存在",
+    "description": "描述",
+    "descriptionPlaceholder": "包描述…",
+    "tags": "标签",
+    "tagsHint": "逗号分隔的标签",
+    "visibility": "可见性",
+    "license": "许可证",
+    "licensePlaceholder": "MIT、Apache-2.0 等",
+    "repository": "仓库地址",
+    "repositoryPlaceholder": "https://github.com/user/repo",
+    "homepage": "主页地址",
+    "homepagePlaceholder": "https://example.com",
+    "save": "保存更改",
+    "saving": "保存中…",
+    "success": "包更新成功",
+    "error": "更新失败"
   }
 }

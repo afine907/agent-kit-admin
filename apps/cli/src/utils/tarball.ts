@@ -5,7 +5,7 @@
 import { statSync } from 'fs';
 import { readdir } from 'fs/promises';
 import { join, relative } from 'path';
-import { create } from 'tar';
+import { create, extract } from 'tar';
 
 // 排除的目录和文件
 const EXCLUDE_PATTERNS = [
@@ -47,6 +47,22 @@ export async function createTarball(
     path: outputPath,
     size: stats.size,
   };
+}
+
+/**
+ * 解压 .tar.gz 到目标目录
+ */
+export async function extractTarball(tarballPath: string, destDir: string): Promise<void> {
+  try {
+    await extract({
+      file: tarballPath,
+      cwd: destDir,
+      strip: 1, // 去掉顶层目录
+    });
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error);
+    throw new Error(`解压失败: ${msg}`);
+  }
 }
 
 /**

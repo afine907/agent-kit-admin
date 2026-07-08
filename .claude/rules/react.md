@@ -59,6 +59,26 @@ useEffect(() => {
 }, [])  // userId 变化时不会重新执行
 ```
 
+## i18n 与 Hooks 依赖
+
+- **错误**: 在 `useCallback`/`useEffect` 中使用 `t()` 函数但未加入依赖数组
+- **原因**: `t` 是从 `useTranslation()` 解构的函数，引用可能随语言切换变化
+- **正确做法**: `useCallback` 的依赖数组必须包含 `t`
+- **场景**: 组件使用 `useTranslation()` 且在 `useCallback`/`useEffect` 中调用 `t()`
+- **来源**: 2026-07-08
+
+```typescript
+// ✅ 正确：t 在依赖数组中
+const handleSearch = useCallback((value: string) => {
+  setError(t('search.failed'))
+}, [t])
+
+// ❌ 错误：缺少 t
+const handleSearch = useCallback((value: string) => {
+  setError(t('search.failed'))
+}, [])
+```
+
 ## 状态管理
 
 ```typescript

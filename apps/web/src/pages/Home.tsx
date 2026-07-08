@@ -10,7 +10,15 @@ import { PackageCard } from '../components/PackageCard'
 import { usePackages } from '../hooks/usePackages'
 import { PackageResponse } from '../lib/api'
 import { Card } from '@/components/ui/card'
-import { Boxes, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react'
+import { Boxes, ChevronLeft, ChevronRight, AlertCircle, ArrowUpDown } from 'lucide-react'
+
+type SortOption = 'newest' | 'downloads' | 'name'
+
+const SORT_CONFIG: Record<SortOption, { sort: string; order: string; label: string }> = {
+  newest: { sort: 'created_at', order: 'desc', label: '最新' },
+  downloads: { sort: 'downloads', order: 'desc', label: '最热' },
+  name: { sort: 'name', order: 'asc', label: '名称' },
+}
 
 export default function Home() {
   const { t } = useTranslation('pages')
@@ -18,12 +26,17 @@ export default function Home() {
   const [searchParams] = useSearchParams()
   const workspaceScope = searchParams.get('scope') || undefined
   const [type, setType] = useState<string | undefined>()
+  const [sort, setSort] = useState<SortOption>('newest')
   const [page, setPage] = useState(1)
+
+  const sortConfig = SORT_CONFIG[sort]
 
   const { data, isLoading, error } = usePackages({
     search: search || undefined,
     type,
     scope: workspaceScope,
+    sort: sortConfig.sort,
+    order: sortConfig.order,
     page,
     per_page: 20,
   })
@@ -35,6 +48,11 @@ export default function Home() {
 
   const handleTypeChange = useCallback((newType: string | undefined) => {
     setType(newType)
+    setPage(1)
+  }, [])
+
+  const handleSortChange = useCallback((newSort: SortOption) => {
+    setSort(newSort)
     setPage(1)
   }, [])
 
@@ -119,6 +137,18 @@ export default function Home() {
               {f.label}
             </button>
           ))}
+        </div>
+        <div className="relative">
+          <select
+            value={sort}
+            onChange={(e) => handleSortChange(e.target.value as SortOption)}
+            className="flex items-center gap-2 px-4 py-2 pr-8 text-sm font-medium bg-muted border rounded-xl shadow-sm appearance-none cursor-pointer hover:bg-muted/80 transition-all"
+          >
+            {(Object.entries(SORT_CONFIG) as [SortOption, typeof sortConfig][]).map(([key, config]) => (
+              <option key={key} value={key}>{config.label}</option>
+            ))}
+          </select>
+          <ArrowUpDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
         </div>
       </div>
 

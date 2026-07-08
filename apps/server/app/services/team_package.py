@@ -422,6 +422,34 @@ class TeamPackageService:
         await self.db.refresh(installed)
         return installed
 
+    async def uninstall_package(
+        self,
+        team_id: str,
+        package_id: str,
+        user_id: str,
+    ) -> None:
+        """卸载团队包（删除 InstalledPackage 记录）"""
+        await self._get_team(team_id)
+        if not await self._is_member(team_id, user_id):
+            raise AppError(code=ErrorCodes.AUTH_FORBIDDEN, message="Not a team member", status_code=403)
+
+        result = await self.db.execute(
+            select(InstalledPackage).where(
+                InstalledPackage.user_id == user_id,
+                InstalledPackage.package_id == package_id,
+            )
+        )
+        record = result.scalar_one_or_none()
+        if not record:
+            raise AppError(
+                code=ErrorCodes.NOT_FOUND,
+                message="Install record not found",
+                status_code=404,
+            )
+
+        await self.db.delete(record)
+        await self.db.commit()
+
     # -------------------------------------------------------------------------
     # 我的已安装包
     # -------------------------------------------------------------------------

@@ -130,6 +130,9 @@ describe('PackageEdit', () => {
         description: 'Updated description',
         tags: ['ai', 'tool'],
         visibility: 'public',
+        license: 'MIT',
+        repository: undefined,
+        homepage: undefined,
       });
     });
   });

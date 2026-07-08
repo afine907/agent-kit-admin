@@ -157,6 +157,17 @@ async def remove_member(
     await service.remove_member(team_id, user_id)
 
 
+@router.post("/{team_id}/leave", status_code=204)
+async def leave_team(
+    team_id: str,
+    current_user: UserType = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """退出团队（当前用户自行移除）"""
+    service = TeamService(db)
+    await service.leave_team(team_id, str(current_user.id))
+
+
 # /me 端点（静态路径，优先于 /{team_id} 匹配）
 @router.get("/me/installed")
 async def list_my_installed(
@@ -419,3 +430,15 @@ async def install_team_package(
         "version_installed": str(installed.version_installed),
         "installed_at": str(installed.installed_at),
     }
+
+
+@router.delete("/{team_id}/packages/{package_id}/install", status_code=204)
+async def uninstall_team_package(
+    team_id: str,
+    package_id: str,
+    current_user: UserType = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """卸载团队包（删除安装记录）"""
+    service = TeamPackageService(db)
+    await service.uninstall_package(team_id, package_id, str(current_user.id))

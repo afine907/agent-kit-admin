@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "name": "agent-kit-admin",
+  "description": "Private Package Registry for AI Agent ecosystems",
+  "defaultAgent": "claude-code",
+  "skills": [
+    "akit",
+    "akit-agent"
+  ],
+  "agents": [
+    "wellness-agent"
+  ],
+  "commands": [
+    "dwp-create",
+    "dwp-execute",
+    "dwp-status",
+    "dwp-refine",
+    "dwp-resume",
+    "dwp-verify",
+    "dwp-onboard"
+  ]
+}
