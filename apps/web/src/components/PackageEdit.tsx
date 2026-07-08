@@ -70,7 +70,7 @@ export function PackageEdit() {
     return (
       <div className="container mx-auto py-16 flex flex-col items-center justify-center">
         <Loader2 className="w-6 h-6 text-primary animate-spin mb-3" />
-        <p className="text-sm text-muted-foreground font-mono">Loading...</p>
+        <p className="text-sm text-muted-foreground font-mono">{t('packageEdit.loading')}</p>
       </div>
     );
   }
@@ -79,7 +79,7 @@ export function PackageEdit() {
     return (
       <div className="container mx-auto py-16 flex flex-col items-center justify-center">
         <AlertCircle className="w-6 h-6 text-destructive mb-3" />
-        <p className="text-destructive">Package not found</p>
+        <p className="text-destructive">{t('packageEdit.notFound')}</p>
       </div>
     );
   }
@@ -93,10 +93,10 @@ export function PackageEdit() {
           {pkg.full_name}
         </Link>
         <span>/</span>
-        <span className="text-foreground font-medium">Edit</span>
+        <span className="text-foreground font-medium">{t('packageEdit.title')}</span>
       </div>
 
-      <h1 className="text-2xl font-bold mb-6">Edit Package</h1>
+      <h1 className="text-2xl font-bold mb-6">{t('packageEdit.title')}</h1>
 
       {/* 状态消息 */}
       {status === 'success' && (
@@ -116,7 +116,7 @@ export function PackageEdit() {
         {/* 描述 */}
         <div>
           <label htmlFor="description" className="block text-sm font-medium mb-2">
-            Description
+            {t('packageEdit.description')}
           </label>
           <textarea
             id="description"
@@ -124,14 +124,14 @@ export function PackageEdit() {
             onChange={(e) => setDescription(e.target.value)}
             rows={3}
             className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 font-mono text-sm"
-            placeholder="Package description..."
+            placeholder={t('packageEdit.descriptionPlaceholder')}
           />
         </div>
 
         {/* 标签 */}
         <div>
           <label htmlFor="tags" className="block text-sm font-medium mb-2">
-            Tags
+            {t('packageEdit.tags')}
           </label>
           <input
             id="tags"
@@ -141,13 +141,13 @@ export function PackageEdit() {
             className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 font-mono text-sm"
             placeholder="ai, tool, mcp"
           />
-          <p className="text-xs text-muted-foreground mt-1">Comma-separated tags</p>
+          <p className="text-xs text-muted-foreground mt-1">{t('packageEdit.tagsHint')}</p>
         </div>
 
         {/* 可见性 */}
         <div>
           <label htmlFor="visibility" className="block text-sm font-medium mb-2">
-            Visibility
+            {t('packageEdit.visibility')}
           </label>
           <select
             id="visibility"
@@ -155,16 +155,16 @@ export function PackageEdit() {
             onChange={(e) => setVisibility(e.target.value)}
             className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 font-mono text-sm"
           >
-            <option value="public">Public</option>
-            <option value="private">Private</option>
-            <option value="team">Team</option>
+            <option value="public">{t('publish.step1.public')}</option>
+            <option value="private">{t('publish.step1.private')}</option>
+            <option value="team">{t('publish.step1.team')}</option>
           </select>
         </div>
 
         {/* 许可证 */}
         <div>
           <label htmlFor="license" className="block text-sm font-medium mb-2">
-            License
+            {t('packageEdit.license')}
           </label>
           <input
             id="license"
@@ -172,14 +172,14 @@ export function PackageEdit() {
             value={license}
             onChange={(e) => setLicense(e.target.value)}
             className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 font-mono text-sm"
-            placeholder="MIT, Apache-2.0, etc."
+            placeholder={t('packageEdit.licensePlaceholder')}
           />
         </div>
 
         {/* 仓库地址 */}
         <div>
           <label htmlFor="repository" className="block text-sm font-medium mb-2">
-            Repository URL
+            {t('packageEdit.repository')}
           </label>
           <input
             id="repository"
@@ -187,14 +187,14 @@ export function PackageEdit() {
             value={repository}
             onChange={(e) => setRepository(e.target.value)}
             className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 font-mono text-sm"
-            placeholder="https://github.com/user/repo"
+            placeholder={t('packageEdit.repositoryPlaceholder')}
           />
         </div>
 
         {/* 主页 */}
         <div>
           <label htmlFor="homepage" className="block text-sm font-medium mb-2">
-            Homepage URL
+            {t('packageEdit.homepage')}
           </label>
           <input
             id="homepage"
@@ -202,7 +202,7 @@ export function PackageEdit() {
             value={homepage}
             onChange={(e) => setHomepage(e.target.value)}
             className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 font-mono text-sm"
-            placeholder="https://example.com"
+            placeholder={t('packageEdit.homepagePlaceholder')}
           />
         </div>
 
@@ -213,7 +213,7 @@ export function PackageEdit() {
           className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors font-medium"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          {saving ? 'Saving...' : 'Save Changes'}
+          {saving ? t('packageEdit.saving') : t('packageEdit.save')}
         </button>
       </form>
     </div>
