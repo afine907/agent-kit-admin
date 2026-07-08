@@ -26,7 +26,7 @@ Fix all critical bugs, complete missing features, and resolve quality issues acr
 - [x] [3. Add server leave-team endpoint](3.task_add_server_leave_team.md)
 - [x] [4. Add server uninstall-team-package endpoint](4.task_add_server_uninstall_team_package.md)
 - [x] [5. Fix server API Key flush + download recording](5.task_fix_server_apikey_flush_download.md)
-- [ ] [6. Add web OAuth callback handler](6.task_add_web_oauth_callback.md)
+- [x] [6. Add web OAuth callback handler](6.task_add_web_oauth_callback.md)
 - [ ] [7. Add web token refresh](7.task_add_web_token_refresh.md)
 - [ ] [8. Fix web TeamPackagesTab buttons](8.task_fix_web_teampackagestab_buttons.md)
 - [ ] [9. Add web sort controls](9.task_add_web_sort_controls.md)

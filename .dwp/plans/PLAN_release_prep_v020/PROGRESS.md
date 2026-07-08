@@ -9,7 +9,7 @@
 | 3 | Add server leave-team endpoint | ✅ Done | 2026-07-08 | 2026-07-08 | POST /teams/{id}/leave with owner guard |
 | 4 | Add server uninstall-team-package endpoint | ✅ Done | 2026-07-08 | 2026-07-08 | DELETE /teams/{id}/packages/{pid}/install |
 | 5 | Fix server API Key flush + download recording | ✅ Done | 2026-07-08 | 2026-07-08 | Periodic flush + ip/ua in download records |
-| 6 | Add web OAuth callback handler | ⬜ Pending | — | — | — |
+| 6 | Add web OAuth callback handler | ✅ Done | 2026-07-08 | 2026-07-08 | AuthCallback page + /auth/callback route |
 | 7 | Add web token refresh | ⬜ Pending | — | — | — |
 | 8 | Fix web TeamPackagesTab buttons | ⬜ Pending | — | — | — |
 | 9 | Add web sort controls | ⬜ Pending | — | — | — |
