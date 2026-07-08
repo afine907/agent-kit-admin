@@ -15,7 +15,7 @@
 | 9 | Add web sort controls | ✅ Done | 2026-07-08 | 2026-07-08 | Sort dropdown: newest/downloads/name |
 | 10 | Complete web PackageEdit | ✅ Done | 2026-07-08 | 2026-07-08 | Added license/repository/homepage fields |
 | 11 | Fix web i18n gaps | ✅ Done | 2026-07-08 | 2026-07-08 | All hardcoded strings → i18n t() calls |
-| 12 | Security Review | ⬜ Pending | — | — | — |
+| 12 | Security Review | ✅ Done | 2026-07-08 | 2026-07-08 | No critical findings, SECURITY.md updated |
 | 13 | Skills & Agents Discovery | ⬜ Pending | — | — | — |
 | 14 | Executive Report | ⬜ Pending | — | — | — |
 

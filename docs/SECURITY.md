@@ -6,9 +6,10 @@ Agent Kit Admin is a private package registry. Security is critical because it m
 
 ## Authentication
 
-- **JWT tokens** for user sessions (short-lived, rotated)
-- **API Keys** for CLI operations (scoped, revocable)
-- **OAuth** planned for enterprise SSO (WeChat Work, Feishu, DingTalk)
+- **JWT tokens** for user sessions (short-lived, with automatic refresh)
+- **API Keys** for CLI operations (scoped, revocable, last_used_at tracked)
+- **OAuth** for enterprise SSO (WeChat Work, Feishu, DingTalk) — callback handled at `/auth/callback`
+- **Token refresh** — automatic refresh on 401 with promise queue to prevent concurrent refresh storms
 - Auth implementation: [`docs/architecture/07-auth-design.md`](architecture/07-auth-design.md)
 
 ## Authorization
