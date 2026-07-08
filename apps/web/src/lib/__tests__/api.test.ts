@@ -8,8 +8,7 @@
  * - 并发请求只触发一次 refresh (promise queue)
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import axios from 'axios';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useAuthStore } from '@/stores/authStore';
 
 // Mock axios
