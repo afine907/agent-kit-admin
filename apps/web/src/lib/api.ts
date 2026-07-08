@@ -26,17 +26,73 @@ client.interceptors.request.use((config) => {
   return config;
 });
 
-// 响应拦截器 - 统一错误处理
+// Token 刷新队列 - 防止多个请求同时触发刷新
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (token: string) => void;
+  reject: (error: Error) => void;
+}> = [];
+
+function processQueue(error: Error | null, token: string | null) {
+  failedQueue.forEach((promise) => {
+    if (error) {
+      promise.reject(error);
+    } else if (token) {
+      promise.resolve(token);
+    }
+  });
+  failedQueue = [];
+}
+
+// 响应拦截器 - 统一错误处理 + 自动 token 刷新
 client.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    const originalRequest = error.config;
+
     if (error.response) {
       const { status, data } = error.response;
       const message = data?.error?.message || data?.message || error.message;
 
-      // 401 清除认证状态
-      if (status === 401) {
-        useAuthStore.getState().clearAuth();
+      // 401 - 尝试刷新 token
+      if (status === 401 && !originalRequest._retry) {
+        const refreshToken = useAuthStore.getState().getRefreshToken();
+
+        if (!refreshToken) {
+          useAuthStore.getState().clearAuth();
+          throw new Error(`API Error (${status}): ${message}`);
+        }
+
+        // 如果正在刷新，加入队列等待
+        if (isRefreshing) {
+          return new Promise<string>((resolve, reject) => {
+            failedQueue.push({ resolve, reject });
+          }).then((newToken) => {
+            originalRequest.headers.Authorization = `Bearer ${newToken}`;
+            return client(originalRequest);
+          });
+        }
+
+        originalRequest._retry = true;
+        isRefreshing = true;
+
+        try {
+          const result = await client.post<{ token: string }>('/api/v1/auth/refresh', {
+            refresh_token: refreshToken,
+          });
+          const newToken = result.data.token;
+          useAuthStore.getState().updateToken(newToken);
+          processQueue(null, newToken);
+
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          return client(originalRequest);
+        } catch (refreshError) {
+          processQueue(refreshError instanceof Error ? refreshError : new Error('Refresh failed'), null);
+          useAuthStore.getState().clearAuth();
+          throw new Error(`API Error (${status}): ${message}`);
+        } finally {
+          isRefreshing = false;
+        }
       }
 
       throw new Error(`API Error (${status}): ${message}`);

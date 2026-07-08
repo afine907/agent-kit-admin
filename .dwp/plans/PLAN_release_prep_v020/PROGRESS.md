@@ -10,7 +10,7 @@
 | 4 | Add server uninstall-team-package endpoint | ✅ Done | 2026-07-08 | 2026-07-08 | DELETE /teams/{id}/packages/{pid}/install |
 | 5 | Fix server API Key flush + download recording | ✅ Done | 2026-07-08 | 2026-07-08 | Periodic flush + ip/ua in download records |
 | 6 | Add web OAuth callback handler | ✅ Done | 2026-07-08 | 2026-07-08 | AuthCallback page + /auth/callback route |
-| 7 | Add web token refresh | ⬜ Pending | — | — | — |
+| 7 | Add web token refresh | ✅ Done | 2026-07-08 | 2026-07-08 | Auto token refresh with queue pattern |
 | 8 | Fix web TeamPackagesTab buttons | ⬜ Pending | — | — | — |
 | 9 | Add web sort controls | ⬜ Pending | — | — | — |
 | 10 | Complete web PackageEdit | ⬜ Pending | — | — | — |
