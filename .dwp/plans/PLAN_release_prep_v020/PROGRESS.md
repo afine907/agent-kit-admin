@@ -12,7 +12,7 @@
 | 6 | Add web OAuth callback handler | ✅ Done | 2026-07-08 | 2026-07-08 | AuthCallback page + /auth/callback route |
 | 7 | Add web token refresh | ✅ Done | 2026-07-08 | 2026-07-08 | Auto token refresh with queue pattern |
 | 8 | Fix web TeamPackagesTab buttons | ✅ Done | 2026-07-08 | 2026-07-08 | Publish navigates, Delete with confirm dialog |
-| 9 | Add web sort controls | ⬜ Pending | — | — | — |
+| 9 | Add web sort controls | ✅ Done | 2026-07-08 | 2026-07-08 | Sort dropdown: newest/downloads/name |
 | 10 | Complete web PackageEdit | ⬜ Pending | — | — | — |
 | 11 | Fix web i18n gaps | ⬜ Pending | — | — | — |
 | 12 | Security Review | ⬜ Pending | — | — | — |

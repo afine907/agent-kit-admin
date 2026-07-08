@@ -12,6 +12,8 @@ export function usePackages(params?: {
   search?: string;
   type?: string;
   scope?: string;
+  sort?: string;
+  order?: string;
   page?: number;
   per_page?: number;
 }) {
