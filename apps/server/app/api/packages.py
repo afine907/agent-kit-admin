@@ -1,7 +1,7 @@
 """包管理 API 路由"""
 
 import logging
-from fastapi import APIRouter, BackgroundTasks, Depends, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -188,6 +188,7 @@ async def delete_package(
 async def download_latest(
     scope: str,
     name: str,
+    request: Request,
     background_tasks: BackgroundTasks,
     current_user: UserType | None = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db),
@@ -212,11 +213,14 @@ async def download_latest(
     url = await storage.get_presigned_url(str(version.tarball_path))
 
     # 使用 FastAPI BackgroundTasks 记录下载计数（请求完成后执行）
-    # 只传递 ID 字符串，避免 ORM 对象 detached 问题
+    ip_address = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
     background_tasks.add_task(
         _record_download,
         str(package.id),
         str(version.id),
+        ip_address,
+        user_agent,
     )
 
     return RedirectResponse(url=url, status_code=302)
@@ -227,6 +231,7 @@ async def download_version(
     scope: str,
     name: str,
     version: str,
+    request: Request,
     background_tasks: BackgroundTasks,
     current_user: UserType | None = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db),
@@ -251,10 +256,14 @@ async def download_version(
     url = await storage.get_presigned_url(str(ver.tarball_path))
 
     # 使用 FastAPI BackgroundTasks 记录下载计数
+    ip_address = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
     background_tasks.add_task(
         _record_download,
         str(package.id),
         str(ver.id),
+        ip_address,
+        user_agent,
     )
 
     return RedirectResponse(url=url, status_code=302)
@@ -263,6 +272,8 @@ async def download_version(
 async def _record_download(
     package_id: str,
     version_id: str,
+    ip_address: str | None = None,
+    user_agent: str | None = None,
 ) -> None:
     """记录下载（后台任务）
 
@@ -280,6 +291,8 @@ async def _record_download(
             download = Download(
                 package_id=package_id,
                 version_id=version_id,
+                ip_address=ip_address,
+                user_agent=user_agent,
             )
             session.add(download)
 
