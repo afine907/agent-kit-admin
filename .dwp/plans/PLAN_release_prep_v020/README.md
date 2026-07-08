@@ -22,7 +22,7 @@ Fix all critical bugs, complete missing features, and resolve quality issues acr
 ## Task List
 
 - [x] [1. Fix CLI install: add tarball extraction](1.task_fix_cli_install_extract.md)
-- [ ] [2. Fix CLI update: re-download and apply](2.task_fix_cli_update_reredownload.md)
+- [x] [2. Fix CLI update: re-download and apply](2.task_fix_cli_update_reredownload.md)
 - [ ] [3. Add server leave-team endpoint](3.task_add_server_leave_team.md)
 - [ ] [4. Add server uninstall-team-package endpoint](4.task_add_server_uninstall_team_package.md)
 - [ ] [5. Fix server API Key flush + download recording](5.task_fix_server_apikey_flush_download.md)

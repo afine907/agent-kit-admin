@@ -5,7 +5,7 @@
 | # | Task | Status | Started | Completed | Notes |
 |---|------|--------|---------|-----------|-------|
 | 1 | Fix CLI install: add tarball extraction | ✅ Done | 2026-07-08 | 2026-07-08 | Added extractTarball + cleanup in install flow |
-| 2 | Fix CLI update: re-download and apply | ⬜ Pending | — | — | — |
+| 2 | Fix CLI update: re-download and apply | ✅ Done | 2026-07-08 | 2026-07-08 | Download + extract + manifest-based config rewrite |
 | 3 | Add server leave-team endpoint | ⬜ Pending | — | — | — |
 | 4 | Add server uninstall-team-package endpoint | ⬜ Pending | — | — | — |
 | 5 | Fix server API Key flush + download recording | ⬜ Pending | — | — | — |
