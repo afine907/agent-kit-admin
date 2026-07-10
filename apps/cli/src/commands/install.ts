@@ -54,6 +54,7 @@ installCommand
   .option('--global', '全局安装到 ~/.akit/packages')
   .option('--no-config', '仅下载包，不写入 Agent 配置')
   .option('--no-deps', '跳过依赖检查')
+  .option('--force', '强制安装已撤回的版本')
   .action(async (packageName: string, options) => {
     try {
       console.log(chalk.bold('\n📥 安装包...\n'));
@@ -110,7 +111,34 @@ installCommand
         }
       }
 
-      // 3. 下载已获取到 URL，开始下载
+      // 3. 检查版本 deprecated/yanked 状态
+      const resolvedVersion = pkg?.latest_version || (options.tag !== 'latest' ? options.tag : undefined);
+      if (resolvedVersion) {
+        try {
+          let versionInfo: { deprecated?: boolean; yanked?: boolean; version?: string } | undefined;
+          if (teamId && packageId) {
+            const versions = await apiClient.getTeamPackageVersions(teamId, packageId);
+            versionInfo = versions.items.find((v) => v.version === resolvedVersion);
+          } else {
+            versionInfo = await apiClient.getVersion(scope, name, resolvedVersion);
+          }
+
+          if (versionInfo?.yanked) {
+            if (options.force) {
+              console.log(chalk.yellow(`\n⚠️ 版本 ${resolvedVersion} 已撤回，使用 --force 强制安装`));
+            } else {
+              console.error(chalk.red(`\n❌ 版本 ${resolvedVersion} 已撤回，无法安装。请使用其他版本，或添加 --force 强制安装。`));
+              process.exit(1);
+            }
+          } else if (versionInfo?.deprecated) {
+            console.log(chalk.yellow(`\n⚠️ 版本 ${resolvedVersion} 已废弃，建议升级到最新版本`));
+          }
+        } catch {
+          // 版本信息获取失败不阻塞安装
+        }
+      }
+
+      // 4. 下载已获取到 URL，开始下载
 
       const spinner3 = ora('下载中...').start();
       const installDir = options.global ? PACKAGES_DIR : join(process.cwd(), '.akit', 'packages');
@@ -144,7 +172,7 @@ installCommand
         process.exit(1);
       }
 
-      // 5. 检查依赖
+      // 6. 检查依赖
       const manifest = readManifest(packageDir);
       if (manifest.dependencies && Object.keys(manifest.dependencies).length > 0) {
         const spinner5 = ora('检查依赖...').start();
