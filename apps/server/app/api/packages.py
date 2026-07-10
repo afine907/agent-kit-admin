@@ -16,6 +16,7 @@ from app.schemas.package import (
     PackageResponse,
     PackageListResponse,
     DependencyCheckRequest,
+    PackageTransferRequest,
 )
 from app.services.dependency import DependencyResolver
 
@@ -196,6 +197,27 @@ async def delete_package(
     from fastapi.responses import Response
 
     return Response(status_code=204)
+
+
+@router.post("/{scope}/{name}/transfer", response_model=PackageResponse)
+async def transfer_package(
+    scope: str,
+    name: str,
+    transfer_data: PackageTransferRequest,
+    current_user: UserType = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """转移包所有权（owner 或 team admin）"""
+    service = PackageService(db)
+    package = await service.transfer_package(
+        scope=scope,
+        name=name,
+        user_id=str(current_user.id),
+        new_owner_type=transfer_data.new_owner_type,
+        new_owner_id=transfer_data.new_owner_id,
+        new_scope=transfer_data.new_scope,
+    )
+    return PackageResponse.model_validate(package)
 
 
 @router.get("/{scope}/{name}/download")

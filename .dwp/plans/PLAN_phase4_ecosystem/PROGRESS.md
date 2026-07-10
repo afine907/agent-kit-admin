@@ -14,10 +14,17 @@
 - **Tests:** 8 test cases 全部通过（CRUD + 签名验证 + 非成员禁止列表）
 - **Validation:** ruff check ✅, ruff format --check ✅, pytest ✅
 
+### Task 3: Package ownership transfer
+- **Status:** completed
+- **Files:** `apps/server/app/services/package.py`（transfer_package 方法），`apps/server/app/api/packages.py`（/transfer endpoint），`apps/server/app/schemas/package.py`（PackageTransferRequest + PackageResponse 新增字段）
+- **Tests:** 6 test cases 全部通过（转移给用户/团队/非owner禁止/自我转移禁止/目标不存在/包不存在）
+- **Schema 修复:** PackageResponse 补充 `owner_type` 和 `owner_id` 字段；`new_scope` pattern 允许下划线
+- **Validation:** ruff check ✅, ruff format --check ✅, pytest ✅
+
 ## Key Decisions
 
-- Webhook 投递使用 `asyncio.create_task` 异步执行，不阻塞主请求
-- Task 2 的大部分代码在 Task 1 提交 (050bac9) 中已经存在，本次补全了缺失的测试用例
+- PackageResponse schema 缺少 owner_type/owner_id，修复并同步更新
+- new_scope 的 regex pattern 原本不支持下划线，导致 @owner_a 这类 username 无法通过，改为允许 `_`
 
 ## Important Values & Paths
 

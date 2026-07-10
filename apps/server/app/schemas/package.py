@@ -65,6 +65,8 @@ class PackageResponse(BaseModel):
     scope: str
     full_name: str
     type: str
+    owner_type: str
+    owner_id: UUID
     description: str | None
     license: str
     repository: str | None
@@ -78,6 +80,14 @@ class PackageResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class PackageTransferRequest(BaseModel):
+    """转移包所有权请求"""
+
+    new_owner_type: str = Field(..., pattern=r"^(user|team)$")
+    new_owner_id: str = Field(..., description="新 owner 的用户 ID 或团队 ID")
+    new_scope: str = Field(..., min_length=2, max_length=50, pattern=r"^@[a-z0-9][a-z0-9_-]*$")
 
 
 class PackageListResponse(BaseModel):
