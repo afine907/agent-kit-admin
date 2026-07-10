@@ -277,6 +277,21 @@ class TeamService:
             for m in members
         ]
 
+    async def _is_team_admin(self, team_id: str, user_id: str) -> bool:
+        """检查用户是否是团队 admin/owner"""
+        result = await self.db.execute(
+            select(TeamMember).where(
+                TeamMember.team_id == team_id,
+                TeamMember.user_id == user_id,
+                TeamMember.role.in_(["owner", "admin"]),
+            )
+        )
+        return result.scalar_one_or_none() is not None
+
+    async def _is_team_member(self, team_id: str, user_id: str) -> bool:
+        """检查用户是否是团队成员"""
+        return await self.is_member(team_id, user_id)
+
     async def _get_member(self, team_id: str, user_id: str) -> TeamMember | None:
         """获取成员"""
         result = await self.db.execute(

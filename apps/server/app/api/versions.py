@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.services.package import PackageService
 from app.services.version import VersionService
+from app.services.webhook import WebhookService
 from app.api.deps import get_current_user, get_current_user_optional, UserType
 from app.schemas.package import VersionResponse, VersionListResponse
 
@@ -103,6 +104,21 @@ async def publish_version(
         published_by=str(current_user.id),
     )
 
+    # 触发 webhook（仅团队包）
+    if package.owner_type == "team":
+        webhook_service = WebhookService(db)
+        await webhook_service.fire_webhooks(
+            team_id=package.owner_id,
+            event="package.published",
+            payload={
+                "scope": scope,
+                "name": name,
+                "version": version,
+                "package_id": str(package.id),
+                "manifest": manifest_data,
+            },
+        )
+
     return ver
 
 
@@ -169,6 +185,21 @@ async def yank_version(
 
     version_service = VersionService(db)
     ver = await version_service.set_yanked(str(package.id), version, True)
+
+    # 触发 webhook（仅团队包）
+    if package.owner_type == "team":
+        webhook_service = WebhookService(db)
+        await webhook_service.fire_webhooks(
+            team_id=package.owner_id,
+            event="version.yanked",
+            payload={
+                "scope": scope,
+                "name": name,
+                "version": version,
+                "package_id": str(package.id),
+            },
+        )
+
     return ver
 
 

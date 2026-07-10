@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.services.package import PackageService
 from app.services.storage import get_storage_service
+from app.services.webhook import WebhookService
 from app.api.deps import get_current_user, get_current_user_optional, UserType
 from app.schemas.package import (
     PackageCreate,
@@ -178,6 +179,19 @@ async def delete_package(
     # 软删除
     package.deleted_at = datetime.now(timezone.utc)  # type: ignore[assignment]
     await db.commit()
+
+    # 触发 webhook（仅团队包）
+    if package.owner_type == "team":
+        webhook_service = WebhookService(db)
+        await webhook_service.fire_webhooks(
+            team_id=package.owner_id,
+            event="package.deleted",
+            payload={
+                "scope": scope,
+                "name": name,
+                "package_id": str(package.id),
+            },
+        )
 
     from fastapi.responses import Response
 

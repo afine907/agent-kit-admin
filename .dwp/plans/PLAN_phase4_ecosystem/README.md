@@ -33,7 +33,7 @@ Expand the agent-kit-admin ecosystem with semver constraint resolution, webhook 
 
 ## 4. Task List & Links
 
-- [ ] Task 1: Semver constraint support in dependency resolver
+- [x] Task 1: Semver constraint support in dependency resolver
       See: [1.task_semver_constraints.md](./1.task_semver_constraints.md)
 
 - [ ] Task 2: Webhook notification system
@@ -82,7 +82,7 @@ No existing skills or agents are directly applicable to this plan's tasks.
 ## 7. Plan Status / Notes
 
 - Current status: Not started
-- Completed: 0/10
+- Completed: 1/10
 
 ## 8. Analysis Outputs
 
