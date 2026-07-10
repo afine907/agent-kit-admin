@@ -188,6 +188,32 @@ async def test_delete_nonexistent_webhook(client, team, team_owner):
     assert resp.status_code == 404
 
 
+@pytest.mark.asyncio
+async def test_list_webhooks_non_member_forbidden(client, team, db):
+    """非团队成员不能列出 webhooks"""
+    from app.models.user import User
+    from app.core.security import hash_password
+
+    outsider = User(
+        username="outsider",
+        email="outsider@example.com",
+        display_name="Outsider",
+        password_hash=hash_password("OutsiderPass123!"),
+        oauth_provider="local",
+        oauth_id=None,
+        role="member",
+        status="active",
+    )
+    db.add(outsider)
+    await db.flush()
+
+    resp = await client.get(
+        f"/api/v1/teams/{team.id}/webhooks",
+        headers=_auth_header(outsider),
+    )
+    assert resp.status_code == 403
+
+
 def test_webhook_signature_verification():
     """HMAC-SHA256 签名验证"""
     from app.services.webhook import WebhookService

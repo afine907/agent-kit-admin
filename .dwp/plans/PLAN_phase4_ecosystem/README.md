@@ -36,7 +36,7 @@ Expand the agent-kit-admin ecosystem with semver constraint resolution, webhook 
 - [x] Task 1: Semver constraint support in dependency resolver
       See: [1.task_semver_constraints.md](./1.task_semver_constraints.md)
 
-- [ ] Task 2: Webhook notification system
+- [x] Task 2: Webhook notification system
       See: [2.task_webhook_system.md](./2.task_webhook_system.md)
 
 - [ ] Task 3: Package ownership transfer
