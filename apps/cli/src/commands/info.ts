@@ -193,11 +193,19 @@ export const infoCommand = new Command('info')
         spinner2.stop();
 
         if (versions && versions.items.length > 0) {
+          // 检查最新版本是否有 deprecated/yanked 警告
+          const latestVer = versions.items[0];
+          if (latestVer.yanked) {
+            console.log(chalk.red(`\n  ❌ 最新版本 ${latestVer.version} 已撤回`));
+          } else if (latestVer.deprecated) {
+            console.log(chalk.yellow(`\n  ⚠️ 最新版本 ${latestVer.version} 已废弃`));
+          }
+
           console.log(chalk.bold('\n  Versions:'));
           for (const ver of versions.items.slice(0, 10)) {
             const tag = ver.tag ? ` (${ver.tag})` : '';
-            const deprecated = ver.deprecated ? ' [deprecated]' : '';
-            const yanked = ver.yanked ? ' [yanked]' : '';
+            const deprecated = ver.deprecated ? chalk.yellow(' [deprecated]') : '';
+            const yanked = ver.yanked ? chalk.red(' [yanked]') : '';
             console.log(
               `    ${ver.version}${tag}${deprecated}${yanked} - ${formatDate(ver.published_at)}`
             );
