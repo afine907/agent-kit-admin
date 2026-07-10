@@ -4,7 +4,7 @@
 """
 
 import pytest
-from httpx import AsyncClient
+
 from app.models.user import User
 from app.models.package import Package
 from app.models.version import Version
@@ -105,7 +105,16 @@ async def public_pkg(db, owner):
     )
     db.add(pkg)
     await db.flush()
-    db.add(Version(version="1.0.0", package_id=pkg.id, manifest={}, tarball_hash="abc", tarball_size=100, tarball_path="packages/public-pkg-1.0.0.tar.gz"))
+    db.add(
+        Version(
+            version="1.0.0",
+            package_id=pkg.id,
+            manifest={},
+            tarball_hash="abc",
+            tarball_size=100,
+            tarball_path="packages/public-pkg-1.0.0.tar.gz",
+        )
+    )
     await db.flush()
     return pkg
 
@@ -125,7 +134,16 @@ async def team_pkg(db, team_with_members):
     )
     db.add(pkg)
     await db.flush()
-    db.add(Version(version="1.0.0", package_id=pkg.id, manifest={}, tarball_hash="def", tarball_size=200, tarball_path="packages/team-pkg-1.0.0.tar.gz"))
+    db.add(
+        Version(
+            version="1.0.0",
+            package_id=pkg.id,
+            manifest={},
+            tarball_hash="def",
+            tarball_size=200,
+            tarball_path="packages/team-pkg-1.0.0.tar.gz",
+        )
+    )
     await db.flush()
     return pkg
 
@@ -145,7 +163,16 @@ async def private_pkg(db, owner):
     )
     db.add(pkg)
     await db.flush()
-    db.add(Version(version="1.0.0", package_id=pkg.id, manifest={}, tarball_hash="ghi", tarball_size=300, tarball_path="packages/private-pkg-1.0.0.tar.gz"))
+    db.add(
+        Version(
+            version="1.0.0",
+            package_id=pkg.id,
+            manifest={},
+            tarball_hash="ghi",
+            tarball_size=300,
+            tarball_path="packages/private-pkg-1.0.0.tar.gz",
+        )
+    )
     await db.flush()
     return pkg
 

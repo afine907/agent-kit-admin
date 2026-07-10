@@ -46,6 +46,7 @@ class DependencyCheckResult(BaseModel):
     constraint: str
     exists: bool
     latest_version: str | None = None
+    constraint_satisfied: bool | None = None
 
 
 class DependencyCheckResponse(BaseModel):

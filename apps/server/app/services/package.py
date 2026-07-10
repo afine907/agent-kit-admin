@@ -423,12 +423,23 @@ class PackageService:
             exists = package is not None and package.deleted_at is None
             latest = package.latest_version if exists else None
 
+            # 检查版本约束
+            constraint_satisfied = False
+            if exists and latest and constraint:
+                from app.services.dependency import DependencyResolver
+
+                try:
+                    constraint_satisfied = DependencyResolver.check_constraint(latest, constraint)
+                except (ValueError, Exception):
+                    constraint_satisfied = False
+
             results.append(
                 {
                     "name": dep_name,
                     "constraint": constraint,
                     "exists": exists,
                     "latest_version": latest,
+                    "constraint_satisfied": constraint_satisfied if exists else None,
                 }
             )
 

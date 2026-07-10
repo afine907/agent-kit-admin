@@ -153,3 +153,51 @@ class TestDependencyResolver:
         assert resolver.has_cycle() is False
         result = resolver.resolve()
         assert len(result) == 5
+
+
+class TestSemverConstraints:
+    """Semver 版本约束测试"""
+
+    def test_exact_version_match(self):
+        """精确版本匹配"""
+        assert DependencyResolver.check_constraint("1.0.0", "1.0.0") is True
+        assert DependencyResolver.check_constraint("1.0.1", "1.0.0") is False
+
+    def test_caret_range(self):
+        """脱字符范围 ^1.0.0 -> >=1.0.0, <2.0.0"""
+        assert DependencyResolver.check_constraint("1.0.0", "^1.0.0") is True
+        assert DependencyResolver.check_constraint("1.5.0", "^1.0.0") is True
+        assert DependencyResolver.check_constraint("1.9.9", "^1.0.0") is True
+        assert DependencyResolver.check_constraint("2.0.0", "^1.0.0") is False
+
+    def test_caret_range_zero_major(self):
+        """脱字符范围 ^0.1.0 -> >=0.1.0, <0.2.0"""
+        assert DependencyResolver.check_constraint("0.1.0", "^0.1.0") is True
+        assert DependencyResolver.check_constraint("0.1.5", "^0.1.0") is True
+        assert DependencyResolver.check_constraint("0.2.0", "^0.1.0") is False
+
+    def test_tilde_range(self):
+        """波浪号范围 ~1.0.0 -> >=1.0.0, <1.1.0"""
+        assert DependencyResolver.check_constraint("1.0.0", "~1.0.0") is True
+        assert DependencyResolver.check_constraint("1.0.5", "~1.0.0") is True
+        assert DependencyResolver.check_constraint("1.1.0", "~1.0.0") is False
+
+    def test_wildcard_range(self):
+        """通配符范围 1.x -> >=1.0.0, <2.0.0"""
+        assert DependencyResolver.check_constraint("1.0.0", "1.x") is True
+        assert DependencyResolver.check_constraint("1.5.0", "1.x") is True
+        assert DependencyResolver.check_constraint("2.0.0", "1.x") is False
+
+    def test_wildcard_star(self):
+        """通配符 1.* -> >=1.0.0, <2.0.0"""
+        assert DependencyResolver.check_constraint("1.0.0", "1.*") is True
+        assert DependencyResolver.check_constraint("1.9.9", "1.*") is True
+        assert DependencyResolver.check_constraint("2.0.0", "1.*") is False
+
+    def test_invalid_version(self):
+        """无效版本号返回 False"""
+        assert DependencyResolver.check_constraint("not-a-version", "^1.0.0") is False
+
+    def test_invalid_constraint(self):
+        """无效约束格式返回 False"""
+        assert DependencyResolver.check_constraint("1.0.0", "invalid") is False
