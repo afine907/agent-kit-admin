@@ -18,11 +18,33 @@ make test
 
 ## Coverage Targets
 
-| Metric | Target |
-|---|---|
-| Statements | ≥ 80% |
-| Branches | ≥ 70% |
-| Functions | ≥ 90% |
+| Metric | Target | Current (2026-07-11) |
+|---|---|---|
+| Server Statements | ≥ 80% | **80%** ✅ |
+| Server Branches | ≥ 70% | — |
+| CLI Statements | ≥ 70% | — |
+| Web Statements | ≥ 70% | — |
+
+### Run Coverage
+
+```bash
+# Server
+cd apps/server && .venv/bin/pytest --cov=app --cov-report=term-missing --cov-fail-under=80
+
+# CLI
+cd apps/cli && pnpm test -- --coverage
+
+# Web
+cd apps/web && pnpm test -- --coverage
+```
+
+### Coverage Baselines (established 2026-07-11)
+
+- **Server**: 80% statements (622 missing of 3043 total)
+  - Low: `app/services/storage.py` (31%), `app/services/auth.py` (63%), `app/cli.py` (46%)
+  - High: `app/schemas/*`, `app/models/*` (93%+)
+- **CLI**: config pending (vitest coverage provider issue — Task 1 will resolve)
+- **Web**: not yet measured
 
 ## Server Tests
 

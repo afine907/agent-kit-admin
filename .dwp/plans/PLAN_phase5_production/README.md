@@ -32,7 +32,7 @@ Make agent-kit-admin production-ready: improve test coverage, add E2E and perfor
 
 ## 4. Task List & Links
 
-- [ ] Task 1: Measure and establish test coverage baselines
+- [x] Task 1: Measure and establish test coverage baselines
       See: [1.task_coverage_baselines.md](./1.task_coverage_baselines.md)
 
 - [ ] Task 2: Server unit test coverage improvement
@@ -102,8 +102,8 @@ No existing skills or agents are directly applicable.
 
 ## 7. Plan Status / Notes
 
-- Current status: Not started
-- Completed: 0/18
+- Current status: In progress (Task 2)
+- Completed: 1/18
 
 ## 8. Analysis Outputs
 
