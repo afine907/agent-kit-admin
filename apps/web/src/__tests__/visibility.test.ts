@@ -17,21 +17,25 @@ vi.mock('react-i18next', () => ({
   Trans: ({ children }: { children: React.ReactNode }) => children,
 }));
 
-// Mock API 模块
+// Mock API module - use module-level mock to avoid dynamic import issues
+const mockApiClient = {
+  getPackage: vi.fn(),
+  getVersions: vi.fn(),
+  listPackages: vi.fn(),
+  listTeams: vi.fn(),
+  listTeamPackages: vi.fn(),
+};
 vi.mock('../lib/api', () => ({
-  apiClient: {
-    getPackage: vi.fn(),
-    getVersions: vi.fn(),
-    listPackages: vi.fn(),
-    listTeams: vi.fn(),
-    listTeamPackages: vi.fn(),
-  },
+  apiClient: mockApiClient,
+  getPackage: mockApiClient.getPackage,
+  getVersions: mockApiClient.getVersions,
+  listPackages: mockApiClient.listPackages,
+  listTeams: mockApiClient.listTeams,
+  listTeamPackages: mockApiClient.listTeamPackages,
 }));
 
 describe('visibility filtering', () => {
   it('should filter packages by visibility in API response', async () => {
-    const { apiClient } = await import('../lib/api');
-
     // 模拟 API 返回不同可见性的包
     const allPackages = [
       { name: 'public-pkg', visibility: 'public', scope: '@user1' },
@@ -39,12 +43,12 @@ describe('visibility filtering', () => {
       { name: 'private-pkg', visibility: 'private', scope: '@user1' },
     ];
 
-    (apiClient.listPackages as ReturnType<typeof vi.fn>).mockResolvedValue({
+    mockApiClient.listPackages.mockResolvedValue({
       items: allPackages.filter((p) => p.visibility === 'public'),
       total: 1,
     });
 
-    const result = await apiClient.listPackages();
+    const result = await mockApiClient.listPackages();
     const names = result.items.map((p: { name: string }) => p.name);
 
     // 公开包应该在结果中
@@ -55,18 +59,15 @@ describe('visibility filtering', () => {
   });
 
   it('should show team packages only for team members', async () => {
-    const { apiClient } = await import('../lib/api');
-
     // 模拟团队成员看到的包
     const teamPackages = [
       { name: 'team-pkg-1', visibility: 'team', full_name: '@myteam/team-pkg-1' },
       { name: 'team-pkg-2', visibility: 'team', full_name: '@myteam/team-pkg-2' },
     ];
 
-    (apiClient.listTeamPackages as ReturnType<typeof vi.fn>).mockResolvedValue(teamPackages);
+    mockApiClient.listTeamPackages.mockResolvedValue(teamPackages);
 
-    const result = await apiClient.listTeams();
-    const packages = await apiClient.listTeamPackages('team-id-1');
+    const packages = await mockApiClient.listTeamPackages('team-id-1');
 
     expect(packages).toHaveLength(2);
     expect(packages[0].name).toBe('team-pkg-1');
@@ -74,17 +75,15 @@ describe('visibility filtering', () => {
   });
 
   it('should not expose private packages to non-owners', async () => {
-    const { apiClient } = await import('../lib/api');
-
     // 模拟非 owner 的包列表（服务端过滤后）
-    (apiClient.listPackages as ReturnType<typeof vi.fn>).mockResolvedValue({
+    mockApiClient.listPackages.mockResolvedValue({
       items: [
         { name: 'public-pkg', visibility: 'public' },
       ],
       total: 1,
     });
 
-    const result = await apiClient.listPackages();
+    const result = await mockApiClient.listPackages();
     const visibilities = result.items.map((p: { visibility: string }) => p.visibility);
 
     // 只有 public 包
