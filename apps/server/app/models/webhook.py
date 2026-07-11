@@ -2,8 +2,7 @@
 
 import uuid
 from sqlalchemy import Column, String, Boolean, DateTime, Text, ForeignKey, func
-from sqlalchemy.dialects.postgresql import UUID
-from app.database import Base, CompatJSONB
+from app.database import Base, CompatJSONB, CompatUUID
 
 
 class Webhook(Base):
@@ -11,8 +10,8 @@ class Webhook(Base):
 
     __tablename__ = "webhooks"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, server_default=func.gen_random_uuid())
-    team_id = Column(UUID(as_uuid=True), ForeignKey("teams.id"), nullable=False, index=True)
+    id = Column(CompatUUID, primary_key=True, default=uuid.uuid4, server_default=func.gen_random_uuid())
+    team_id = Column(CompatUUID, ForeignKey("teams.id"), nullable=False, index=True)
     url = Column(Text, nullable=False)
     secret = Column(String(255), nullable=False)  # HMAC-SHA256 密钥
     events = Column(CompatJSONB, nullable=False, default=list)  # ["package.published", "version.yanked"]
