@@ -17,6 +17,10 @@ from app.schemas.package import (
     PackageListResponse,
     DependencyCheckRequest,
     PackageTransferRequest,
+    BatchPackageRequest,
+    BatchDeprecateRequest,
+    BatchResultResponse,
+    BatchResultItem,
 )
 from app.services.dependency import DependencyResolver
 
@@ -218,6 +222,61 @@ async def transfer_package(
         new_scope=transfer_data.new_scope,
     )
     return PackageResponse.model_validate(package)
+
+
+@router.post("/batch/delete", response_model=BatchResultResponse)
+async def batch_delete_packages(
+    batch_data: BatchPackageRequest,
+    current_user: UserType = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """批量删除包（软删除）"""
+    from app.errors import AppError, ErrorCodes
+
+    if len(batch_data.packages) > 50:
+        raise AppError(
+            code=ErrorCodes.INVALID_PARAM,
+            message="Maximum 50 packages per batch",
+            status_code=400,
+        )
+
+    service = PackageService(db)
+    success, failed = await service.batch_delete_packages(
+        package_names=batch_data.packages,
+        user_id=str(current_user.id),
+    )
+    return BatchResultResponse(
+        success=success,
+        failed=[BatchResultItem(**f) for f in failed],
+    )
+
+
+@router.post("/batch/deprecate", response_model=BatchResultResponse)
+async def batch_deprecate_packages(
+    batch_data: BatchDeprecateRequest,
+    current_user: UserType = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """批量废弃/取消废弃包"""
+    from app.errors import AppError, ErrorCodes
+
+    if len(batch_data.packages) > 50:
+        raise AppError(
+            code=ErrorCodes.INVALID_PARAM,
+            message="Maximum 50 packages per batch",
+            status_code=400,
+        )
+
+    service = PackageService(db)
+    success, failed = await service.batch_deprecate_packages(
+        package_names=batch_data.packages,
+        user_id=str(current_user.id),
+        deprecated=batch_data.deprecated,
+    )
+    return BatchResultResponse(
+        success=success,
+        failed=[BatchResultItem(**f) for f in failed],
+    )
 
 
 @router.get("/{scope}/{name}/download")

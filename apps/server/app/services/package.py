@@ -597,3 +597,95 @@ class PackageService:
         )
 
         return package
+
+    # --------------------------------------------------------------------------
+    # 批量操作
+    # --------------------------------------------------------------------------
+
+    async def _can_write_package(self, package: Package, user_id: str) -> bool:
+        """检查用户是否有写权限"""
+        if package.owner_type == "team":
+            is_owner = str(package.owner_id) == user_id
+            is_admin = await self._is_team_admin(package.owner_id, user_id)
+            return is_owner or is_admin
+        else:
+            return str(package.owner_id) == user_id
+
+    async def batch_delete_packages(
+        self,
+        package_names: list[str],
+        user_id: str,
+    ) -> tuple[list[str], list[dict]]:
+        """批量删除包
+
+        Returns (success_names, failed_list)
+        """
+        from datetime import datetime, timezone
+
+        success = []
+        failed = []
+        for full_name in package_names:
+            try:
+                # 解析 scope/name
+                if "/" not in full_name:
+                    failed.append({"name": full_name, "error": "Invalid format, expected @scope/name"})
+                    continue
+                scope, name = full_name.split("/", 1)
+
+                package = await self._get_package_raw(scope, name)
+                if not package or package.deleted_at:
+                    failed.append({"name": full_name, "error": "Package not found"})
+                    continue
+
+                if not await self._can_write_package(package, user_id):
+                    failed.append({"name": full_name, "error": "Permission denied"})
+                    continue
+
+                package.deleted_at = datetime.now(timezone.utc)
+                success.append(full_name)
+            except Exception as e:
+                failed.append({"name": full_name, "error": str(e)})
+
+        await self.db.flush()
+        return success, failed
+
+    async def batch_deprecate_packages(
+        self,
+        package_names: list[str],
+        user_id: str,
+        deprecated: bool,
+    ) -> tuple[list[str], list[dict]]:
+        """批量废弃/取消废弃包
+
+        Returns (success_names, failed_list)
+        """
+        success = []
+        failed = []
+        for full_name in package_names:
+            try:
+                if "/" not in full_name:
+                    failed.append({"name": full_name, "error": "Invalid format, expected @scope/name"})
+                    continue
+                scope, name = full_name.split("/", 1)
+
+                package = await self._get_package_raw(scope, name)
+                if not package or package.deleted_at:
+                    failed.append({"name": full_name, "error": "Package not found"})
+                    continue
+
+                if not await self._can_write_package(package, user_id):
+                    failed.append({"name": full_name, "error": "Permission denied"})
+                    continue
+
+                # 标记所有版本为 deprecated
+                from app.models.version import Version
+
+                result = await self.db.execute(select(Version).where(Version.package_id == package.id))
+                for ver in result.scalars().all():
+                    ver.deprecated = deprecated
+                success.append(full_name)
+            except Exception as e:
+                failed.append({"name": full_name, "error": str(e)})
+
+        await self.db.flush()
+        return success, failed

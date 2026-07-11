@@ -90,6 +90,33 @@ class PackageTransferRequest(BaseModel):
     new_scope: str = Field(..., min_length=2, max_length=50, pattern=r"^@[a-z0-9][a-z0-9_-]*$")
 
 
+class BatchPackageRequest(BaseModel):
+    """批量操作请求"""
+
+    packages: list[str] = Field(..., min_length=1, description="包名列表，如 @scope/name")
+
+
+class BatchDeprecateRequest(BaseModel):
+    """批量废弃请求"""
+
+    packages: list[str] = Field(..., min_length=1)
+    deprecated: bool = Field(..., description="true=废弃，false=取消废弃")
+
+
+class BatchResultItem(BaseModel):
+    """单个包的批量操作结果"""
+
+    name: str
+    error: str | None = None
+
+
+class BatchResultResponse(BaseModel):
+    """批量操作结果"""
+
+    success: list[str]
+    failed: list[BatchResultItem]
+
+
 class PackageListResponse(BaseModel):
     """包列表响应"""
 

@@ -42,7 +42,7 @@ Expand the agent-kit-admin ecosystem with semver constraint resolution, webhook 
 - [x] Task 3: Package ownership transfer
       See: [3.task_ownership_transfer.md](./3.task_ownership_transfer.md)
 
-- [ ] Task 4: Batch operations
+- [x] Task 4: Batch operations
       See: [4.task_batch_operations.md](./4.task_batch_operations.md)
 
 - [ ] Task 5: CLI webhook management commands
