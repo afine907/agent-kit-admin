@@ -54,7 +54,7 @@ Expand the agent-kit-admin ecosystem with semver constraint resolution, webhook 
 - [x] Task 7: Alembic migration for new tables
       See: [7.task_alembic_migration.md](./7.task_alembic_migration.md)
 
-- [ ] Task 8: Security Review
+- [x] Task 8: Security Review
       See: [8.task_security_review.md](./8.task_security_review.md)
 
 - [ ] Task 9: Skills & Agents Discovery
