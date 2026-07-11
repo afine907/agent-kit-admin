@@ -510,11 +510,13 @@ class PackageService:
         """
         # 加行级锁防止并发转移
         result = await self.db.execute(
-            select(Package).where(
+            select(Package)
+            .where(
                 Package.scope == scope,
                 Package.name == name,
                 Package.deleted_at.is_(None),
-            ).with_for_update()
+            )
+            .with_for_update()
         )
         package = result.scalar_one_or_none()
         if not package:
@@ -572,11 +574,13 @@ class PackageService:
 
         # 检查目标 scope+name 是否已被占用（加锁防止 TOCTOU）
         existing = await self.db.execute(
-            select(Package).where(
+            select(Package)
+            .where(
                 Package.scope == new_scope,
                 Package.name == name,
                 Package.deleted_at.is_(None),
-            ).with_for_update()
+            )
+            .with_for_update()
         )
         if existing.scalar_one_or_none():
             raise AppError(

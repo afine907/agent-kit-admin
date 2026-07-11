@@ -83,10 +83,7 @@ class WebhookService:
         if not active_webhooks:
             return
 
-        tasks = [
-            asyncio.create_task(self._deliver_webhook(webhook, event, payload))
-            for webhook in active_webhooks
-        ]
+        tasks = [asyncio.create_task(self._deliver_webhook(webhook, event, payload)) for webhook in active_webhooks]
         if tasks:
             await asyncio.gather(*tasks, return_exceptions=True)
 
