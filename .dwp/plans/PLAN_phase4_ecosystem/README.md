@@ -45,7 +45,7 @@ Expand the agent-kit-admin ecosystem with semver constraint resolution, webhook 
 - [x] Task 4: Batch operations
       See: [4.task_batch_operations.md](./4.task_batch_operations.md)
 
-- [ ] Task 5: CLI webhook management commands
+- [x] Task 5: CLI webhook management commands
       See: [5.task_cli_webhook_commands.md](./5.task_cli_webhook_commands.md)
 
 - [ ] Task 6: CLI batch operations support

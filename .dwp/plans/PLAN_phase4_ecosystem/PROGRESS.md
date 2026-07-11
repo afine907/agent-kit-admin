@@ -29,6 +29,15 @@
 - **Schema 设计:** BatchPackageRequest/BatchDeprecateRequest 的 max_length=50 从 schema 移除，改为 endpoint 自行返回 400（避免 Pydantic 返回 422）
 - **Validation:** ruff check ✅, ruff format ✅, pytest ✅
 
+### Task 5: CLI webhook management commands
+- **Status:** completed
+- **Files:** `apps/cli/src/commands/webhook.ts`（新文件），`apps/cli/src/api/client.ts`（+3 webhook 方法），`apps/cli/src/bin/akit.ts`（注册命令），`apps/cli/src/i18n.ts`（+1 key）
+- **Commands:** `akit webhook list --team @slug`，`akit webhook add --team @slug --url https://... --events publish delete`，`akit webhook remove --team @slug --id <id>`
+- **Features:** 表格输出、事件类型校验（publish/delete/version.published/version.yanked）、删除确认提示
+- **Tests:** 7 test cases 全部通过
+- **Bug 修复:** Commander v14 `commands` 是属性不是方法（`commands()` → `commands`），`inquirer.Confirm` 改为 `inquirer.prompt`
+- **Validation:** pnpm test ✅, pnpm lint ✅（既有 js-yaml/semver TS 警告与本次改动无关）
+
 ## Key Decisions
 
 - PackageResponse schema 缺少 owner_type/owner_id，修复并同步更新
