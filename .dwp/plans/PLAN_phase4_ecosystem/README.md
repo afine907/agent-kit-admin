@@ -57,7 +57,7 @@ Expand the agent-kit-admin ecosystem with semver constraint resolution, webhook 
 - [x] Task 8: Security Review
       See: [8.task_security_review.md](./8.task_security_review.md)
 
-- [ ] Task 9: Skills & Agents Discovery
+- [x] Task 9: Skills & Agents Discovery
       See: [9.task_skills_agents_discovery.md](./9.task_skills_agents_discovery.md)
 
 - [ ] Task 10: Executive Report
