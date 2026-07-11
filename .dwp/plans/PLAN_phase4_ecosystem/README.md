@@ -51,7 +51,7 @@ Expand the agent-kit-admin ecosystem with semver constraint resolution, webhook 
 - [x] Task 6: CLI batch operations support
       See: [6.task_cli_batch_commands.md](./6.task_cli_batch_commands.md)
 
-- [ ] Task 7: Alembic migration for new tables
+- [x] Task 7: Alembic migration for new tables
       See: [7.task_alembic_migration.md](./7.task_alembic_migration.md)
 
 - [ ] Task 8: Security Review

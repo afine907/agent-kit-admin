@@ -46,6 +46,13 @@
 - **Tests:** 6 test cases 全部通过
 - **Validation:** pnpm test ✅, pnpm lint ✅
 
+### Task 7: Alembic migration for new tables
+- **Status:** completed
+- **Files:** `alembic/versions/003_add_webhooks_table.py`（新文件）
+- **Content:** 创建 `webhooks` 表（id, team_id, url, secret, events JSON, active, created_at, updated_at）
+- **Validation:** Python AST parse ✅, ruff check ✅, ruff format --check ✅, pytest 21 passed ✅
+- **Note:** Alembic `--check` 需要数据库连接（CI/生产环境），本地仅验证语法正确性
+
 ## Key Decisions
 
 - PackageResponse schema 缺少 owner_type/owner_id，修复并同步更新
