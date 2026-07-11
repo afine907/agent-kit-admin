@@ -55,6 +55,7 @@ const syncTranslations: Record<string, Record<string, string>> = {
     'commands:workspace.description': '管理工作空间',
     'commands:setup-skill.description': '配置 Agent Skill',
     'commands:webhook.description': '管理团队 Webhook',
+    'commands:batch.description': '批量操作包（删除/废弃）',
   },
   en: {
     'cli.description': 'Agent Kit Admin CLI',
@@ -82,6 +83,7 @@ const syncTranslations: Record<string, Record<string, string>> = {
     'commands:workspace.description': 'Manage workspaces',
     'commands:setup-skill.description': 'Configure Agent Skill',
     'commands:webhook.description': 'Manage team Webhooks',
+    'commands:batch.description': 'Batch operations (delete/deprecate)',
   },
 };
 

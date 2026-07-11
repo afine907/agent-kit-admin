@@ -589,6 +589,34 @@ export class ApiClient {
   async deleteWebhook(teamId: string, webhookId: string): Promise<void> {
     await this.client.delete(`/api/v1/teams/${teamId}/webhooks/${webhookId}`);
   }
+
+  // ============================================
+  // 批量操作
+  // ============================================
+
+  async batchDeletePackages(packages: string[]): Promise<BatchResultResponse> {
+    const response = await this.client.post<BatchResultResponse>(
+      '/api/v1/packages/batch/delete',
+      { packages }
+    );
+    return response.data;
+  }
+
+  async batchDeprecatePackages(
+    packages: string[],
+    deprecated: boolean
+  ): Promise<BatchResultResponse> {
+    const response = await this.client.post<BatchResultResponse>(
+      '/api/v1/packages/batch/deprecate',
+      { packages, deprecated }
+    );
+    return response.data;
+  }
+}
+
+export interface BatchResultResponse {
+  success: string[];
+  failed: Array<{ name: string; error: string }>;
 }
 
 export interface WebhookInfo {

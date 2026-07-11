@@ -38,6 +38,14 @@
 - **Bug 修复:** Commander v14 `commands` 是属性不是方法（`commands()` → `commands`），`inquirer.Confirm` 改为 `inquirer.prompt`
 - **Validation:** pnpm test ✅, pnpm lint ✅（既有 js-yaml/semver TS 警告与本次改动无关）
 
+### Task 6: CLI batch operations support
+- **Status:** completed
+- **Files:** `apps/cli/src/commands/batch.ts`（新文件），`apps/cli/src/api/client.ts`（+batchDeletePackages/batchDeprecatePackages），`apps/cli/src/bin/akit.ts`（注册命令），`apps/cli/src/i18n.ts`（+1 key）
+- **Commands:** `akit batch delete @scope/name [--yes]`，`akit batch deprecate @scope/name [--undeprecate] [--yes]`
+- **Features:** 操作前摘要展示、确认提示（`inquirer.prompt`）、per-package 成功/失败结果、`--yes` 跳过确认、`--undeprecate` 取消废弃
+- **Tests:** 6 test cases 全部通过
+- **Validation:** pnpm test ✅, pnpm lint ✅
+
 ## Key Decisions
 
 - PackageResponse schema 缺少 owner_type/owner_id，修复并同步更新
