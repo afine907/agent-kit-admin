@@ -72,16 +72,23 @@ class WebhookService:
         team_id: UUID,
         event: str,
         payload: dict,
+        timeout: float = 5.0,
     ) -> None:
-        """触发 webhooks（异步投递，不等待结果）"""
+        """触发 webhooks（等待所有投递完成，最多 timeout 秒）"""
+        import asyncio
+
         webhooks = await self.list_webhooks(team_id)
         active_webhooks = [w for w in webhooks if w.active and event in w.events]
 
-        import asyncio
+        if not active_webhooks:
+            return
 
-        for webhook in active_webhooks:
-            # 异步投递，不阻塞
+        tasks = [
             asyncio.create_task(self._deliver_webhook(webhook, event, payload))
+            for webhook in active_webhooks
+        ]
+        if tasks:
+            await asyncio.gather(*tasks, return_exceptions=True)
 
     async def _deliver_webhook(
         self,

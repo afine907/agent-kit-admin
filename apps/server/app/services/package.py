@@ -508,8 +508,16 @@ class PackageService:
             - 禁止转移给自己
             - 新的 (new_scope, name) 组合不能已存在
         """
-        package = await self._get_package_raw(scope, name)
-        if not package or package.deleted_at:
+        # 加行级锁防止并发转移
+        result = await self.db.execute(
+            select(Package).where(
+                Package.scope == scope,
+                Package.name == name,
+                Package.deleted_at.is_(None),
+            ).with_for_update()
+        )
+        package = result.scalar_one_or_none()
+        if not package:
             raise AppError(
                 code=ErrorCodes.PACKAGE_NOT_FOUND,
                 message=f"Package {scope}/{name} not found",
@@ -562,9 +570,13 @@ class PackageService:
                     status_code=404,
                 )
 
-        # 检查目标 scope+name 是否已被占用
+        # 检查目标 scope+name 是否已被占用（加锁防止 TOCTOU）
         existing = await self.db.execute(
-            select(Package).where(Package.scope == new_scope, Package.name == name, Package.deleted_at.is_(None))
+            select(Package).where(
+                Package.scope == new_scope,
+                Package.name == name,
+                Package.deleted_at.is_(None),
+            ).with_for_update()
         )
         if existing.scalar_one_or_none():
             raise AppError(

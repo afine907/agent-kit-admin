@@ -1,6 +1,7 @@
 """Webhook API 端点"""
 
 import secrets
+from datetime import datetime, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
@@ -9,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.user import User
+from app.models.team import TeamMember
 from app.api.deps import get_current_user
 from app.services.webhook import WebhookService
 from app.services.team import TeamService
@@ -31,7 +33,7 @@ class WebhookResponse(BaseModel):
     url: str
     events: list[str]
     active: bool
-    created_at: str
+    created_at: datetime
 
     class Config:
         from_attributes = True
