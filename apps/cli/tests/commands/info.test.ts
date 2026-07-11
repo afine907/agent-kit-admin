@@ -177,4 +177,52 @@ describe('info command', () => {
     expect(logCalls).toContain('[deprecated]');
     expect(logCalls).toContain('[yanked]');
   });
+
+  it('should show summary warning when latest version is yanked', async () => {
+    mockGetPackage.mockResolvedValue({
+      name: 'pg-mcp',
+      scope: '@team',
+      full_name: '@team/pg-mcp',
+      type: 'mcp',
+      description: 'PostgreSQL MCP tool',
+    });
+
+    mockGetVersions.mockResolvedValue({
+      items: [
+        { version: '2.0.0', tag: 'latest', published_at: '2024-02-01T10:00:00Z', deprecated: false, yanked: true },
+        { version: '1.0.0', tag: null, published_at: '2024-01-01T10:00:00Z', deprecated: false, yanked: false },
+      ],
+    });
+
+    const { infoCommand } = await import('../../src/commands/info');
+    await infoCommand.parseAsync(['node', 'test', '@team/pg-mcp']);
+
+    const logCalls = mockConsoleLog.mock.calls.flat().join('\n');
+    expect(logCalls).toContain('已撤回');
+    expect(logCalls).toContain('2.0.0');
+  });
+
+  it('should show summary warning when latest version is deprecated', async () => {
+    mockGetPackage.mockResolvedValue({
+      name: 'pg-mcp',
+      scope: '@team',
+      full_name: '@team/pg-mcp',
+      type: 'mcp',
+      description: 'PostgreSQL MCP tool',
+    });
+
+    mockGetVersions.mockResolvedValue({
+      items: [
+        { version: '2.0.0', tag: 'latest', published_at: '2024-02-01T10:00:00Z', deprecated: true, yanked: false },
+        { version: '1.0.0', tag: null, published_at: '2024-01-01T10:00:00Z', deprecated: false, yanked: false },
+      ],
+    });
+
+    const { infoCommand } = await import('../../src/commands/info');
+    await infoCommand.parseAsync(['node', 'test', '@team/pg-mcp']);
+
+    const logCalls = mockConsoleLog.mock.calls.flat().join('\n');
+    expect(logCalls).toContain('已废弃');
+    expect(logCalls).toContain('2.0.0');
+  });
 });

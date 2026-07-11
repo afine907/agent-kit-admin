@@ -18,9 +18,12 @@ vi.mock('../../src/api/client', () => ({
   apiClient: {
     getPackage: vi.fn(),
     getDownloadUrl: vi.fn(),
+    getVersion: vi.fn(),
+    getTeamPackageVersions: vi.fn(),
     checkDependencies: vi.fn(),
     listTeams: vi.fn(),
     listTeamPackages: vi.fn(),
+    getTeamPackageDownloadUrl: vi.fn(),
   },
 }));
 
@@ -77,12 +80,32 @@ describe('install command logic', () => {
     expect(optionNames).toContain('--global');
     expect(optionNames).toContain('--no-config');
     expect(optionNames).toContain('--no-deps');
+    expect(optionNames).toContain('--force');
   });
 
   it('should export installCommand as Commander instance', async () => {
     const { installCommand } = await import('../../src/commands/install');
     expect(installCommand).toBeDefined();
     expect(typeof installCommand.action).toBe('function');
+  });
+});
+
+describe('deprecated/yanked version handling', () => {
+  it('should have --force option for bypassing yanked block', async () => {
+    const { installCommand } = await import('../../src/commands/install');
+    const forceOption = installCommand.options.find((o) => o.long === '--force');
+    expect(forceOption).toBeDefined();
+    expect(forceOption!.description).toContain('强制');
+  });
+
+  it('should import getVersion for version status check', async () => {
+    const { apiClient } = await import('../../src/api/client');
+    expect(typeof apiClient.getVersion).toBe('function');
+  });
+
+  it('should import getTeamPackageVersions for team version check', async () => {
+    const { apiClient } = await import('../../src/api/client');
+    expect(typeof apiClient.getTeamPackageVersions).toBe('function');
   });
 });
 

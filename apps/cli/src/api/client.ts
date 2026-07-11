@@ -563,6 +563,69 @@ export class ApiClient {
     }
     return location;
   }
+
+  // ============================================
+  // Webhook 管理
+  // ============================================
+
+  async listWebhooks(teamId: string): Promise<WebhookInfo[]> {
+    const response = await this.client.get<{ data: WebhookInfo[] }>(
+      `/api/v1/teams/${teamId}/webhooks`
+    );
+    return response.data.data;
+  }
+
+  async createWebhook(
+    teamId: string,
+    data: { url: string; events: string[]; secret?: string }
+  ): Promise<WebhookInfo> {
+    const response = await this.client.post<WebhookInfo>(
+      `/api/v1/teams/${teamId}/webhooks`,
+      data
+    );
+    return response.data;
+  }
+
+  async deleteWebhook(teamId: string, webhookId: string): Promise<void> {
+    await this.client.delete(`/api/v1/teams/${teamId}/webhooks/${webhookId}`);
+  }
+
+  // ============================================
+  // 批量操作
+  // ============================================
+
+  async batchDeletePackages(packages: string[]): Promise<BatchResultResponse> {
+    const response = await this.client.post<BatchResultResponse>(
+      '/api/v1/packages/batch/delete',
+      { packages }
+    );
+    return response.data;
+  }
+
+  async batchDeprecatePackages(
+    packages: string[],
+    deprecated: boolean
+  ): Promise<BatchResultResponse> {
+    const response = await this.client.post<BatchResultResponse>(
+      '/api/v1/packages/batch/deprecate',
+      { packages, deprecated }
+    );
+    return response.data;
+  }
+}
+
+export interface BatchResultResponse {
+  success: string[];
+  failed: Array<{ name: string; error: string }>;
+}
+
+export interface WebhookInfo {
+  id: string;
+  team_id: string;
+  url: string;
+  events: string[];
+  created_at: string;
+  last_triggered_at?: string;
 }
 
 // 单例导出

@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.services.package import PackageService
 from app.services.storage import get_storage_service
+from app.services.webhook import WebhookService
 from app.api.deps import get_current_user, get_current_user_optional, UserType
 from app.schemas.package import (
     PackageCreate,
@@ -15,6 +16,11 @@ from app.schemas.package import (
     PackageResponse,
     PackageListResponse,
     DependencyCheckRequest,
+    PackageTransferRequest,
+    BatchPackageRequest,
+    BatchDeprecateRequest,
+    BatchResultResponse,
+    BatchResultItem,
 )
 from app.services.dependency import DependencyResolver
 
@@ -179,9 +185,98 @@ async def delete_package(
     package.deleted_at = datetime.now(timezone.utc)  # type: ignore[assignment]
     await db.commit()
 
+    # 触发 webhook（仅团队包）
+    if package.owner_type == "team":
+        webhook_service = WebhookService(db)
+        await webhook_service.fire_webhooks(
+            team_id=package.owner_id,
+            event="package.deleted",
+            payload={
+                "scope": scope,
+                "name": name,
+                "package_id": str(package.id),
+            },
+        )
+
     from fastapi.responses import Response
 
     return Response(status_code=204)
+
+
+@router.post("/{scope}/{name}/transfer", response_model=PackageResponse)
+async def transfer_package(
+    scope: str,
+    name: str,
+    transfer_data: PackageTransferRequest,
+    current_user: UserType = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """转移包所有权（owner 或 team admin）"""
+    service = PackageService(db)
+    package = await service.transfer_package(
+        scope=scope,
+        name=name,
+        user_id=str(current_user.id),
+        new_owner_type=transfer_data.new_owner_type,
+        new_owner_id=transfer_data.new_owner_id,
+        new_scope=transfer_data.new_scope,
+    )
+    return PackageResponse.model_validate(package)
+
+
+@router.post("/batch/delete", response_model=BatchResultResponse)
+async def batch_delete_packages(
+    batch_data: BatchPackageRequest,
+    current_user: UserType = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """批量删除包（软删除）"""
+    from app.errors import AppError, ErrorCodes
+
+    if len(batch_data.packages) > 50:
+        raise AppError(
+            code=ErrorCodes.INVALID_PARAM,
+            message="Maximum 50 packages per batch",
+            status_code=400,
+        )
+
+    service = PackageService(db)
+    success, failed = await service.batch_delete_packages(
+        package_names=batch_data.packages,
+        user_id=str(current_user.id),
+    )
+    return BatchResultResponse(
+        success=success,
+        failed=[BatchResultItem(**f) for f in failed],
+    )
+
+
+@router.post("/batch/deprecate", response_model=BatchResultResponse)
+async def batch_deprecate_packages(
+    batch_data: BatchDeprecateRequest,
+    current_user: UserType = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """批量废弃/取消废弃包"""
+    from app.errors import AppError, ErrorCodes
+
+    if len(batch_data.packages) > 50:
+        raise AppError(
+            code=ErrorCodes.INVALID_PARAM,
+            message="Maximum 50 packages per batch",
+            status_code=400,
+        )
+
+    service = PackageService(db)
+    success, failed = await service.batch_deprecate_packages(
+        package_names=batch_data.packages,
+        user_id=str(current_user.id),
+        deprecated=batch_data.deprecated,
+    )
+    return BatchResultResponse(
+        success=success,
+        failed=[BatchResultItem(**f) for f in failed],
+    )
 
 
 @router.get("/{scope}/{name}/download")

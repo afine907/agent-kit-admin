@@ -1,11 +1,15 @@
 """包管理服务 — Workspace 隔离版本"""
 
+import logging
+
 from sqlalchemy import select, func, or_, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.package import Package
 from app.models.user import User
 from app.models.team import TeamMember
 from app.errors import AppError, ErrorCodes
+
+logger = logging.getLogger(__name__)
 
 
 class PackageService:
@@ -423,12 +427,23 @@ class PackageService:
             exists = package is not None and package.deleted_at is None
             latest = package.latest_version if exists else None
 
+            # 检查版本约束
+            constraint_satisfied = False
+            if exists and latest and constraint:
+                from app.services.dependency import DependencyResolver
+
+                try:
+                    constraint_satisfied = DependencyResolver.check_constraint(latest, constraint)
+                except (ValueError, Exception):
+                    constraint_satisfied = False
+
             results.append(
                 {
                     "name": dep_name,
                     "constraint": constraint,
                     "exists": exists,
                     "latest_version": latest,
+                    "constraint_satisfied": constraint_satisfied if exists else None,
                 }
             )
 
@@ -463,3 +478,230 @@ class PackageService:
             "total_downloads": package.downloads_count,
             "downloads_by_version": downloads_by_version,
         }
+
+    # --------------------------------------------------------------------------
+    # 转移所有权
+    # --------------------------------------------------------------------------
+
+    async def transfer_package(
+        self,
+        scope: str,
+        name: str,
+        user_id: str,
+        new_owner_type: str,  # "user" | "team"
+        new_owner_id: str,
+        new_scope: str,
+    ) -> Package:
+        """转移包所有权
+
+        Args:
+            scope: 当前 scope（@team 或 @username）
+            name: 包名
+            user_id: 当前用户 ID
+            new_owner_type: "user" | "team"
+            new_owner_id: 新 owner 的 UUID
+            new_scope: 新的 scope（@username 或 @team-slug）
+
+        规则：
+            - 仅当前 owner 可转移（user 包）
+            - team 包：owner 用户本人或团队 admin 可转移
+            - 禁止转移给自己
+            - 新的 (new_scope, name) 组合不能已存在
+        """
+        # 加行级锁防止并发转移
+        result = await self.db.execute(
+            select(Package)
+            .where(
+                Package.scope == scope,
+                Package.name == name,
+                Package.deleted_at.is_(None),
+            )
+            .with_for_update()
+        )
+        package = result.scalar_one_or_none()
+        if not package:
+            raise AppError(
+                code=ErrorCodes.PACKAGE_NOT_FOUND,
+                message=f"Package {scope}/{name} not found",
+                status_code=404,
+            )
+
+        # 权限检查
+        if package.owner_type == "team":
+            is_owner = str(package.owner_id) == user_id
+            is_admin = await self._is_team_admin(package.owner_id, user_id)
+            if not (is_owner or is_admin):
+                raise AppError(
+                    code=ErrorCodes.AUTH_FORBIDDEN,
+                    message="Only team owner or admin can transfer this package",
+                    status_code=403,
+                )
+        else:
+            if str(package.owner_id) != user_id:
+                raise AppError(
+                    code=ErrorCodes.AUTH_FORBIDDEN,
+                    message="Only the package owner can transfer this package",
+                    status_code=403,
+                )
+
+        # 不能转移给自己
+        if str(package.owner_id) == new_owner_id and package.scope == new_scope:
+            raise AppError(
+                code=ErrorCodes.INVALID_PARAM,
+                message="Cannot transfer package to its current owner",
+                status_code=400,
+            )
+
+        # 验证目标存在
+        if new_owner_type == "user":
+            result = await self.db.execute(select(User).where(User.id == new_owner_id))
+            if not result.scalar_one_or_none():
+                raise AppError(
+                    code=ErrorCodes.NOT_FOUND,
+                    message="Target user not found",
+                    status_code=404,
+                )
+        else:  # team
+            from app.models.team import Team
+
+            result = await self.db.execute(select(Team).where(Team.id == new_owner_id))
+            if not result.scalar_one_or_none():
+                raise AppError(
+                    code=ErrorCodes.NOT_FOUND,
+                    message="Target team not found",
+                    status_code=404,
+                )
+
+        # 检查目标 scope+name 是否已被占用（加锁防止 TOCTOU）
+        existing = await self.db.execute(
+            select(Package)
+            .where(
+                Package.scope == new_scope,
+                Package.name == name,
+                Package.deleted_at.is_(None),
+            )
+            .with_for_update()
+        )
+        if existing.scalar_one_or_none():
+            raise AppError(
+                code=ErrorCodes.INVALID_PARAM,
+                message=f"Package @{new_scope}/{name} already exists",
+                status_code=409,
+            )
+
+        # 执行转移
+        old_owner_id = str(package.owner_id)
+        old_scope = package.scope
+        package.owner_id = new_owner_id
+        package.owner_type = new_owner_type
+        package.scope = new_scope
+        package.full_name = f"{new_scope}/{name}"
+
+        await self.db.flush()
+        await self.db.refresh(package)
+
+        logger.info(
+            "package_transfer",
+            extra={
+                "package": name,
+                "old_owner": old_owner_id,
+                "old_scope": old_scope,
+                "new_owner": new_owner_id,
+                "new_scope": new_scope,
+                "actor": user_id,
+            },
+        )
+
+        return package
+
+    # --------------------------------------------------------------------------
+    # 批量操作
+    # --------------------------------------------------------------------------
+
+    async def _can_write_package(self, package: Package, user_id: str) -> bool:
+        """检查用户是否有写权限"""
+        if package.owner_type == "team":
+            is_owner = str(package.owner_id) == user_id
+            is_admin = await self._is_team_admin(package.owner_id, user_id)
+            return is_owner or is_admin
+        else:
+            return str(package.owner_id) == user_id
+
+    async def batch_delete_packages(
+        self,
+        package_names: list[str],
+        user_id: str,
+    ) -> tuple[list[str], list[dict]]:
+        """批量删除包
+
+        Returns (success_names, failed_list)
+        """
+        from datetime import datetime, timezone
+
+        success = []
+        failed = []
+        for full_name in package_names:
+            try:
+                # 解析 scope/name
+                if "/" not in full_name:
+                    failed.append({"name": full_name, "error": "Invalid format, expected @scope/name"})
+                    continue
+                scope, name = full_name.split("/", 1)
+
+                package = await self._get_package_raw(scope, name)
+                if not package or package.deleted_at:
+                    failed.append({"name": full_name, "error": "Package not found"})
+                    continue
+
+                if not await self._can_write_package(package, user_id):
+                    failed.append({"name": full_name, "error": "Permission denied"})
+                    continue
+
+                package.deleted_at = datetime.now(timezone.utc)
+                success.append(full_name)
+            except Exception as e:
+                failed.append({"name": full_name, "error": str(e)})
+
+        await self.db.flush()
+        return success, failed
+
+    async def batch_deprecate_packages(
+        self,
+        package_names: list[str],
+        user_id: str,
+        deprecated: bool,
+    ) -> tuple[list[str], list[dict]]:
+        """批量废弃/取消废弃包
+
+        Returns (success_names, failed_list)
+        """
+        success = []
+        failed = []
+        for full_name in package_names:
+            try:
+                if "/" not in full_name:
+                    failed.append({"name": full_name, "error": "Invalid format, expected @scope/name"})
+                    continue
+                scope, name = full_name.split("/", 1)
+
+                package = await self._get_package_raw(scope, name)
+                if not package or package.deleted_at:
+                    failed.append({"name": full_name, "error": "Package not found"})
+                    continue
+
+                if not await self._can_write_package(package, user_id):
+                    failed.append({"name": full_name, "error": "Permission denied"})
+                    continue
+
+                # 标记所有版本为 deprecated
+                from app.models.version import Version
+
+                result = await self.db.execute(select(Version).where(Version.package_id == package.id))
+                for ver in result.scalars().all():
+                    ver.deprecated = deprecated
+                success.append(full_name)
+            except Exception as e:
+                failed.append({"name": full_name, "error": str(e)})
+
+        await self.db.flush()
+        return success, failed

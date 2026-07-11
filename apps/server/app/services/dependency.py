@@ -5,6 +5,7 @@
 
 import logging
 from collections import deque
+import semver
 
 logger = logging.getLogger(__name__)
 
@@ -162,3 +163,83 @@ class DependencyResolver:
                         queue.append(sub_dep)
 
         return result
+
+    @staticmethod
+    def check_constraint(version: str, constraint: str) -> bool:
+        """检查版本是否满足约束
+
+        支持的约束格式：
+        - 精确版本: 1.0.0
+        - 脱字符范围: ^1.0.0 (>=1.0.0, <2.0.0)
+        - 波浪号范围: ~1.0.0 (>=1.0.0, <1.1.0)
+        - 通配符: 1.x, 1.*, 1.x.x
+
+        Args:
+            version: 版本号，如 "1.2.3"
+            constraint: 版本约束，如 "^1.0.0"
+
+        Returns:
+            True 如果版本满足约束
+        """
+        try:
+            v = semver.Version.parse(version)
+        except ValueError:
+            return False
+
+        # 精确匹配
+        if not constraint.startswith(("^", "~", ">", "<", "=", "!")):
+            # 处理通配符 1.x, 1.*, 1.x.x
+            if "x" in constraint or "*" in constraint:
+                parts = constraint.replace("x", "0").replace("*", "0").split(".")
+                while len(parts) < 3:
+                    parts.append("0")
+                base = ".".join(parts)
+                next_parts = list(parts)
+                for i in range(len(next_parts) - 1, -1, -1):
+                    if next_parts[i] == "0":
+                        continue
+                    next_val = int(next_parts[i]) + 1
+                    next_parts[i] = str(next_val)
+                    for j in range(i + 1, len(next_parts)):
+                        next_parts[j] = "0"
+                    break
+                upper = ".".join(next_parts)
+                try:
+                    return v >= semver.Version.parse(base) and v < semver.Version.parse(upper)
+                except ValueError:
+                    return False
+            try:
+                return v == semver.Version.parse(constraint)
+            except ValueError:
+                return False
+
+        # 脱字符范围 ^1.0.0 -> >=1.0.0, <2.0.0
+        if constraint.startswith("^"):
+            base_str = constraint[1:]
+            try:
+                base = semver.Version.parse(base_str)
+            except ValueError:
+                return False
+            if base.major != 0:
+                upper = base.bump_major()
+            elif base.minor != 0:
+                upper = base.bump_minor()
+            else:
+                upper = base.bump_patch()
+            return v >= base and v < upper
+
+        # 波浪号范围 ~1.0.0 -> >=1.0.0, <1.1.0
+        if constraint.startswith("~"):
+            base_str = constraint[1:]
+            try:
+                base = semver.Version.parse(base_str)
+            except ValueError:
+                return False
+            upper = base.bump_minor()
+            return v >= base and v < upper
+
+        # 比较运算符
+        try:
+            return semver.Version.match(v, constraint)
+        except ValueError:
+            return False

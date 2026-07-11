@@ -24,6 +24,8 @@ import { configCommand } from '../commands/config.js';
 import { workspaceCommand } from '../commands/workspace.js';
 import { tokenCommand } from '../commands/token.js';
 import { setupSkillCommand } from '../commands/setup-skill.js';
+import { webhookCommand } from '../commands/webhook.js';
+import { batchCommand } from '../commands/batch.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -69,6 +71,12 @@ async function main() {
   // 注册 setup-claude-skill 命令（函数式注册）
   setupSkillCommand(program);
 
+  // Webhook 管理命令
+  program.addCommand(webhookCommand);
+
+  // Batch 批量操作命令
+  program.addCommand(batchCommand);
+
   // 帮助信息
   program
     .command('help')
@@ -87,6 +95,8 @@ ${t('cli.commands')}
   whoami      ${t('commands:whoami.description')}
   init        ${t('commands:init.description')}
   publish     ${t('commands:publish.description')}
+  webhook     ${t('commands:webhook.description')}
+  batch       ${t('commands:batch.description')}
   install     ${t('commands:install.description')}
   uninstall   ${t('commands:uninstall.description')}
   update      ${t('commands:update.description')}

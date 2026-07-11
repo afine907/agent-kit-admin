@@ -46,6 +46,7 @@ class DependencyCheckResult(BaseModel):
     constraint: str
     exists: bool
     latest_version: str | None = None
+    constraint_satisfied: bool | None = None
 
 
 class DependencyCheckResponse(BaseModel):
@@ -64,6 +65,8 @@ class PackageResponse(BaseModel):
     scope: str
     full_name: str
     type: str
+    owner_type: str
+    owner_id: UUID
     description: str | None
     license: str
     repository: str | None
@@ -77,6 +80,41 @@ class PackageResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class PackageTransferRequest(BaseModel):
+    """转移包所有权请求"""
+
+    new_owner_type: str = Field(..., pattern=r"^(user|team)$")
+    new_owner_id: str = Field(..., description="新 owner 的用户 ID 或团队 ID")
+    new_scope: str = Field(..., min_length=2, max_length=50, pattern=r"^@[a-z0-9][a-z0-9_-]*$")
+
+
+class BatchPackageRequest(BaseModel):
+    """批量操作请求"""
+
+    packages: list[str] = Field(..., min_length=1, description="包名列表，如 @scope/name")
+
+
+class BatchDeprecateRequest(BaseModel):
+    """批量废弃请求"""
+
+    packages: list[str] = Field(..., min_length=1)
+    deprecated: bool = Field(..., description="true=废弃，false=取消废弃")
+
+
+class BatchResultItem(BaseModel):
+    """单个包的批量操作结果"""
+
+    name: str
+    error: str | None = None
+
+
+class BatchResultResponse(BaseModel):
+    """批量操作结果"""
+
+    success: list[str]
+    failed: list[BatchResultItem]
 
 
 class PackageListResponse(BaseModel):
