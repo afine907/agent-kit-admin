@@ -1,13 +1,10 @@
 """API Key Service 单元测试"""
 
 import hashlib
-from datetime import datetime, timedelta, timezone
-from unittest.mock import patch
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.api_key import APIKey
 from app.services.api_key import (
     APIKeyService,
     generate_api_key,

@@ -1,7 +1,7 @@
 """StorageService 单元测试"""
 
 import hashlib
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
