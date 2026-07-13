@@ -106,9 +106,7 @@ class TestGetPresignedUrl:
         """默认 900 秒过期"""
         with patch("app.services.storage.boto3") as mock_boto3:
             mock_client = MagicMock()
-            mock_client.generate_presigned_url = MagicMock(
-                return_value="http://minio:9000/packages/key?signature=xxx"
-            )
+            mock_client.generate_presigned_url = MagicMock(return_value="http://minio:9000/packages/key?signature=xxx")
             mock_boto3.client.return_value = mock_client
 
             service = StorageService()
