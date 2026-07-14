@@ -336,7 +336,7 @@ class TeamService:
 
     def _generate_token(self) -> str:
         """生成安全的随机邀请码"""
-        return secrets.token_urlsafe(8)[:16]
+        return secrets.token_hex(8)  # 16 hex chars, always alphanumeric
 
     async def generate_invite(
         self,

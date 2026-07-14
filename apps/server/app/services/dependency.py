@@ -72,11 +72,7 @@ class DependencyResolver:
         return result
 
     def has_cycle(self) -> bool:
-        """检测是否存在循环依赖
-
-        Returns:
-            True 如果存在循环依赖
-        """
+        """检测是否存在循环依赖"""
         visited: set[str] = set()
         rec_stack: set[str] = set()
 
@@ -85,7 +81,7 @@ class DependencyResolver:
             rec_stack.add(node)
             for dep in self.dependencies.get(node, []):
                 if dep not in self.dependencies:
-                    continue  # 跳过未知依赖
+                    continue
                 if dep not in visited:
                     if dfs(dep):
                         return True
@@ -101,12 +97,7 @@ class DependencyResolver:
         return False
 
     def find_cycle(self) -> list[str] | None:
-        """查找循环路径
-
-        Returns:
-            循环路径列表，如 ['A', 'B', 'C', 'A']。
-            如果不存在循环，返回 None。
-        """
+        """查找循环路径"""
         visited: set[str] = set()
         path: list[str] = []
 
@@ -117,7 +108,6 @@ class DependencyResolver:
                 if dep not in self.dependencies:
                     continue
                 if dep in path:
-                    # 找到循环
                     idx = path.index(dep)
                     return path[idx:] + [dep]
                 if dep not in visited:
@@ -135,14 +125,7 @@ class DependencyResolver:
         return None
 
     def get_all_dependencies(self, package: str) -> list[str]:
-        """获取包的所有依赖（递归）
-
-        Args:
-            package: 包名
-
-        Returns:
-            所有依赖包名列表（不包含自身）
-        """
+        """获取包的所有依赖（递归）"""
         if package not in self.dependencies:
             return []
 
@@ -156,7 +139,6 @@ class DependencyResolver:
                 continue
             visited.add(dep)
             result.append(dep)
-            # 递归获取依赖的依赖
             if dep in self.dependencies:
                 for sub_dep in self.dependencies[dep]:
                     if sub_dep not in visited:
@@ -166,29 +148,13 @@ class DependencyResolver:
 
     @staticmethod
     def check_constraint(version: str, constraint: str) -> bool:
-        """检查版本是否满足约束
-
-        支持的约束格式：
-        - 精确版本: 1.0.0
-        - 脱字符范围: ^1.0.0 (>=1.0.0, <2.0.0)
-        - 波浪号范围: ~1.0.0 (>=1.0.0, <1.1.0)
-        - 通配符: 1.x, 1.*, 1.x.x
-
-        Args:
-            version: 版本号，如 "1.2.3"
-            constraint: 版本约束，如 "^1.0.0"
-
-        Returns:
-            True 如果版本满足约束
-        """
+        """检查版本是否满足约束"""
         try:
             v = semver.Version.parse(version)
         except ValueError:
             return False
 
-        # 精确匹配
         if not constraint.startswith(("^", "~", ">", "<", "=", "!")):
-            # 处理通配符 1.x, 1.*, 1.x.x
             if "x" in constraint or "*" in constraint:
                 parts = constraint.replace("x", "0").replace("*", "0").split(".")
                 while len(parts) < 3:
@@ -213,7 +179,6 @@ class DependencyResolver:
             except ValueError:
                 return False
 
-        # 脱字符范围 ^1.0.0 -> >=1.0.0, <2.0.0
         if constraint.startswith("^"):
             base_str = constraint[1:]
             try:
@@ -228,7 +193,6 @@ class DependencyResolver:
                 upper = base.bump_patch()
             return v >= base and v < upper
 
-        # 波浪号范围 ~1.0.0 -> >=1.0.0, <1.1.0
         if constraint.startswith("~"):
             base_str = constraint[1:]
             try:
@@ -238,8 +202,151 @@ class DependencyResolver:
             upper = base.bump_minor()
             return v >= base and v < upper
 
-        # 比较运算符
         try:
             return semver.Version.match(v, constraint)
         except ValueError:
             return False
+
+
+class DependencyGraphResolver:
+    """递归依赖图解析器（带循环检测和深度限制）
+
+    用于 GET /packages/{scope}/{name}/dependencies
+
+    依赖图格式: {pkg: {"version": "1.0.0", "deps": {...}}}
+    """
+
+    MAX_DEPTH = 10
+
+    def __init__(self, graph: dict[str, dict]):
+        """graph: {pkg_name: {"version": "1.0.0", "deps": {...}}} """
+        self.graph = graph
+        self._cycles: list[list[str]] = []
+
+    def has_cycle(self) -> bool:
+        visited: set[str] = set()
+        rec_stack: set[str] = set()
+
+        def dfs(node: str, depth: int) -> bool:
+            if depth > self.MAX_DEPTH:
+                return False
+            visited.add(node)
+            rec_stack.add(node)
+            deps = self.graph.get(node, {}).get("deps", {})
+            for dep in deps:
+                if dep not in visited:
+                    if dfs(dep, depth + 1):
+                        return True
+                elif dep in rec_stack:
+                    return True
+            rec_stack.discard(node)
+            return False
+
+        for node in self.graph:
+            if node not in visited:
+                if dfs(node, 0):
+                    return True
+        return False
+
+    def find_cycle(self) -> list[str] | None:
+        visited: set[str] = set()
+        path: list[str] = []
+
+        def dfs(node: str, depth: int) -> list[str] | None:
+            if depth > self.MAX_DEPTH:
+                return None
+            visited.add(node)
+            path.append(node)
+            deps = self.graph.get(node, {}).get("deps", {})
+            for dep in deps:
+                if dep in path:
+                    idx = path.index(dep)
+                    return path[idx:] + [dep]
+                if dep not in visited:
+                    result = dfs(dep, depth + 1)
+                    if result:
+                        return result
+            path.pop()
+            return None
+
+        for node in self.graph:
+            if node not in visited:
+                cycle = dfs(node, 0)
+                if cycle:
+                    return cycle
+        return None
+
+    def resolve(self) -> dict:
+        """递归解析依赖图，返回完整依赖树
+
+        Returns:
+            {
+                "dependencies": {pkg: {"version": "x.x.x", "deps": {...}}},
+                "cycles": [["a","b","a"], ...]
+            }
+        """
+        visited: set[str] = set()
+        cycles: list[list[str]] = []
+        result: dict[str, dict] = {}
+
+        def dfs(node: str, depth: int) -> None:
+            if depth > self.MAX_DEPTH:
+                return
+            if node in visited:
+                return
+            visited.add(node)
+
+            node_data = self.graph.get(node, {})
+            direct_deps = node_data.get("deps", {})
+            resolved_deps: dict[str, dict] = {}
+
+            for dep_name, dep_info in direct_deps.items():
+                if isinstance(dep_info, dict):
+                    dep_version = dep_info.get("version")
+                    sub_deps = dep_info.get("deps", {})
+                else:
+                    dep_version = dep_info
+                    sub_deps = {}
+
+                resolved_sub: dict[str, dict] = {}
+                for sub_name, sub_info in sub_deps.items():
+                    if isinstance(sub_info, dict):
+                        resolved_sub[sub_name] = {
+                            "version": sub_info.get("version"),
+                            "deps": sub_info.get("deps", {}),
+                        }
+                    else:
+                        resolved_sub[sub_name] = {"version": sub_info, "deps": {}}
+
+                resolved_deps[dep_name] = {"version": dep_version, "deps": resolved_sub}
+
+            result[node] = {"version": node_data.get("version"), "deps": resolved_deps}
+
+        def detect_cycle(node: str, depth: int, path: list[str]) -> list[str] | None:
+            if depth > self.MAX_DEPTH:
+                return None
+            if node in path:
+                idx = path.index(node)
+                return path[idx:] + [node]
+            path.append(node)
+            for dep in self.graph.get(node, {}).get("deps", {}):
+                if dep not in self.graph:
+                    continue
+                c = detect_cycle(dep, depth + 1, path[:])
+                if c:
+                    return c
+            return None
+
+        visited_cycle: set[str] = set()
+        for node in self.graph:
+            if node not in visited_cycle:
+                c = detect_cycle(node, 0, [])
+                if c:
+                    cycles.append(c)
+                    for n in c[:-1]:
+                        visited_cycle.add(n)
+
+        for node in self.graph:
+            dfs(node, 0)
+
+        return {"dependencies": result, "cycles": cycles}

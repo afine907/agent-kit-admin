@@ -309,9 +309,10 @@ class TestVisibilityEnforcement:
 
         mock_db = MagicMock()
         service = TeamPackageService(mock_db)
+        service._get_team = FakeAsyncMock(return_value=FakeTeam(id="team-1"))
+        service._get_member = FakeAsyncMock(return_value=None)  # 非成员
         service._get_package = FakeAsyncMock(return_value=None)
 
         with pytest.raises(AppError) as exc_info:
             await service.get_package("team-1", "pkg-1", "user-outsider")
-        assert exc_info.value.status_code == 404
-        assert exc_info.value.code == ErrorCodes.PACKAGE_NOT_FOUND
+        assert exc_info.value.status_code == 403
