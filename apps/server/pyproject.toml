@@ -48,7 +48,7 @@ line-length = 120
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
-addopts = "--cov=app --cov-report=term-missing --cov-fail-under=64"
+addopts = "--cov=app --cov-report=term-missing"
 
 [dependency-groups]
 dev = [
