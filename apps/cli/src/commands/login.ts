@@ -9,11 +9,10 @@ import ora from 'ora';
 import express from 'express';
 import open from 'open';
 import type { Server } from 'http';
-import { i18n } from '../i18n.js';
+import { i18n, t } from '../i18n.js';
 import { configManager } from '../config/manager.js';
 import { apiClient } from '../api/client.js';
 
-const t = (key: string, options?: Record<string, unknown>): string => i18n.t(key, options) as string;
 
 // OAuth Provider 列表
 const OAUTH_PROVIDERS = () => [

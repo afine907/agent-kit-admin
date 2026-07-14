@@ -88,6 +88,35 @@ export interface TeamInfo {
   created_at: string;
 }
 
+export interface TeamPackageInfo {
+  id: string;
+  name: string;
+  scope: string;
+  full_name: string;
+  type: 'mcp' | 'skill';
+  description?: string;
+  visibility: string;
+  owner_type: string;
+  downloads_count: number;
+  latest_version?: string;
+  created_at: string;
+  updated_at: string;
+  // 安装状态（仅 listTeamPackages 时返回）
+  my_installed_version?: string | null;
+  has_update?: boolean;
+}
+
+export interface InstalledPackageInfo {
+  package_id: string;
+  version_installed: string;
+  installed_at: string;
+  package_name?: string;
+  package_scope?: string;
+  package_type?: string;
+  latest_version?: string;
+  has_update?: boolean;
+}
+
 export interface ListPackagesParams {
   search?: string;
   type?: 'mcp' | 'skill';
@@ -123,6 +152,20 @@ export class ApiClient {
     const RETRYABLE_STATUSES = [429, 502, 503, 504];
     const MAX_RETRIES = 3;
 
+    // 中文友好错误消息
+    const USER_FRIENDLY_ERRORS: Record<number, string> = {
+      400: '请求参数错误',
+      401: '未登录或登录已过期，请运行 akit login',
+      403: '没有权限执行此操作',
+      404: '找不到请求的资源',
+      409: '资源冲突，可能已存在',
+      422: '请求参数验证失败',
+      429: '请求过于频繁，请稍后再试',
+      500: '服务器内部错误，请稍后重试',
+      502: '服务暂时不可用，请稍后重试',
+      503: '服务暂时不可用，请稍后重试',
+    };
+
     this.client.interceptors.response.use(
       (response) => response,
       async (error) => {
@@ -153,11 +196,13 @@ export class ApiClient {
           return this.client(config);
         }
 
-        // 格式化错误消息
+        // 格式化错误消息（中文友好）
         if (error.response) {
           const { status, data } = error.response;
-          const message = data?.error?.message || data?.message || error.message;
-          throw new Error(`API Error (${status}): ${message}`);
+          const apiMessage = data?.error?.message || data?.message || error.message;
+          const friendlyMsg = USER_FRIENDLY_ERRORS[status];
+          const hint = friendlyMsg && friendlyMsg !== apiMessage ? ` → ${friendlyMsg}` : '';
+          throw new Error(`${apiMessage}${hint}`);
         }
         throw error;
       }
@@ -302,6 +347,16 @@ export class ApiClient {
   }
 
   /**
+   * 获取特定版本的 manifest
+   */
+  async getVersion(scope: string, name: string, version: string): Promise<VersionResponse> {
+    const response = await this.client.get<VersionResponse>(
+      `/api/v1/packages/${scope}/${name}/versions/${version}`
+    );
+    return response.data;
+  }
+
+  /**
    * 发布版本
    */
   async publishVersion(
@@ -330,11 +385,22 @@ export class ApiClient {
     version?: string
   ): Promise<string> {
     const params = version ? { version } : {};
-    const response = await this.client.get<{ url: string }>(
+    // API returns 302 redirect to MinIO presigned URL; accept non-2xx as valid
+    const response = await this.client.get(
       `/api/v1/packages/${scope}/${name}/download`,
-      { params }
+      { params, maxRedirects: 0, validateStatus: (status) => status < 500 }
     );
-    return response.data.url;
+    if (response.status === 302 || response.status === 301) {
+      const location = response.headers['location'] as string | undefined;
+      if (!location) throw new Error('No Location header in redirect response');
+      return location;
+    }
+    if (response.status >= 400) {
+      throw new Error(`Download URL request failed: ${response.status}`);
+    }
+    // Some APIs return URL in body
+    const data = response.data as { url?: string };
+    return data.url || (typeof data === 'string' ? data : '');
   }
 
   /**
@@ -393,6 +459,173 @@ export class ApiClient {
     const response = await this.client.get<TeamInfo[]>('/api/v1/teams');
     return response.data;
   }
+
+  // ============================================
+  // 团队包管理
+  // ============================================
+
+  /**
+   * 列出团队所有包（含当前用户安装状态）
+   * GET /api/v1/teams/{team_id}/packages
+   */
+  async listTeamPackages(teamId: string): Promise<TeamPackageInfo[]> {
+    const response = await this.client.get<TeamPackageInfo[]>(
+      `/api/v1/teams/${teamId}/packages`
+    );
+    return response.data;
+  }
+
+  /**
+   * 发布包到团队
+   * POST /api/v1/teams/{team_id}/packages
+   */
+  async publishTeamPackage(
+    teamId: string,
+    data: {
+      name: string;
+      type: 'mcp' | 'skill';
+      description?: string;
+      visibility?: string;
+      owner_type?: 'user' | 'team';
+      manifest?: Record<string, unknown>;
+      tarball?: string;
+    }
+  ): Promise<TeamPackageInfo> {
+    const response = await this.client.post<TeamPackageInfo>(
+      `/api/v1/teams/${teamId}/packages`,
+      data
+    );
+    return response.data;
+  }
+
+  /**
+   * 安装团队包（记录安装状态）
+   * POST /api/v1/teams/{team_id}/packages/{package_id}/install
+   */
+  async installTeamPackage(
+    teamId: string,
+    packageId: string
+  ): Promise<{ package_id: string; version_installed: string; installed_at: string }> {
+    const response = await this.client.post(
+      `/api/v1/teams/${teamId}/packages/${packageId}/install`
+    );
+    return response.data;
+  }
+
+  /**
+   * 获取我安装的包（支持按 team_id 筛选）
+   * GET /api/v1/me/installed?team_id=X
+   */
+  async getInstalledPackages(teamId?: string): Promise<InstalledPackageInfo[]> {
+    const params = teamId ? { team_id: teamId } : {};
+    const response = await this.client.get<{ data: InstalledPackageInfo[]; total: number }>(
+      '/api/v1/me/installed',
+      { params }
+    );
+    return response.data.data;
+  }
+
+  /**
+   * 列出包的所有版本
+   * GET /api/v1/teams/{team_id}/packages/{package_id}/versions
+   */
+  async getTeamPackageVersions(
+    teamId: string,
+    packageId: string
+  ): Promise<VersionListResponse> {
+    const response = await this.client.get<{ data: VersionResponse[]; total: number }>(
+      `/api/v1/teams/${teamId}/packages/${packageId}/versions`
+    );
+    return { items: response.data.data, total: response.data.total };
+  }
+
+  /**
+   * 获取团队包下载链接（302 redirect to MinIO presigned URL）
+   * GET /api/v1/teams/{team_id}/packages/{package_id}/download
+   */
+  async getTeamPackageDownloadUrl(
+    teamId: string,
+    packageId: string,
+    version?: string
+  ): Promise<string> {
+    const path = version
+      ? `/api/v1/teams/${teamId}/packages/${packageId}/versions/${version}/download`
+      : `/api/v1/teams/${teamId}/packages/${packageId}/download`;
+    // API returns 302 redirect, follow Location header
+    const response = await this.client.get<string>(path, {
+      headers: { Accept: 'application/json' },
+      maxRedirects: 0,
+    });
+    // Location header contains the actual download URL
+    const location = response.headers['location'] as string | undefined;
+    if (!location) {
+      throw new Error('No download URL in response');
+    }
+    return location;
+  }
+
+  // ============================================
+  // Webhook 管理
+  // ============================================
+
+  async listWebhooks(teamId: string): Promise<WebhookInfo[]> {
+    const response = await this.client.get<{ data: WebhookInfo[] }>(
+      `/api/v1/teams/${teamId}/webhooks`
+    );
+    return response.data.data;
+  }
+
+  async createWebhook(
+    teamId: string,
+    data: { url: string; events: string[]; secret?: string }
+  ): Promise<WebhookInfo> {
+    const response = await this.client.post<WebhookInfo>(
+      `/api/v1/teams/${teamId}/webhooks`,
+      data
+    );
+    return response.data;
+  }
+
+  async deleteWebhook(teamId: string, webhookId: string): Promise<void> {
+    await this.client.delete(`/api/v1/teams/${teamId}/webhooks/${webhookId}`);
+  }
+
+  // ============================================
+  // 批量操作
+  // ============================================
+
+  async batchDeletePackages(packages: string[]): Promise<BatchResultResponse> {
+    const response = await this.client.post<BatchResultResponse>(
+      '/api/v1/packages/batch/delete',
+      { packages }
+    );
+    return response.data;
+  }
+
+  async batchDeprecatePackages(
+    packages: string[],
+    deprecated: boolean
+  ): Promise<BatchResultResponse> {
+    const response = await this.client.post<BatchResultResponse>(
+      '/api/v1/packages/batch/deprecate',
+      { packages, deprecated }
+    );
+    return response.data;
+  }
+}
+
+export interface BatchResultResponse {
+  success: string[];
+  failed: Array<{ name: string; error: string }>;
+}
+
+export interface WebhookInfo {
+  id: string;
+  team_id: string;
+  url: string;
+  events: string[];
+  created_at: string;
+  last_triggered_at?: string;
 }
 
 // 单例导出

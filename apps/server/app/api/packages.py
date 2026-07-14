@@ -1,13 +1,14 @@
 """包管理 API 路由"""
 
 import logging
-from fastapi import APIRouter, BackgroundTasks, Depends, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.services.package import PackageService
 from app.services.storage import get_storage_service
+from app.services.webhook import WebhookService
 from app.api.deps import get_current_user, get_current_user_optional, UserType
 from app.schemas.package import (
     PackageCreate,
@@ -15,6 +16,11 @@ from app.schemas.package import (
     PackageResponse,
     PackageListResponse,
     DependencyCheckRequest,
+    PackageTransferRequest,
+    BatchPackageRequest,
+    BatchDeprecateRequest,
+    BatchResultResponse,
+    BatchResultItem,
 )
 from app.services.dependency import DependencyResolver
 
@@ -179,15 +185,105 @@ async def delete_package(
     package.deleted_at = datetime.now(timezone.utc)  # type: ignore[assignment]
     await db.commit()
 
+    # 触发 webhook（仅团队包）
+    if package.owner_type == "team":
+        webhook_service = WebhookService(db)
+        await webhook_service.fire_webhooks(
+            team_id=package.owner_id,
+            event="package.deleted",
+            payload={
+                "scope": scope,
+                "name": name,
+                "package_id": str(package.id),
+            },
+        )
+
     from fastapi.responses import Response
 
     return Response(status_code=204)
+
+
+@router.post("/{scope}/{name}/transfer", response_model=PackageResponse)
+async def transfer_package(
+    scope: str,
+    name: str,
+    transfer_data: PackageTransferRequest,
+    current_user: UserType = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """转移包所有权（owner 或 team admin）"""
+    service = PackageService(db)
+    package = await service.transfer_package(
+        scope=scope,
+        name=name,
+        user_id=str(current_user.id),
+        new_owner_type=transfer_data.new_owner_type,
+        new_owner_id=transfer_data.new_owner_id,
+        new_scope=transfer_data.new_scope,
+    )
+    return PackageResponse.model_validate(package)
+
+
+@router.post("/batch/delete", response_model=BatchResultResponse)
+async def batch_delete_packages(
+    batch_data: BatchPackageRequest,
+    current_user: UserType = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """批量删除包（软删除）"""
+    from app.errors import AppError, ErrorCodes
+
+    if len(batch_data.packages) > 50:
+        raise AppError(
+            code=ErrorCodes.INVALID_PARAM,
+            message="Maximum 50 packages per batch",
+            status_code=400,
+        )
+
+    service = PackageService(db)
+    success, failed = await service.batch_delete_packages(
+        package_names=batch_data.packages,
+        user_id=str(current_user.id),
+    )
+    return BatchResultResponse(
+        success=success,
+        failed=[BatchResultItem(**f) for f in failed],
+    )
+
+
+@router.post("/batch/deprecate", response_model=BatchResultResponse)
+async def batch_deprecate_packages(
+    batch_data: BatchDeprecateRequest,
+    current_user: UserType = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """批量废弃/取消废弃包"""
+    from app.errors import AppError, ErrorCodes
+
+    if len(batch_data.packages) > 50:
+        raise AppError(
+            code=ErrorCodes.INVALID_PARAM,
+            message="Maximum 50 packages per batch",
+            status_code=400,
+        )
+
+    service = PackageService(db)
+    success, failed = await service.batch_deprecate_packages(
+        package_names=batch_data.packages,
+        user_id=str(current_user.id),
+        deprecated=batch_data.deprecated,
+    )
+    return BatchResultResponse(
+        success=success,
+        failed=[BatchResultItem(**f) for f in failed],
+    )
 
 
 @router.get("/{scope}/{name}/download")
 async def download_latest(
     scope: str,
     name: str,
+    request: Request,
     background_tasks: BackgroundTasks,
     current_user: UserType | None = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db),
@@ -212,11 +308,14 @@ async def download_latest(
     url = await storage.get_presigned_url(str(version.tarball_path))
 
     # 使用 FastAPI BackgroundTasks 记录下载计数（请求完成后执行）
-    # 只传递 ID 字符串，避免 ORM 对象 detached 问题
+    ip_address = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
     background_tasks.add_task(
         _record_download,
         str(package.id),
         str(version.id),
+        ip_address,
+        user_agent,
     )
 
     return RedirectResponse(url=url, status_code=302)
@@ -227,6 +326,7 @@ async def download_version(
     scope: str,
     name: str,
     version: str,
+    request: Request,
     background_tasks: BackgroundTasks,
     current_user: UserType | None = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db),
@@ -251,10 +351,14 @@ async def download_version(
     url = await storage.get_presigned_url(str(ver.tarball_path))
 
     # 使用 FastAPI BackgroundTasks 记录下载计数
+    ip_address = request.client.host if request.client else None
+    user_agent = request.headers.get("user-agent")
     background_tasks.add_task(
         _record_download,
         str(package.id),
         str(ver.id),
+        ip_address,
+        user_agent,
     )
 
     return RedirectResponse(url=url, status_code=302)
@@ -263,6 +367,8 @@ async def download_version(
 async def _record_download(
     package_id: str,
     version_id: str,
+    ip_address: str | None = None,
+    user_agent: str | None = None,
 ) -> None:
     """记录下载（后台任务）
 
@@ -280,6 +386,8 @@ async def _record_download(
             download = Download(
                 package_id=package_id,
                 version_id=version_id,
+                ip_address=ip_address,
+                user_agent=user_agent,
             )
             session.add(download)
 

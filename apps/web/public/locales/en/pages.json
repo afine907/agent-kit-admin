@@ -27,14 +27,17 @@
       "wechat_work": "WeChat Work",
       "feishu": "Feishu",
       "dingtalk": "DingTalk"
-    }
+    },
+    "registerTitle": "Create account"
   },
   "home": {
     "title": "Agent Kit Registry",
     "subtitle": "Search and install AI Agent packages — MCP Servers and Agent Skills",
     "searchPlaceholder": "Search packages…",
     "filterAll": "All",
-    "noResults": "No matching packages found"
+    "noResults": "No matching packages found",
+    "noResultsHint": "Try different keywords or browse all packages",
+    "packages": "packages"
   },
   "packageDetail": {
     "loading": "Loading…",
@@ -141,6 +144,26 @@
       "owner": "Owner",
       "admin": "Admin",
       "member": "Member"
+    },
+    "packages": {
+      "title": "Packages",
+      "publish": "Publish Package",
+      "empty": "No packages yet",
+      "emptyHint": "No packages have been published yet",
+      "notInstalled": "Not installed",
+      "install": "Install",
+      "installing": "Installing",
+      "update": "Update",
+      "installed": "Installed",
+      "loadFailed": "Failed to load",
+      "installFailed": "Installation failed",
+      "deletePackage": "Delete package",
+      "deleteConfirmTitle": "Confirm deletion",
+      "deleteConfirmMessage": "Are you sure you want to delete {{name}}? This action cannot be undone.",
+      "deleteFailed": "Deletion failed",
+      "updateTo": "Update to {{version}}",
+      "downloading": "Downloaded {{count}} times",
+      "latest": "latest"
     }
   },
   "publish": {
@@ -201,5 +224,28 @@
     "title": "Something went wrong",
     "message": "An error occurred while loading the page. Please refresh or go back to the home page.",
     "backHome": "Back to Home"
+  },
+  "error": {
+    "loadFailed": "Failed to load"
+  },
+  "packageEdit": {
+    "title": "Edit Package",
+    "loading": "Loading…",
+    "notFound": "Package not found",
+    "description": "Description",
+    "descriptionPlaceholder": "Package description…",
+    "tags": "Tags",
+    "tagsHint": "Comma-separated tags",
+    "visibility": "Visibility",
+    "license": "License",
+    "licensePlaceholder": "MIT, Apache-2.0, etc.",
+    "repository": "Repository URL",
+    "repositoryPlaceholder": "https://github.com/user/repo",
+    "homepage": "Homepage URL",
+    "homepagePlaceholder": "https://example.com",
+    "save": "Save Changes",
+    "saving": "Saving…",
+    "success": "Package updated successfully",
+    "error": "Failed to update package"
   }
 }

@@ -21,6 +21,8 @@ dependencies = [
     "httpx>=0.25.0",
     "cachetools>=5.3.0",
     "email-validator>=2.0.0",
+    "packaging>=21.0",
+    "semver>=3.0.0",
 ]
 
 [project.optional-dependencies]
@@ -46,3 +48,11 @@ line-length = 120
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+addopts = "--cov=app --cov-report=term-missing"
+
+[dependency-groups]
+dev = [
+    "aiosqlite>=0.22.1",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+]

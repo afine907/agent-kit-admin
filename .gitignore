@@ -40,6 +40,7 @@ wheels/
 pip-log.txt
 pip-delete-this-directory.txt
 htmlcov/
+coverage/
 .tox/
 .nox/
 .coverage
@@ -115,4 +116,14 @@ apps/web/dist/
 # ============================================
 # Orchestra (本地开发文档)
 # ============================================
+.claude/commands/
 .claude/orchestra/
+.claude/worktrees/
+
+# ============================================
+# DWP (Deep Work Plan)
+# ============================================
+.dwp/drafts/
+tmp/
+
+# Note: .dwp/plans/ is tracked — plans are project artifacts

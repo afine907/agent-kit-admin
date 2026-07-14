@@ -187,6 +187,27 @@ class TeamService:
         await self.db.delete(member)
         await self.db.commit()
 
+    async def leave_team(self, team_id: str, user_id: str) -> None:
+        """退出团队（成员自行移除）"""
+        member = await self._get_member(team_id, user_id)
+        if not member:
+            raise AppError(
+                code=ErrorCodes.NOT_FOUND,
+                message=f"You are not a member of team {team_id}",
+                status_code=404,
+            )
+
+        # Owner 不能退出团队
+        if member.role == "owner":
+            raise AppError(
+                code=ErrorCodes.INVALID_PARAM,
+                message="Owner cannot leave team. Transfer ownership or delete the team.",
+                status_code=400,
+            )
+
+        await self.db.delete(member)
+        await self.db.commit()
+
     async def update_member_role(
         self,
         team_id: str,
@@ -255,6 +276,21 @@ class TeamService:
             }
             for m in members
         ]
+
+    async def _is_team_admin(self, team_id: str, user_id: str) -> bool:
+        """检查用户是否是团队 admin/owner"""
+        result = await self.db.execute(
+            select(TeamMember).where(
+                TeamMember.team_id == team_id,
+                TeamMember.user_id == user_id,
+                TeamMember.role.in_(["owner", "admin"]),
+            )
+        )
+        return result.scalar_one_or_none() is not None
+
+    async def _is_team_member(self, team_id: str, user_id: str) -> bool:
+        """检查用户是否是团队成员"""
+        return await self.is_member(team_id, user_id)
 
     async def _get_member(self, team_id: str, user_id: str) -> TeamMember | None:
         """获取成员"""

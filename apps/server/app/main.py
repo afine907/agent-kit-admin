@@ -9,7 +9,7 @@ from sqlalchemy import text
 from app.config import get_settings
 from app.errors import AppError, app_error_handler
 from app.middleware import RequestIDMiddleware, LoggingMiddleware
-from app.api import auth, packages, versions, admin, reviews, teams
+from app.api import auth, packages, versions, admin, reviews, teams, webhooks
 
 # 配置日志
 logging.basicConfig(
@@ -19,6 +19,24 @@ logging.basicConfig(
 logger = logging.getLogger("akit")
 
 settings = get_settings()
+
+
+async def _flush_api_key_updates():
+    """后台任务：定期持久化 API Key 的 last_used_at"""
+    from app.database import AsyncSessionLocal
+    from app.services.api_key import APIKeyService, _pending_last_used_updates
+
+    while True:
+        try:
+            if _pending_last_used_updates:
+                async with AsyncSessionLocal() as session:
+                    service = APIKeyService(session)
+                    count = await service.flush_pending_updates()
+                    if count:
+                        logger.info("Flushed %d API Key last_used_at updates", count)
+        except Exception as e:
+            logger.warning("Failed to flush API Key updates: %s", e)
+        await asyncio.sleep(60)
 
 
 @asynccontextmanager
@@ -42,7 +60,22 @@ async def lifespan(app: FastAPI):
         )
         logger.info(f"Admin user initialized: {settings.INIT_ADMIN_EMAIL}")
 
+    # 启动 API Key 定时刷新任务
+    flush_task = asyncio.create_task(_flush_api_key_updates())
+
     yield
+
+    # 停止刷新任务并做最后一次刷新
+    flush_task.cancel()
+    try:
+        from app.database import AsyncSessionLocal
+        from app.services.api_key import APIKeyService
+
+        async with AsyncSessionLocal() as session:
+            service = APIKeyService(session)
+            await service.flush_pending_updates()
+    except Exception:
+        pass
 
     # 关闭引擎
     await engine.dispose()
@@ -84,6 +117,7 @@ app.include_router(versions.router, prefix="/api/v1")
 app.include_router(reviews.router, prefix="/api/v1")
 app.include_router(teams.router, prefix="/api/v1")
 app.include_router(admin.router, prefix="/api/v1")
+app.include_router(webhooks.router, prefix="/api/v1/teams")
 
 
 @app.get("/api/health")

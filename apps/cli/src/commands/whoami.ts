@@ -4,11 +4,10 @@
 
 import { Command } from 'commander';
 import chalk from 'chalk';
-import { i18n } from '../i18n.js';
+import { t } from '../i18n.js';
 import { configManager } from '../config/manager.js';
 import { apiClient } from '../api/client.js';
 
-const t = (key: string, options?: Record<string, unknown>): string => i18n.t(key, options) as string;
 
 export const whoamiCommand = new Command('whoami')
   .description(t('commands:whoami.description'))
