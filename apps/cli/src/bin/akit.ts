@@ -26,6 +26,7 @@ import { tokenCommand } from '../commands/token.js';
 import { setupSkillCommand } from '../commands/setup-skill.js';
 import { webhookCommand } from '../commands/webhook.js';
 import { batchCommand } from '../commands/batch.js';
+import { teamCommand } from '../commands/team.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -76,6 +77,9 @@ async function main() {
 
   // Batch 批量操作命令
   program.addCommand(batchCommand);
+
+  // Team 团队管理命令
+  program.addCommand(teamCommand);
 
   // 帮助信息
   program

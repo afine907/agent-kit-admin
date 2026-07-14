@@ -612,6 +612,77 @@ export class ApiClient {
     );
     return response.data;
   }
+
+  // Team invites & membership management
+
+  async createTeamInvite(teamId: string): Promise<{ invite_code: string; expires_at: string }> {
+    const response = await this.client.post<{ invite_code: string; expires_at: string }>(
+      `/api/v1/teams/${teamId}/invites`
+    );
+    return response.data;
+  }
+
+  async listTeamInvites(teamId: string): Promise<Array<{
+    id: string; code: string; created_by: string; created_at: string; expires_at: string; used: boolean;
+  }>> {
+    const response = await this.client.get(`/api/v1/teams/${teamId}/invites`);
+    return response.data.items ?? response.data;
+  }
+
+  async revokeTeamInvite(teamId: string, inviteId: string): Promise<void> {
+    await this.client.delete(`/api/v1/teams/${teamId}/invites/${inviteId}`);
+  }
+
+  async joinTeam(token: string): Promise<{ team_id: string; team_name: string; role: string }> {
+    const response = await this.client.post<{ team_id: string; team_name: string; role: string }>(
+      '/api/v1/teams/join', { token }
+    );
+    return response.data;
+  }
+
+  async listTeamMembers(teamId: string): Promise<Array<{
+    user_id: string; username: string; display_name: string; role: string; joined_at: string;
+  }>> {
+    const response = await this.client.get(`/api/v1/teams/${teamId}/members`);
+    return response.data.items ?? response.data;
+  }
+
+  async updateMemberRole(teamId: string, userId: string, role: string): Promise<{ user_id: string; role: string }> {
+    const response = await this.client.put<{ user_id: string; role: string }>(
+      `/api/v1/teams/${teamId}/members/${userId}/role`, { role }
+    );
+    return response.data;
+  }
+
+  async getTeamSettings(teamId: string): Promise<{ name: string; description: string; avatar_url?: string }> {
+    const response = await this.client.get(`/api/v1/teams/${teamId}/settings`);
+    return response.data;
+  }
+
+  async updateTeamSettings(teamId: string, data: { name?: string; description?: string; avatar_url?: string }):
+    Promise<{ name: string; description: string; avatar_url?: string }> {
+    const response = await this.client.put(`/api/v1/teams/${teamId}/settings`, data);
+    return response.data;
+  }
+
+  async getTeamByName(name: string): Promise<{
+    id: string; name: string; slug: string; description?: string; avatar_url?: string;
+  }> {
+    const response = await this.client.get<{
+      id: string; name: string; slug: string; description?: string; avatar_url?: string;
+    }>('/api/v1/teams', { params: { name } });
+    const items = (response.data as unknown as { items?: Array<{
+      id: string; name: string; slug: string; description?: string; avatar_url?: string;
+    }> }).items ?? response.data;
+    if (Array.isArray(items) && items.length > 0) {
+      return items[0];
+    }
+    throw new Error(`Team not found: ${name}`);
+  }
+
+  async removeTeamMember(teamId: string, userId: string): Promise<void> {
+    await this.client.delete(`/api/v1/teams/${teamId}/members/${userId}`);
+  }
 }
 
 export interface BatchResultResponse {
@@ -628,5 +699,5 @@ export interface WebhookInfo {
   last_triggered_at?: string;
 }
 
-// 单例导出
+// Singleton export
 export const apiClient = new ApiClient();
