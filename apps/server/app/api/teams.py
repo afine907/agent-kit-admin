@@ -15,11 +15,24 @@ from app.schemas.team import (
     TeamResponse,
     MemberAdd,
     MemberUpdateRole,
+    TeamInviteCreate,
+    TeamInviteResponse,
+    TeamInviteListItem,
+    TeamJoinRequest,
+    TransferOwnershipRequest,
+    TransferOwnershipResponse,
+    TeamSettingsResponse,
+    TeamSettingsUpdate,
     TeamPackagePublish,
     TeamPackageVersionPublish,
 )
 
 router = APIRouter(prefix="/teams", tags=["teams"])
+
+
+# =============================================================================
+# 基础团队 CRUD
+# =============================================================================
 
 
 @router.post("", response_model=TeamResponse, status_code=201)
@@ -58,9 +71,7 @@ async def get_team(
 ):
     """获取团队详情（需为团队成员）"""
     service = TeamService(db)
-    # 先检查团队是否存在（不存在会抛 404）
     team = await service.get_team(team_id)
-    # 再检查权限
     if not await service.is_member(team_id, str(current_user.id)):
         raise AppError(
             code=ErrorCodes.AUTH_FORBIDDEN,
@@ -98,6 +109,11 @@ async def delete_team(
     await service.delete_team(team_id, str(current_user.id))
 
 
+# =============================================================================
+# 成员管理
+# =============================================================================
+
+
 @router.get("/{team_id}/members")
 async def list_members(
     team_id: str,
@@ -106,7 +122,6 @@ async def list_members(
 ):
     """列出成员（需为团队成员）"""
     service = TeamService(db)
-    # 权限检查：必须是团队成员才能查看成员列表
     if not await service.is_member(team_id, str(current_user.id)):
         raise AppError(
             code=ErrorCodes.AUTH_FORBIDDEN,
@@ -126,7 +141,6 @@ async def add_member(
 ):
     """添加成员（需 admin/owner 权限）"""
     service = TeamService(db)
-    # 权限检查：需要 admin 或 owner 权限
     await service._check_admin_permission(team_id, str(current_user.id))
     member = await service.add_member(
         team_id=team_id,
@@ -145,9 +159,7 @@ async def remove_member(
 ):
     """移除成员（需 admin/owner 权限，且不能移除自己）"""
     service = TeamService(db)
-    # 权限检查：需要 admin 或 owner 权限
     await service._check_admin_permission(team_id, str(current_user.id))
-    # 不能移除自己（应该用退出团队接口）
     if user_id == str(current_user.id):
         raise AppError(
             code=ErrorCodes.INVALID_PARAM,
@@ -168,7 +180,171 @@ async def leave_team(
     await service.leave_team(team_id, str(current_user.id))
 
 
+# =============================================================================
+# 邀请相关 API (Task 1)
+# =============================================================================
+
+
+@router.post("/{team_id}/invites", response_model=TeamInviteResponse, status_code=201)
+async def create_invite(
+    team_id: str,
+    data: TeamInviteCreate | None = None,
+    current_user: UserType = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """创建团队邀请（admin+）"""
+    service = TeamService(db)
+    expires_hours = data.expires_hours if data else 72
+    max_uses = data.max_uses if data else 1
+    result = await service.generate_invite(
+        team_id=team_id,
+        user_id=str(current_user.id),
+        expires_hours=expires_hours,
+        max_uses=max_uses,
+    )
+    return result
+
+
+@router.get("/{team_id}/invites", response_model=list[TeamInviteListItem])
+async def list_invites(
+    team_id: str,
+    current_user: UserType = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """列出团队有效邀请（admin+）"""
+    service = TeamService(db)
+    return await service.list_invites(team_id, str(current_user.id))
+
+
+@router.delete("/{team_id}/invites/{token}", status_code=204)
+async def revoke_invite(
+    team_id: str,
+    token: str,
+    current_user: UserType = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """撤销邀请（admin+）"""
+    service = TeamService(db)
+    await service.revoke_invite(team_id, token, str(current_user.id))
+
+
+@router.post("/join")
+async def join_team(
+    data: TeamJoinRequest,
+    current_user: UserType = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """通过邀请码加入团队"""
+    service = TeamService(db)
+    return await service.accept_invite(data.token, str(current_user.id))
+
+
+# =============================================================================
+# 角色变更 & Ownership Transfer API (Task 2)
+# =============================================================================
+
+
+@router.put("/{team_id}/members/{user_id}/role")
+async def change_member_role(
+    team_id: str,
+    user_id: str,
+    data: MemberUpdateRole,
+    current_user: UserType = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """变更成员角色（需 owner）"""
+    service = TeamService(db)
+    return await service.change_member_role(
+        team_id=team_id,
+        target_user_id=user_id,
+        new_role=data.role,
+        actor_user_id=str(current_user.id),
+    )
+
+
+@router.post("/{team_id}/transfer-ownership", response_model=TransferOwnershipResponse)
+async def transfer_ownership(
+    team_id: str,
+    data: TransferOwnershipRequest,
+    current_user: UserType = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """发起所有权转让（需 owner）"""
+    service = TeamService(db)
+    return await service.initiate_ownership_transfer(
+        team_id=team_id,
+        from_user_id=str(current_user.id),
+        to_user_id=str(data.to_user_id),
+    )
+
+
+@router.post("/{team_id}/accept-ownership")
+async def accept_ownership(
+    team_id: str,
+    current_user: UserType = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """接受所有权转让"""
+    service = TeamService(db)
+    return await service.accept_ownership_transfer(team_id, str(current_user.id))
+
+
+@router.delete("/{team_id}/transfer-ownership", status_code=204)
+async def cancel_ownership(
+    team_id: str,
+    current_user: UserType = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """取消待处理的转让（需 owner）"""
+    service = TeamService(db)
+    await service.cancel_ownership_transfer(team_id, str(current_user.id))
+
+
+# =============================================================================
+# 团队设置 API (Task 3)
+# =============================================================================
+
+
+@router.get("/{team_id}/settings", response_model=TeamSettingsResponse)
+async def get_team_settings(
+    team_id: str,
+    current_user: UserType = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """获取团队设置（成员可读）"""
+    service = TeamService(db)
+    if not await service.is_member(team_id, str(current_user.id)):
+        raise AppError(
+            code=ErrorCodes.AUTH_FORBIDDEN,
+            message="You must be a team member",
+            status_code=403,
+        )
+    settings = await service.get_settings(team_id)
+    return settings
+
+
+@router.put("/{team_id}/settings", response_model=TeamSettingsResponse)
+async def update_team_settings(
+    team_id: str,
+    data: TeamSettingsUpdate,
+    current_user: UserType = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """更新团队设置（需 admin+）"""
+    service = TeamService(db)
+    settings = await service.update_settings(
+        team_id=team_id,
+        user_id=str(current_user.id),
+        updates=data.model_dump(exclude_unset=True),
+    )
+    return settings
+
+
+# =============================================================================
 # /me 端点（静态路径，优先于 /{team_id} 匹配）
+# =============================================================================
+
+
 @router.get("/me/installed")
 async def list_my_installed(
     team_id: str | None = None,
@@ -179,26 +355,6 @@ async def list_my_installed(
     service = TeamPackageService(db)
     packages = await service.list_installed(str(current_user.id), team_id)
     return {"data": packages, "total": len(packages)}
-
-
-@router.put("/{team_id}/members/{user_id}")
-async def update_member_role(
-    team_id: str,
-    user_id: str,
-    data: MemberUpdateRole,
-    current_user: UserType = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """更新成员角色（需 owner 权限）"""
-    service = TeamService(db)
-    # 权限检查：需要 owner 权限
-    await service._check_owner_permission(team_id, str(current_user.id))
-    member = await service.update_member_role(
-        team_id=team_id,
-        user_id=user_id,
-        role=data.role,
-    )
-    return member
 
 
 # =============================================================================

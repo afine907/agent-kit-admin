@@ -49,3 +49,67 @@ class TeamMember(Base):
 
     def __repr__(self) -> str:
         return f"<TeamMember team={self.team_id} user={self.user_id} role={self.role}>"
+
+
+class TeamInvite(Base):
+    """团队邀请模型"""
+
+    __tablename__ = "team_invites"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, server_default=func.gen_random_uuid()
+    )
+    team_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("teams.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    token: Mapped[str] = mapped_column(String(20), unique=True, nullable=False, index=True)
+    created_by: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    max_uses: Mapped[int] = mapped_column(default=1)
+    use_count: Mapped[int] = mapped_column(default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    def __repr__(self) -> str:
+        return f"<TeamInvite team={self.team_id} token={self.token[:8]}...>"
+
+
+class PendingOwnershipTransfer(Base):
+    """待接受的Ownership转让模型"""
+
+    __tablename__ = "pending_ownership_transfers"
+
+    team_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("teams.id", ondelete="CASCADE"), primary_key=True
+    )
+    from_owner_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    to_user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    def __repr__(self) -> str:
+        return f"<PendingOwnershipTransfer team={self.team_id} from={self.from_owner_id} to={self.to_user_id}>"
+
+
+class TeamSettings(Base):
+    """团队设置模型"""
+
+    __tablename__ = "team_settings"
+
+    team_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("teams.id", ondelete="CASCADE"), primary_key=True
+    )
+    avatar_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    default_visibility: Mapped[str] = mapped_column(String(20), default="team")
+    website: Mapped[str | None] = mapped_column(Text, nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    def __repr__(self) -> str:
+        return f"<TeamSettings team={self.team_id}>"

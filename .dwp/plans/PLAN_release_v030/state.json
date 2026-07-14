@@ -1,0 +1,30 @@
+{
+  "plan": "release_v030",
+  "tasks": {
+    "1":  {"status": "pending", "started_at": null, "completed_at": null},
+    "2":  {"status": "pending", "started_at": null, "completed_at": null},
+    "3":  {"status": "pending", "started_at": null, "completed_at": null},
+    "4":  {"status": "pending", "started_at": null, "completed_at": null},
+    "5":  {"status": "pending", "started_at": null, "completed_at": null},
+    "6":  {"status": "pending", "started_at": null, "completed_at": null},
+    "7":  {"status": "pending", "started_at": null, "completed_at": null},
+    "8":  {"status": "pending", "started_at": null, "completed_at": null},
+    "9":  {"status": "pending", "started_at": null, "completed_at": null},
+    "10": {"status": "pending", "started_at": null, "completed_at": null},
+    "11": {"status": "pending", "started_at": null, "completed_at": null},
+    "12": {"status": "pending", "started_at": null, "completed_at": null},
+    "13": {"status": "pending", "started_at": null, "completed_at": null},
+    "14": {"status": "pending", "started_at": null, "completed_at": null},
+    "15": {"status": "pending", "started_at": null, "completed_at": null},
+    "16": {"status": "pending", "started_at": null, "completed_at": null},
+    "17": {"status": "pending", "started_at": null, "completed_at": null},
+    "18": {"status": "pending", "started_at": null, "completed_at": null}
+  },
+  "phases": {
+    "phase1": {"status": "pending", "tasks": [1, 2, 3, 4]},
+    "phase2": {"status": "pending", "tasks": [5, 6, 7, 8]},
+    "phase3": {"status": "pending", "tasks": [9, 10]},
+    "phase4": {"status": "pending", "tasks": [11, 12, 13, 14]},
+    "phase5": {"status": "pending", "tasks": [15, 16, 17, 18]}
+  }
+}
