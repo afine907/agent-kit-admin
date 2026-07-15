@@ -683,6 +683,13 @@ export class ApiClient {
   async removeTeamMember(teamId: string, userId: string): Promise<void> {
     await this.client.delete(`/api/v1/teams/${teamId}/members/${userId}`);
   }
+
+  async getDependencyGraph(scope: string, name: string): Promise<Record<string, unknown>> {
+    const response = await this.client.get(
+      `/api/v1/packages/${scope}/${name}/dependencies`
+    );
+    return response.data;
+  }
 }
 
 export interface BatchResultResponse {
