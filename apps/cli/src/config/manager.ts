@@ -3,6 +3,7 @@
  * 配置路径: ~/.akit/config.json
  */
 
+import path from 'node:path';
 import Conf from 'conf';
 import { readFile, writeFile } from 'fs/promises';
 
@@ -121,10 +122,14 @@ export class ConfigManager {
   constructor(configPath?: string) {
     if (configPath) {
       // 测试模式：使用指定路径
+      const dir = path.dirname(configPath);
+      const name = path.basename(configPath, path.extname(configPath));
       this.config = new Conf<ConfigData>({
-        configFilePath: configPath,
+        projectName: 'akit',
+        cwd: dir,
+        configName: name,
         defaults: DEFAULT_CONFIG,
-      } as Conf<ConfigData> extends { options: infer O } ? O : never);
+      });
     } else {
       this.config = new Conf<ConfigData>({
         projectName: 'akit',
