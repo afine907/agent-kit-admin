@@ -219,7 +219,7 @@ class DependencyGraphResolver:
     MAX_DEPTH = 10
 
     def __init__(self, graph: dict[str, dict]):
-        """graph: {pkg_name: {"version": "1.0.0", "deps": {...}}} """
+        """graph: {pkg_name: {"version": "1.0.0", "deps": {...}}}"""
         self.graph = graph
         self._cycles: list[list[str]] = []
 

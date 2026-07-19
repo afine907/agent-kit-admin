@@ -43,9 +43,7 @@ async def list_tags(
     from sqlalchemy import select
     from app.models.package import Package
 
-    result = await db.execute(
-        select(Package.tags).where(Package.deleted_at.is_(None))
-    )
+    result = await db.execute(select(Package.tags).where(Package.deleted_at.is_(None)))
     rows = result.scalars().all()
 
     tag_counts: dict[str, int] = {}
@@ -54,10 +52,7 @@ async def list_tags(
             for t in tags:
                 tag_counts[t] = tag_counts.get(t, 0) + 1
 
-    tags_list = [
-        TagInfo(tag=k, count=v)
-        for k, v in sorted(tag_counts.items(), key=lambda x: -x[1])
-    ]
+    tags_list = [TagInfo(tag=k, count=v) for k, v in sorted(tag_counts.items(), key=lambda x: -x[1])]
     return TagListResponse(tags=tags_list)
 
 
@@ -186,6 +181,7 @@ async def deprecate_package(
 ):
     """废弃包（owner 或 team admin）"""
     from app.models.version import Version
+
     service = PackageService(db)
     package = await service.get_package(scope, name, current_user)
 
@@ -230,6 +226,7 @@ async def undeprecate_package(
 ):
     """取消废弃包（owner 或 team admin）"""
     from app.models.version import Version
+
     service = PackageService(db)
     package = await service.get_package(scope, name, current_user)
 
@@ -256,9 +253,7 @@ async def undeprecate_package(
         )
     else:
         await db.execute(
-            update(Version)
-            .where(Version.package_id == package.id)
-            .values(deprecated=False, deprecation_reason=None)
+            update(Version).where(Version.package_id == package.id).values(deprecated=False, deprecation_reason=None)
         )
     await db.commit()
     return {"message": "Package undeprecated", "version": data.version}

@@ -139,7 +139,6 @@ class TeamSettingsUpdate(BaseModel):
     website: str | None = Field(None, max_length=500)
 
 
-
 class MemberResponse(BaseModel):
     """成员响应"""
 

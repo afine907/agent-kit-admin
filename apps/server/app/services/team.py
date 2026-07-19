@@ -517,9 +517,7 @@ class TeamService:
             )
 
         # 删除已有的待处理转让
-        await self.db.execute(
-            delete(PendingOwnershipTransfer).where(PendingOwnershipTransfer.team_id == team_id)
-        )
+        await self.db.execute(delete(PendingOwnershipTransfer).where(PendingOwnershipTransfer.team_id == team_id))
 
         expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
         transfer = PendingOwnershipTransfer(
@@ -547,7 +545,9 @@ class TeamService:
             raise AppError(code=ErrorCodes.NOT_FOUND, message="No pending ownership transfer", status_code=404)
 
         if transfer.to_user_id != user_id:
-            raise AppError(code=ErrorCodes.AUTH_FORBIDDEN, message="Not authorized to accept this transfer", status_code=403)
+            raise AppError(
+                code=ErrorCodes.AUTH_FORBIDDEN, message="Not authorized to accept this transfer", status_code=403
+            )
 
         if transfer.expires_at < datetime.now(timezone.utc):
             raise AppError(code=ErrorCodes.INVALID_PARAM, message="Ownership transfer has expired", status_code=400)
@@ -573,9 +573,7 @@ class TeamService:
     async def cancel_ownership_transfer(self, team_id: str, user_id: str) -> None:
         """取消待处理的转让"""
         await self._check_owner_permission(team_id, user_id)
-        await self.db.execute(
-            delete(PendingOwnershipTransfer).where(PendingOwnershipTransfer.team_id == team_id)
-        )
+        await self.db.execute(delete(PendingOwnershipTransfer).where(PendingOwnershipTransfer.team_id == team_id))
         await self.db.commit()
 
     # ========================================================================

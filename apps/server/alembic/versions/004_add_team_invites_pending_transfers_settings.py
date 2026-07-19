@@ -27,23 +27,17 @@ def upgrade() -> None:
             "team_id", UUID(as_uuid=True), sa.ForeignKey("teams.id", ondelete="CASCADE"), nullable=False, index=True
         ),
         sa.Column("token", sa.String(20), unique=True, nullable=False, index=True),
-        sa.Column(
-            "created_by", UUID(as_uuid=True), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False
-        ),
+        sa.Column("created_by", UUID(as_uuid=True), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
         sa.Column("expires_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("max_uses", sa.Integer, server_default="1"),
         sa.Column("use_count", sa.Integer, server_default="0"),
-        sa.Column(
-            "created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")
-        ),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
     )
 
     # pending_ownership_transfers table
     op.create_table(
         "pending_ownership_transfers",
-        sa.Column(
-            "team_id", UUID(as_uuid=True), sa.ForeignKey("teams.id", ondelete="CASCADE"), primary_key=True
-        ),
+        sa.Column("team_id", UUID(as_uuid=True), sa.ForeignKey("teams.id", ondelete="CASCADE"), primary_key=True),
         sa.Column(
             "from_owner_id",
             UUID(as_uuid=True),
@@ -56,18 +50,14 @@ def upgrade() -> None:
             sa.ForeignKey("users.id", ondelete="CASCADE"),
             nullable=False,
         ),
-        sa.Column(
-            "created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")
-        ),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
         sa.Column("expires_at", sa.DateTime(timezone=True), nullable=False),
     )
 
     # team_settings table
     op.create_table(
         "team_settings",
-        sa.Column(
-            "team_id", UUID(as_uuid=True), sa.ForeignKey("teams.id", ondelete="CASCADE"), primary_key=True
-        ),
+        sa.Column("team_id", UUID(as_uuid=True), sa.ForeignKey("teams.id", ondelete="CASCADE"), primary_key=True),
         sa.Column("avatar_url", sa.Text, nullable=True),
         sa.Column("default_visibility", sa.String(20), server_default="team"),
         sa.Column("website", sa.Text, nullable=True),

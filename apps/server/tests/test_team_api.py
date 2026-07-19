@@ -305,4 +305,4 @@ class TestTeamMembers:
         )
         assert response.status_code == 200
         data = response.json()
-        assert data["role"] == "admin"
+        assert data["new_role"] == "admin"

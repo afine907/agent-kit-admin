@@ -183,4 +183,3 @@ class DependencyGraphResponse(BaseModel):
 
     dependencies: dict[str, dict]  # {pkg: {version, deps: {...}}}
     cycles: list[list[str]]  # 检测到的循环列表
-
