@@ -56,6 +56,89 @@ class MemberUpdateRole(BaseModel):
     role: str = Field(..., pattern=r"^(admin|member)$", description="成员角色")
 
 
+# ---- Invite Schemas ----
+
+
+class TeamInviteCreate(BaseModel):
+    """创建邀请请求"""
+
+    expires_hours: int = Field(72, ge=1, le=168)
+    max_uses: int = Field(1, ge=1, le=100)
+
+
+class TeamInviteResponse(BaseModel):
+    """邀请响应"""
+
+    token: str
+    expires_at: datetime
+    max_uses: int
+    use_count: int
+    invite_url: str
+
+    class Config:
+        from_attributes = True
+
+
+class TeamInviteListItem(BaseModel):
+    """邀请列表项"""
+
+    token: str
+    created_by: UUID
+    expires_at: datetime
+    max_uses: int
+    use_count: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class TeamJoinRequest(BaseModel):
+    """加入团队请求"""
+
+    token: str
+
+
+# ---- Ownership Transfer Schemas ----
+
+
+class TransferOwnershipRequest(BaseModel):
+    """转让所有权请求"""
+
+    to_user_id: UUID
+
+
+class TransferOwnershipResponse(BaseModel):
+    """转让所有权响应"""
+
+    message: str
+    expires_at: datetime
+
+
+# ---- Team Settings Schemas ----
+
+
+class TeamSettingsResponse(BaseModel):
+    """团队设置响应"""
+
+    team_id: UUID
+    avatar_url: str | None = None
+    default_visibility: str = "team"
+    website: str | None = None
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class TeamSettingsUpdate(BaseModel):
+    """更新团队设置请求"""
+
+    avatar_url: str | None = Field(None, max_length=500)
+    default_visibility: str | None = Field(None, pattern=r"^(public|private|team)$")
+    website: str | None = Field(None, max_length=500)
+
+
 class MemberResponse(BaseModel):
     """成员响应"""
 

@@ -1,7 +1,7 @@
 """Version 模型 - 权威来源: docs/architecture/04-data-model.md"""
 
 import uuid
-from sqlalchemy import Column, String, BigInteger, Boolean, DateTime, func, UniqueConstraint, ForeignKey
+from sqlalchemy import Column, String, Text, BigInteger, Boolean, DateTime, func, UniqueConstraint, ForeignKey
 from app.database import CompatUUID as UUID
 from app.database import Base, CompatJSONB
 
@@ -22,6 +22,7 @@ class Version(Base):
     published_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     published_at = Column(DateTime(timezone=True), server_default=func.now())
     deprecated = Column(Boolean, default=False)
+    deprecation_reason = Column(Text, nullable=True)  # 废弃原因
     yanked = Column(Boolean, default=False)
     tag = Column(String(50), nullable=True)  # latest / beta / alpha / rc
 

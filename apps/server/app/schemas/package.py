@@ -17,6 +17,7 @@ class PackageCreate(BaseModel):
     homepage: str | None = None
     visibility: str = Field("public", pattern=r"^(public|team|private)$")
     owner_type: str = Field("user", pattern=r"^(user|team)$")
+    category: str | None = Field(None, max_length=50)
 
 
 class PackageUpdate(BaseModel):
@@ -27,6 +28,7 @@ class PackageUpdate(BaseModel):
     repository: str | None = None
     homepage: str | None = None
     tags: list[str] | None = None
+    category: str | None = Field(None, max_length=50)
     visibility: str | None = Field(None, pattern=r"^(public|team|private)$")
 
 
@@ -75,6 +77,7 @@ class PackageResponse(BaseModel):
     downloads_count: int
     latest_version: str | None
     tags: list[str]
+    category: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -134,6 +137,7 @@ class VersionResponse(BaseModel):
     tarball_size: int
     tag: str | None
     deprecated: bool
+    deprecation_reason: str | None = None
     yanked: bool
     published_at: datetime
 
@@ -146,3 +150,36 @@ class VersionListResponse(BaseModel):
 
     data: list[VersionResponse]
     total: int
+
+
+class TagInfo(BaseModel):
+    """标签信息"""
+
+    tag: str
+    count: int
+
+
+class TagListResponse(BaseModel):
+    """标签列表响应"""
+
+    tags: list[TagInfo]
+
+
+class DeprecateRequest(BaseModel):
+    """废弃包请求"""
+
+    reason: str = Field(..., min_length=1, max_length=500)
+    version: str | None = Field(None, description="指定版本，不指定则废弃所有版本")
+
+
+class UndeprecateRequest(BaseModel):
+    """取消废弃包请求"""
+
+    version: str | None = Field(None, description="指定版本，不指定则取消所有版本的废弃")
+
+
+class DependencyGraphResponse(BaseModel):
+    """依赖图响应"""
+
+    dependencies: dict[str, dict]  # {pkg: {version, deps: {...}}}
+    cycles: list[list[str]]  # 检测到的循环列表

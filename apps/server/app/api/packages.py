@@ -10,6 +10,7 @@ from app.services.package import PackageService
 from app.services.storage import get_storage_service
 from app.services.webhook import WebhookService
 from app.api.deps import get_current_user, get_current_user_optional, UserType
+from app.errors import AppError, ErrorCodes
 from app.schemas.package import (
     PackageCreate,
     PackageUpdate,
@@ -21,12 +22,38 @@ from app.schemas.package import (
     BatchDeprecateRequest,
     BatchResultResponse,
     BatchResultItem,
+    TagListResponse,
+    TagInfo,
+    DeprecateRequest,
+    UndeprecateRequest,
+    DependencyGraphResponse,
 )
 from app.services.dependency import DependencyResolver
 
 logger = logging.getLogger("akit.download")
 
 router = APIRouter(prefix="/packages", tags=["packages"])
+
+
+@router.get("/tags", response_model=TagListResponse)
+async def list_tags(
+    db: AsyncSession = Depends(get_db),
+):
+    """列出所有标签及其计数"""
+    from sqlalchemy import select
+    from app.models.package import Package
+
+    result = await db.execute(select(Package.tags).where(Package.deleted_at.is_(None)))
+    rows = result.scalars().all()
+
+    tag_counts: dict[str, int] = {}
+    for tags in rows:
+        if tags:
+            for t in tags:
+                tag_counts[t] = tag_counts.get(t, 0) + 1
+
+    tags_list = [TagInfo(tag=k, count=v) for k, v in sorted(tag_counts.items(), key=lambda x: -x[1])]
+    return TagListResponse(tags=tags_list)
 
 
 @router.get("", response_model=PackageListResponse)
@@ -38,6 +65,8 @@ async def list_packages(
     order: str = Query("desc", description="排序方向"),
     page: int = Query(1, ge=1, description="页码"),
     per_page: int = Query(20, ge=1, le=100, description="每页数量"),
+    category: str | None = Query(None, description="按分类筛选"),
+    tag: str | None = Query(None, description="按标签筛选"),
     current_user: UserType | None = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db),
 ):
@@ -47,6 +76,8 @@ async def list_packages(
         search=search,
         type=type,
         scope=scope,
+        category=category,
+        tag=tag,
         sort=sort,
         order=order,
         page=page,
@@ -112,6 +143,120 @@ async def check_dependencies(
         "results": results,
         "circular_error": circular_error,
     }
+
+
+@router.get("/{scope}/{name}/dependencies", response_model=DependencyGraphResponse)
+async def get_package_dependencies(
+    scope: str,
+    name: str,
+    current_user: UserType | None = Depends(get_current_user_optional),
+    db: AsyncSession = Depends(get_db),
+):
+    """获取包的完整依赖图"""
+    from app.services.dependency import DependencyGraphResolver
+
+    service = PackageService(db)
+    package = await service.get_package(scope, name, current_user)
+
+    if not package.manifest_dependencies:
+        return DependencyGraphResponse(dependencies={}, cycles=[])
+
+    resolver = DependencyGraphResolver(package.manifest_dependencies)
+    cycles: list[list[str]] = []
+    if resolver.has_cycle():
+        cycle = resolver.find_cycle()
+        if cycle:
+            cycles.append(cycle)
+
+    return DependencyGraphResponse(dependencies=package.manifest_dependencies, cycles=cycles)
+
+
+@router.post("/{scope}/{name}/deprecate")
+async def deprecate_package(
+    scope: str,
+    name: str,
+    data: DeprecateRequest,
+    current_user: UserType = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """废弃包（owner 或 team admin）"""
+    from app.models.version import Version
+
+    service = PackageService(db)
+    package = await service.get_package(scope, name, current_user)
+
+    if package.owner_type == "team":
+        if not await service._is_team_admin(package.owner_id, str(current_user.id)):
+            raise AppError(
+                code=ErrorCodes.AUTH_FORBIDDEN,
+                message="Only team admin can deprecate",
+                status_code=403,
+            )
+    else:
+        if str(package.owner_id) != str(current_user.id):
+            raise AppError(
+                code=ErrorCodes.AUTH_FORBIDDEN,
+                message="Only owner can deprecate",
+                status_code=403,
+            )
+
+    if data.version:
+        await db.execute(
+            update(Version)
+            .where(Version.package_id == package.id, Version.version == data.version)
+            .values(deprecated=True, deprecation_reason=data.reason)
+        )
+    else:
+        await db.execute(
+            update(Version)
+            .where(Version.package_id == package.id)
+            .values(deprecated=True, deprecation_reason=data.reason)
+        )
+    await db.commit()
+    return {"message": "Package deprecated", "reason": data.reason, "version": data.version}
+
+
+@router.post("/{scope}/{name}/undeprecate")
+async def undeprecate_package(
+    scope: str,
+    name: str,
+    data: UndeprecateRequest,
+    current_user: UserType = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """取消废弃包（owner 或 team admin）"""
+    from app.models.version import Version
+
+    service = PackageService(db)
+    package = await service.get_package(scope, name, current_user)
+
+    if package.owner_type == "team":
+        if not await service._is_team_admin(package.owner_id, str(current_user.id)):
+            raise AppError(
+                code=ErrorCodes.AUTH_FORBIDDEN,
+                message="Only team admin can undeprecate",
+                status_code=403,
+            )
+    else:
+        if str(package.owner_id) != str(current_user.id):
+            raise AppError(
+                code=ErrorCodes.AUTH_FORBIDDEN,
+                message="Only owner can undeprecate",
+                status_code=403,
+            )
+
+    if data.version:
+        await db.execute(
+            update(Version)
+            .where(Version.package_id == package.id, Version.version == data.version)
+            .values(deprecated=False, deprecation_reason=None)
+        )
+    else:
+        await db.execute(
+            update(Version).where(Version.package_id == package.id).values(deprecated=False, deprecation_reason=None)
+        )
+    await db.commit()
+    return {"message": "Package undeprecated", "version": data.version}
 
 
 @router.post("", response_model=PackageResponse, status_code=201)

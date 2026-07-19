@@ -1,0 +1,12 @@
+{
+  "name": "release_v030",
+  "display_name": "Release v0.3.0 — Team Collaboration",
+  "version": "1.0",
+  "archetype": "individual",
+  "tier": "deep",
+  "spec_version": "2.15.0",
+  "created_at": "2026-07-14T09:49:00Z",
+  "task_count": 18,
+  "creating_agent": "jojo",
+  "description": "Ship v0.3.0 Team Collaboration: team RBAC + invite flow, package categories/tags/deprecation/dependencies, full team management UI, user settings, dashboard"
+}

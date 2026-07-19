@@ -2,7 +2,7 @@
 
 import logging
 
-from sqlalchemy import select, func, or_, and_
+from sqlalchemy import select, func, or_, and_, String
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.package import Package
 from app.models.user import User
@@ -89,6 +89,8 @@ class PackageService:
         search: str | None = None,
         type: str | None = None,
         scope: str | None = None,
+        category: str | None = None,
+        tag: str | None = None,
         sort: str = "updated_at",
         order: str = "desc",
         page: int = 1,
@@ -155,6 +157,10 @@ class PackageService:
             query = query.where(Package.type == type)
         if scope:
             query = query.where(Package.scope == scope)
+        if category:
+            query = query.where(Package.category == category)
+        if tag:
+            query = query.where(Package.tags.cast(String).contains(f'"{tag}"'))
 
         # --- 总数 ---
         count_q = select(func.count()).select_from(query.subquery())
@@ -244,6 +250,7 @@ class PackageService:
         homepage: str | None = None,
         visibility: str = "public",
         owner_type: str = "user",
+        category: str | None = None,
     ) -> Package:
         """创建包
 
@@ -311,6 +318,7 @@ class PackageService:
             owner_id=owner_id,
             owner_type=owner_type,
             visibility=visibility,
+            category=category,
         )
         self.db.add(package)
         await self.db.commit()

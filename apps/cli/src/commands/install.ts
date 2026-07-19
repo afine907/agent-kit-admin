@@ -55,6 +55,7 @@ installCommand
   .option('--no-config', '仅下载包，不写入 Agent 配置')
   .option('--no-deps', '跳过依赖检查')
   .option('--force', '强制安装已撤回的版本')
+  .option('--dry-run', '仅显示依赖树，不安装')
   .action(async (packageName: string, options) => {
     try {
       console.log(chalk.bold('\n📥 安装包...\n'));
@@ -63,7 +64,36 @@ installCommand
       const { scope, name } = parsePackageName(packageName);
       const fullName = `${scope}/${name}`;
 
-      // 2. 获取包信息 + 下载 URL（团队包或普通包）
+      // 2. 干跑模式 - 显示依赖树
+      if (options.dryRun) {
+        console.log(chalk.bold('\n🔍 依赖分析（干跑）\n'));
+        const { resolveDependencies, printDepTree, getAllPackages } = await import('../utils/dependency-resolver.js');
+        try {
+          const { node, cycles } = await resolveDependencies(scope, name);
+          if (node.version === 'unavailable') {
+            console.log(chalk.yellow('⚠ 无法获取依赖信息，服务器可能不支持此端点\n'));
+            process.exit(0);
+          }
+          console.log(chalk.bold('依赖树:'));
+          printDepTree(node, cycles, '', true);
+          if (cycles.length > 0) {
+            console.log(chalk.red('\n⚠ 检测到循环依赖:'));
+            for (const cycle of cycles) {
+              console.log(chalk.red('  ' + cycle.join(' → ')));
+            }
+          }
+          const allPkgs = getAllPackages(node);
+          console.log(chalk.bold('\n共 ' + allPkgs.length + ' 个包待安装'));
+          console.log('');
+          process.exit(0);
+        } catch (err: unknown) {
+          console.log(chalk.yellow('⚠ 依赖解析失败: ' + (err instanceof Error ? err.message : String(err))));
+          console.log('');
+          process.exit(0);
+        }
+      }
+
+      // 3. 获取包信息 + 下载 URL（团队包或普通包）
       const spinner1 = ora('获取包信息...').start();
       let pkg: { latest_version?: string; name?: string } | null = null;
       let downloadUrl: string = '';

@@ -299,10 +299,10 @@ class TestTeamMembers:
         )
 
         response = await client.put(
-            f"/api/v1/teams/{team_id}/members/{another_user.id}",
+            f"/api/v1/teams/{team_id}/members/{another_user.id}/role",
             json={"role": "admin"},
             headers=auth_headers,
         )
         assert response.status_code == 200
         data = response.json()
-        assert data["role"] == "admin"
+        assert data["new_role"] == "admin"
