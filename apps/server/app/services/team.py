@@ -266,18 +266,23 @@ class TeamService:
         await self.get_team(team_id)
 
         result = await self.db.execute(
-            select(TeamMember).where(TeamMember.team_id == team_id).order_by(TeamMember.role, TeamMember.joined_at)
+            select(TeamMember, User.username, User.display_name)
+            .join(User, User.id == TeamMember.user_id, isouter=True)
+            .where(TeamMember.team_id == team_id)
+            .order_by(TeamMember.role, TeamMember.joined_at)
         )
-        members = result.scalars().all()
+        rows = result.all()
 
         return [
             {
                 "team_id": str(m.team_id),
                 "user_id": str(m.user_id),
+                "username": username or "",
+                "display_name": display_name or "",
                 "role": m.role,
                 "joined_at": str(m.joined_at),
             }
-            for m in members
+            for m, username, display_name in rows
         ]
 
     async def _is_team_admin(self, team_id: str, user_id: str) -> bool:

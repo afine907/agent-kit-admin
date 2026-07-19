@@ -44,13 +44,13 @@ function buildInviteCommand(): Command {
           console.error(chalk.red('过期时间必须是正整数（小时）\n'));
           process.exit(1);
         }
-        const invite = await apiClient.createTeamInvite(team.id);
+        const invite = await apiClient.createTeamInvite(team.id, expiresHours, 1);
         const registry = configManager.getRegistry().replace(/\/$/, '');
-        const inviteUrl = registry + '/join?token=' + invite.invite_code;
+        const inviteUrl = registry + '/join?token=' + invite.token;
         spinner.succeed('已为团队 ' + chalk.bold(team.name) + ' 生成邀请链接');
-        console.log('\n' + chalk.green('✔ 邀请链接（' + options.role + '，' + options.expiresIn + 'h 过期）'));
+        console.log('\n' + chalk.green('✔ 邀请链接（' + options.expiresIn + 'h 过期，最多 1 次使用）'));
         console.log('  ' + chalk.cyan(inviteUrl) + '\n');
-        console.log(chalk.gray('邀请码: ' + invite.invite_code));
+        console.log(chalk.gray('邀请码: ' + invite.token));
         console.log(chalk.gray('过期时间: ' + invite.expires_at + '\n'));
       } catch (err: unknown) {
         spinner.fail('查找团队失败');
@@ -274,8 +274,8 @@ function buildLeaveCommand(): Command {
       const spinner = ora('正在离开团队...').start();
       try {
         const team = await apiClient.getTeamByName(teamName);
-        // 调用后端 DELETE /teams/{team_id}/members/self 删除自己
-        await apiClient.removeTeamMember(team.id, 'self');
+        // 调用后端 POST /teams/{team_id}/leave 退出团队
+        await apiClient.leaveTeam(team.id);
         spinner.succeed(chalk.green('✔ 已离开团队'));
         console.log(chalk.bold('\n  你已离开 ' + teamName + '\n'));
       } catch (err: unknown) {

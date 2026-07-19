@@ -615,10 +615,14 @@ export class ApiClient {
 
   // Team invites & membership management
 
-  async createTeamInvite(teamId: string): Promise<{ invite_code: string; expires_at: string }> {
-    const response = await this.client.post<{ invite_code: string; expires_at: string }>(
-      `/api/v1/teams/${teamId}/invites`
-    );
+  async createTeamInvite(
+    teamId: string,
+    expiresHours: number = 72,
+    maxUses: number = 1,
+  ): Promise<{ token: string; expires_at: string; max_uses: number; use_count: number; invite_url: string }> {
+    const response = await this.client.post<{
+      token: string; expires_at: string; max_uses: number; use_count: number; invite_url: string;
+    }>(`/api/v1/teams/${teamId}/invites`, { expires_hours: expiresHours, max_uses: maxUses });
     return response.data;
   }
 
@@ -682,6 +686,10 @@ export class ApiClient {
 
   async removeTeamMember(teamId: string, userId: string): Promise<void> {
     await this.client.delete(`/api/v1/teams/${teamId}/members/${userId}`);
+  }
+
+  async leaveTeam(teamId: string): Promise<void> {
+    await this.client.post(`/api/v1/teams/${teamId}/leave`);
   }
 
   async getDependencyGraph(scope: string, name: string): Promise<Record<string, unknown>> {
