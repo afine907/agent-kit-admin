@@ -70,7 +70,7 @@ export async function resolveDependencies(
   let graphResponse: DepGraphResponse;
   try {
     const result = await apiClient.getDependencyGraph(scope, name);
-    graphResponse = result as DepGraphResponse;
+    graphResponse = result as unknown as DepGraphResponse;
   } catch {
     return {
       node: { scope, name, version: 'unavailable', dependencies: [] },
