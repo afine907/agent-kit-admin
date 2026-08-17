@@ -83,6 +83,13 @@ class Settings(BaseSettings):
     OPENAI_MODEL: str = "gpt-4o-mini"
     OPENAI_MAX_TOKENS: int = 1024
 
+    # Inspector Worker
+    INSPECTOR_SAMPLE_RATE: float = 0.2
+    INSPECTOR_CRON_HOUR: int = 2
+    INSPECTOR_CRON_MINUTE: int = 0
+    INSPECTOR_MAX_LLM_PER_RUN: int = 50
+    INSPECTOR_POLL_INTERVAL: int = 30
+
     # 初始化管理员
     INIT_ADMIN_EMAIL: str = ""
     INIT_ADMIN_PASSWORD: str = ""

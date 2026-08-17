@@ -1,7 +1,7 @@
 """Package 模型 - 权威来源: docs/architecture/04-data-model.md"""
 
 import uuid
-from sqlalchemy import Column, String, Text, BigInteger, DateTime, func, UniqueConstraint
+from sqlalchemy import Column, String, Text, BigInteger, Boolean, DateTime, func, UniqueConstraint
 from app.database import CompatUUID as UUID
 from app.database import Base, CompatJSONB
 
@@ -31,6 +31,9 @@ class Package(Base):
     admin_status = Column(String(20), default="active")  # active / suspended - 管理员下架状态
     admin_note = Column(Text, nullable=True)  # 管理员备注（如下架原因）
     deleted_at = Column(DateTime(timezone=True), nullable=True)  # 软删除
+    health_status = Column(String(10), default="pending", index=True)  # 最新健康状态
+    needs_check = Column(Boolean, default=False, index=True)  # 待检查标记
+    last_check_at = Column(DateTime(timezone=True), nullable=True)  # 最后检查时间
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
