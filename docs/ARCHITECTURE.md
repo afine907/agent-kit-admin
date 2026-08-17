@@ -31,7 +31,7 @@ Three tightly coupled components forming one product:
 ### CLI (`apps/cli/`)
 - **Stack:** Node.js 20+, TypeScript, Commander.js
 - **Role:** `akit` CLI — publish, install, manage packages
-- **Pattern:** Commands → API client → Agent adapters
+- **Pattern:** Commands → API client
 - **Entry:** `src/bin/akit.ts` (dev via tsx), `dist/bin/akit.js` (built)
 
 ### Web (`apps/web/`)
@@ -43,18 +43,8 @@ Three tightly coupled components forming one product:
 ## Data Flow
 
 1. **Publish:** CLI uploads tarball → Server stores in MinIO + metadata in PostgreSQL
-2. **Install:** CLI requests package → Server serves tarball from MinIO → CLI extracts + configures Agent
+2. **Install:** CLI requests package → Server serves tarball from MinIO → CLI extracts + records
 3. **Browse:** Web queries API → Server returns metadata from PostgreSQL
-
-## Agent Adapters
-
-The CLI uses an adapter registry (`apps/cli/src/agents/registry.ts`) to write package configs to different AI agents:
-
-- **Claude Code:** `~/.claude/mcp.json` (JSON)
-- **Codex:** `~/.codex/config.toml` (TOML)
-- **Cursor, Windsurf, Cline, Aider:** Additional adapters
-
-Each adapter implements `AgentAdapter` interface: `detect()`, `readConfig()`, `writeConfig()`, `removeConfig()`.
 
 ## Infrastructure
 

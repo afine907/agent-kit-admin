@@ -10,15 +10,12 @@ import { join } from 'path';
 import { homedir } from 'os';
 import { configManager } from '../config/manager.js';
 import { apiClient } from '../api/client.js';
-import { agentRegistry } from '../agents/registry.js';
 import { extractTarball } from '../utils/tarball.js';
-import { readManifest } from '../utils/manifest.js';
 
 export const updateCommand = new Command('update')
   .description('更新已安装的包')
   .argument('[name]', '包名 (不指定则更新所有)')
-  .option('--agent <agent>', '指定 Agent (claude/codex)')
-  .action(async (name, options) => {
+  .action(async (name) => {
     try {
       console.log(chalk.bold('\n🔄 Agent Kit Admin - 更新包\n'));
 
@@ -87,30 +84,6 @@ export const updateCommand = new Command('update')
           fs.writeFileSync(tarPath, buffer);
           await extractTarball(tarPath, packageDir);
           fs.unlinkSync(tarPath);
-
-          // 读取 manifest 获取实际配置
-          const manifest = readManifest(packageDir);
-
-          // 获取 Agent adapter
-          const agent = options.agent || pkg.agent;
-          const adapter = agentRegistry.get(agent);
-
-          if (!adapter) {
-            spinner.fail(`${pkg.full_name} - 不支持的 Agent: ${agent}`);
-            failed++;
-            continue;
-          }
-
-          // 用 manifest 实际值重写配置
-          await adapter.removeConfig(pkg.name);
-          if (manifest.type === 'mcp' && manifest.mcp) {
-            await adapter.writeConfig({
-              name: pkg.name,
-              command: manifest.mcp.command,
-              args: manifest.mcp.args || [],
-              env: {},
-            });
-          }
 
           // 更新本地记录
           configManager.updateInstalledPackage(pkg.full_name, {

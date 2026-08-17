@@ -24,6 +24,10 @@ class ErrorCodes:
     NOT_FOUND = 20003
     RATE_LIMIT = 20006
 
+    # LLM / 聊天 Agent 错误
+    LLM_NOT_CONFIGURED = 20007  # 未配置 OPENAI_API_KEY
+    LLM_UPSTREAM_ERROR = 20008  # LLM 上游服务调用失败
+
     # 认证错误
     AUTH_REQUIRED = 20001
     AUTH_INVALID_TOKEN = 20001  # Token 无效或过期统一用 20001

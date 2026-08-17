@@ -10,7 +10,7 @@ class PackageCreate(BaseModel):
 
     name: str = Field(..., min_length=1, max_length=100, pattern=r"^[a-z0-9]([a-z0-9-]*[a-z0-9])?$")
     scope: str = Field(..., min_length=2, max_length=50, pattern=r"^@[a-z0-9][a-z0-9-]*$")
-    type: str = Field(..., pattern=r"^(mcp|skill)$")
+    type: str = Field("skill", pattern=r"^skill$")
     description: str | None = Field(None, max_length=500)
     license: str = "MIT"
     repository: str | None = None

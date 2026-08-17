@@ -1,8 +1,8 @@
 # Agent Kit Admin
 
-**团队 AI 工具包管理平台** — 团队共享 MCP Servers 和 Agent Skills，支持私有发布、版本管理、一键安装。
+**团队 AI 工具包管理平台** — 团队共享 Agent Skills，支持私有发布、版本管理、一键安装。
 
-适用于：团队内部沉淀可复用的 MCP 工具库，统一管理 Cursor/Claude Code 的 Agent Skills。
+适用于：团队内部沉淀可复用的 Agent Skills，统一管理 Cursor/Claude Code 的 Agent Skills。
 
 [![CI](https://github.com/afine907/agent-kit-admin/actions/workflows/ci.yml/badge.svg)](https://github.com/afine907/agent-kit-admin/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -13,8 +13,7 @@
 
 | 功能 | 说明 |
 |------|------|
-| **团队包管理** | 发布、下载、版本控制团队私有的 MCP/Skill |
-| **MCP Server** | 发布标准化的 Model Context Protocol 服务器 |
+| **团队包管理** | 发布、下载、版本控制团队私有的 Skill |
 | **Agent Skill** | 发布可被 Agent 调用的 Skill 配置 |
 | **CLI 工具** | `akit` 命令行，无缝集成到 Cursor/Claude Code |
 | **Web UI** | 可视化包浏览、团队管理、安装追踪 |
@@ -80,8 +79,8 @@ curl -X POST http://localhost:8000/api/v1/teams \
   -d '{"name":"My Team","slug":"myteam","description":"Internal tools"}'
 
 # 初始化包
-mkdir my-mcp && cd my-mcp
-akit init --name @myteam/web-search --type mcp
+mkdir my-skill && cd my-skill
+akit init
 
 # 发布到团队
 akit publish --team @myteam
@@ -105,7 +104,7 @@ akit install @myteam/web-search  # 安装团队包
 akit publish --team @myteam  # 发布到团队
 akit publish .               # 发布个人包
 
-akit search mcp              # 搜索包
+akit search skill            # 搜索包
 akit info @scope/name        # 查看包详情
 
 akit update                  # 更新所有已安装的包

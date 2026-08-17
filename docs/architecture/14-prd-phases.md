@@ -12,12 +12,12 @@
 验证核心链路可行性。
 
 ### 交付物
-- [ ] 手动发布一个 MCP 到 MinIO
-- [ ] 手动下载并配置到 Claude Code
-- [ ] 验证 MCP 在 Claude Code 中可正常调用
+- [ ] 手动发布一个 Skill 到 MinIO
+- [ ] 手动下载并解压到本地
+- [ ] 验证 Skill 可正常使用
 
 ### 验收标准
-- 完整的 发布 → 下载 → 配置 → 使用 流程跑通
+- 完整的 发布 → 下载 → 使用 流程跑通
 
 ### 时间
 1 周
@@ -30,7 +30,7 @@
 最小可用版本，核心流程闭环。
 
 ### 用户故事
-- US-001: 发布 MCP
+- US-001: 发布 Skill
 - US-002: 发布 Skill
 - US-004: 安装到 Claude Code
 - US-005: 安装到 Codex
@@ -46,8 +46,8 @@
 |---|---|---|
 | `akit login` | OAuth 登录 | 浏览器授权后获取 Token |
 | `akit publish` | 发布包 | 成功上传到 MinIO，数据库记录 |
-| `akit install` | 安装包 | 下载包，写入 Agent 配置 |
-| `akit uninstall` | 卸载包 | 删除包文件，清理配置 |
+| `akit install` | 安装包 | 下载包并记录 |
+| `akit uninstall` | 卸载包 | 删除包文件，移除记录 |
 | `akit list` | 已安装列表 | 显示所有已安装包 |
 | `akit search` | 搜索包 | 返回匹配结果 |
 | `akit info` | 包详情 | 显示包信息和安装命令 |
@@ -81,10 +81,10 @@
 | 健康检查 | 服务状态 | `/api/health` 返回正常 |
 
 ### Agent 支持
-| Agent | 配置路径 | 验收标准 |
-|---|---|---|
-| Claude Code | `~/.claude/mcp.json` | 安装后可正常使用 |
-| Codex | `~/.codex/config.toml` | 安装后可正常使用 |
+| Agent | 验收标准 |
+|---|---|
+| Claude Code | 安装后可正常使用 |
+| Codex | 安装后可正常使用 |
 
 ### 明确不做
 - ❌ 评分/评论
@@ -94,7 +94,7 @@
 - ❌ 多 Agent (Cursor 等)
 
 ### 验收标准
-- [ ] 新用户从零到安装第一个 MCP < 3 分钟
+- [ ] 新用户从零到安装第一个 Skill < 3 分钟
 - [ ] Docker 部署 < 5 分钟
 - [ ] 核心流程 0 bug
 - [ ] 内部团队 3 人使用 1 周无 blocker
@@ -148,9 +148,9 @@
 | 包编辑 | 编辑描述 | 包作者可编辑 |
 
 #### Agent 支持
-| Agent | 配置路径 | 验收标准 |
-|---|---|---|
-| Cursor | `~/.cursor/mcp.json` | 安装后可正常使用 |
+| Agent | 验收标准 |
+|---|---|
+| Cursor | 安装后可正常使用 |
 
 ### 验收标准
 - [ ] 评分系统可用
@@ -228,11 +228,11 @@
 ### 新增功能
 
 #### Agent 支持
-| Agent | 配置路径 | 验收标准 |
-|---|---|---|
-| Windsurf | `~/.windsurf/mcp.json` | 安装后可正常使用 |
-| Cline | VS Code settings | 安装后可正常使用 |
-| Aider | `~/.aider.conf.yml` | 安装后可正常使用 |
+| Agent | 验收标准 |
+|---|---|
+| Windsurf | 安装后可正常使用 |
+| Cline | 安装后可正常使用 |
+| Aider | 安装后可正常使用 |
 
 #### 依赖管理 (完整)
 | 功能 | 说明 | 验收标准 |

@@ -69,8 +69,9 @@ export function diffManifests(
           changed.push({ ...c, key: `${key}.${c.key}` });
         }
       } else if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
+        // Skill 包的触发方式/命令变更视为破坏性变更
         const isBreaking =
-          key === 'command' || key === 'transport';
+          key === 'command' || key === 'trigger';
         changed.push({ key, oldValue: oldVal, newValue: newVal, breaking: isBreaking });
       }
     }
@@ -157,7 +158,7 @@ export const infoCommand = new Command('info')
 
       // 显示基本信息
       console.log(chalk.gray(`  ${pkg.description || '-'}\n`));
-      console.log(`  Type:      ${pkg.type === 'mcp' ? 'MCP' : 'Skill'}`);
+      console.log(`  Type:      Skill`);
       console.log(`  License:   ${pkg.license || '-'}`);
       console.log(`  Latest:    ${pkg.latest_version || '-'}`);
       console.log(`  Downloads: ${formatNumber(pkg.downloads_count)}`);

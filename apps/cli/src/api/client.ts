@@ -31,7 +31,7 @@ export interface PackageResponse {
   name: string;
   scope: string;
   full_name: string;
-  type: 'mcp' | 'skill';
+  type: 'skill';
   description?: string;
   license?: string;
   repository?: string;
@@ -93,7 +93,7 @@ export interface TeamPackageInfo {
   name: string;
   scope: string;
   full_name: string;
-  type: 'mcp' | 'skill';
+  type: 'skill';
   description?: string;
   visibility: string;
   owner_type: string;
@@ -119,7 +119,7 @@ export interface InstalledPackageInfo {
 
 export interface ListPackagesParams {
   search?: string;
-  type?: 'mcp' | 'skill';
+  type?: 'skill';
   page?: number;
   per_page?: number;
   tag?: string;
@@ -322,7 +322,7 @@ export class ApiClient {
   async createPackage(data: {
     name: string;
     scope: string;
-    type: 'mcp' | 'skill';
+    type: 'skill';
     description?: string;
     license?: string;
     visibility?: string;
@@ -416,7 +416,7 @@ export class ApiClient {
   /**
    * 搜索包
    */
-  async searchPackages(query: string, type?: 'mcp' | 'skill'): Promise<PackageListResponse> {
+  async searchPackages(query: string, type?: 'skill'): Promise<PackageListResponse> {
     return this.listPackages({ search: query, type });
   }
 
@@ -483,7 +483,7 @@ export class ApiClient {
     teamId: string,
     data: {
       name: string;
-      type: 'mcp' | 'skill';
+      type: 'skill';
       description?: string;
       visibility?: string;
       owner_type?: 'user' | 'team';

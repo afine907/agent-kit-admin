@@ -76,6 +76,13 @@ class Settings(BaseSettings):
     DINGTALK_APP_KEY: str = ""
     DINGTALK_APP_SECRET: str = ""
 
+    # LLM (OpenAI 兼容接口) - 用于 Skill 测试对话 Agent
+    # OPENAI_API_KEY 为空时不阻塞启动，聊天端点返回干净的 503 LLM_NOT_CONFIGURED
+    OPENAI_BASE_URL: str = "https://api.openai.com/v1"
+    OPENAI_API_KEY: str = ""
+    OPENAI_MODEL: str = "gpt-4o-mini"
+    OPENAI_MAX_TOKENS: int = 1024
+
     # 初始化管理员
     INIT_ADMIN_EMAIL: str = ""
     INIT_ADMIN_PASSWORD: str = ""

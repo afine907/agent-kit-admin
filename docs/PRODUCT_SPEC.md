@@ -7,7 +7,7 @@ A **private Package Registry** for AI Agent ecosystems — think "npm registry" 
 ## Problem
 
 Teams using AI agents (Claude Code, Codex, Cursor, etc.) need a way to:
-- Share MCP servers and Agent Skills across the team
+- Share Agent Skills across the team
 - Version and distribute agent tooling
 - Control who can publish and install packages
 - Track what tools each team member is using
@@ -22,15 +22,15 @@ Agent Kit Admin provides:
 
 ## Target Users
 
-- **AI Agent Users** — install MCP servers and skills to enhance their agents
+- **AI Agent Users** — install skills to enhance their agents
 - **Team Leads** — manage team tooling, control access, track usage
-- **Tool Authors** — publish and version their MCP servers and skills
+- **Tool Authors** — publish and version their skills
 - **Platform Admins** — manage users, teams, and system configuration
 
 ## Core User Stories
 
 1. As a developer, I want to `akit install @team/web-search` so my Claude Code agent can search the web
-2. As a tool author, I want to `akit publish` my MCP server so others can use it
+2. As a tool author, I want to `akit publish` my Skill so others can use it
 3. As a team lead, I want to see what tools my team is using so I can standardize
 4. As an admin, I want to manage teams and permissions so I can control access
 
@@ -38,7 +38,6 @@ Agent Kit Admin provides:
 
 | Type | Description | Example |
 |---|---|---|
-| **MCP** | Model Context Protocol server | `@team/pg-mcp` — PostgreSQL MCP server |
 | **Skill** | Agent behavior/capability | `@team/web-search` — web search skill |
 
 ## Key Differentiators

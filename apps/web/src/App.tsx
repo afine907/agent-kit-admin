@@ -14,6 +14,7 @@ const Publish = React.lazy(() => import('./pages/Publish'));
 const Teams = React.lazy(() => import('./pages/Teams'));
 const NotFound = React.lazy(() => import('./pages/NotFound'));
 const PackageEdit = React.lazy(() => import('./pages/PackageEdit'));
+const Agent = React.lazy(() => import('./pages/Agent'));
 
 // 管理后台页面
 const AdminDashboard = React.lazy(() => import('./pages/admin/Dashboard'));
@@ -86,6 +87,16 @@ function App() {
               element={
                 <RequireAuth>
                   <Teams />
+                </RequireAuth>
+              }
+            />
+
+            {/* 聊天 Agent 页 */}
+            <Route
+              path="/agent"
+              element={
+                <RequireAuth>
+                  <Agent />
                 </RequireAuth>
               }
             />

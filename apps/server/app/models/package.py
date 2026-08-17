@@ -15,7 +15,7 @@ class Package(Base):
     name = Column(String(100), nullable=False)
     scope = Column(String(50), nullable=False)  # @team 或 @username
     full_name = Column(String(150), unique=True)  # generated always as scope||'/'||name
-    type = Column(String(10), nullable=False)  # mcp / skill
+    type = Column(String(10), nullable=False)  # skill
     owner_id = Column(UUID(as_uuid=True), nullable=False)
     owner_type = Column(String(10), nullable=False, default="user")  # user / team
     description = Column(Text, nullable=True)

@@ -288,11 +288,11 @@ def super_admin_headers(super_admin_token: str):
 async def test_package(db: AsyncSession, test_user: User):
     """创建测试包"""
     package = Package(
-        name="test-mcp",
+        name="test-skill",
         scope="@test",
-        type="mcp",
-        full_name="@test/test-mcp",
-        description="Test MCP package",
+        type="skill",
+        full_name="@test/test-skill",
+        description="Test Skill package",
         license="MIT",
         owner_id=test_user.id,
         visibility="public",
@@ -316,10 +316,15 @@ async def test_package_with_version(db: AsyncSession, test_user: User, test_pack
     version = Version(
         package_id=package.id,
         version="1.0.0",
-        manifest={"name": "test-mcp", "version": "1.0.0", "type": "mcp"},
+        manifest={
+            "name": "test-skill",
+            "version": "1.0.0",
+            "type": "skill",
+            "skill": {"content": "## 测试 Skill\n\n这是测试内容。"},
+        },
         tarball_hash="sha256:abc123def456",
         tarball_size=1024,
-        tarball_path="packages/@test/test-mcp/1.0.0.tar.gz",
+        tarball_path="packages/@test/test-skill/1.0.0.tar.gz",
         tag="latest",
         published_by=test_user.id,
     )
@@ -333,11 +338,11 @@ async def test_package_with_version(db: AsyncSession, test_user: User, test_pack
 async def public_package(db: AsyncSession, test_user: User):
     """创建公开包"""
     package = Package(
-        name="public-mcp",
+        name="public-skill",
         scope="@team",
-        type="mcp",
-        full_name="@team/public-mcp",
-        description="Public MCP package",
+        type="skill",
+        full_name="@team/public-skill",
+        description="Public Skill package",
         owner_id=test_user.id,
         visibility="public",
     )
@@ -357,11 +362,11 @@ async def public_package(db: AsyncSession, test_user: User):
 async def private_package(db: AsyncSession, test_user: User):
     """创建私有包"""
     package = Package(
-        name="private-mcp",
+        name="private-skill",
         scope="@test",
-        type="mcp",
-        full_name="@test/private-mcp",
-        description="Private MCP package",
+        type="skill",
+        full_name="@test/private-skill",
+        description="Private Skill package",
         owner_id=test_user.id,
         visibility="private",
     )
@@ -381,11 +386,11 @@ async def private_package(db: AsyncSession, test_user: User):
 async def deleted_package(db: AsyncSession, test_user: User):
     """创建已删除的包"""
     package = Package(
-        name="deleted-mcp",
+        name="deleted-skill",
         scope="@test",
-        type="mcp",
-        full_name="@test/deleted-mcp",
-        description="Deleted MCP package",
+        type="skill",
+        full_name="@test/deleted-skill",
+        description="Deleted Skill package",
         owner_id=test_user.id,
         visibility="public",
         deleted_at=datetime.now(timezone.utc),
@@ -407,11 +412,10 @@ async def multiple_packages(db: AsyncSession, test_user: User):
     """创建多个测试包"""
     packages = []
     for i in range(5):
-        pkg_type = "mcp" if i % 2 == 0 else "skill"
         package = Package(
             name=f"package-{i}",
             scope="@test",
-            type=pkg_type,
+            type="skill",
             full_name=f"@test/package-{i}",
             description=f"Test package {i}",
             owner_id=test_user.id,
@@ -451,6 +455,7 @@ class MockStorageService:
     def __init__(self):
         self.client = MockStorageClient()
         self.bucket = "packages"
+        self._content_store: dict[str, bytes] = {}
 
     async def upload_tarball(self, scope: str, name: str, version: str, data: bytes) -> tuple[str, str]:
         """模拟上传包文件"""
@@ -471,8 +476,14 @@ class MockStorageService:
         return object_path, sha256, len(content)
 
     async def upload_content(self, object_path: str, data: bytes) -> None:
-        """模拟上传内容文件"""
-        pass
+        """模拟上传内容文件 - 存到内存 map"""
+        self._content_store[object_path] = data
+
+    async def read_content(self, object_path: str) -> bytes:
+        """模拟读取内容文件（从内存 map 中查找）"""
+        if object_path in self._content_store:
+            return self._content_store[object_path]
+        return f"# Mock content for {object_path}".encode("utf-8")
 
     async def get_presigned_url(self, object_path: str, expires: int = 900) -> str:
         """模拟生成预签名 URL"""

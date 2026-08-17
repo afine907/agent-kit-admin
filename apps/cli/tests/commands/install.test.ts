@@ -27,25 +27,12 @@ vi.mock('../../src/api/client', () => ({
   },
 }));
 
-vi.mock('../../src/agents/registry', () => ({
-  agentRegistry: {
-    detectAll: vi.fn(),
-    get: vi.fn(),
-  },
-}));
-
 vi.mock('../../src/utils/manifest', () => ({
   readManifest: vi.fn(),
 }));
 
 vi.mock('../../src/utils/install-record', () => ({
   recordInstall: vi.fn(),
-}));
-
-vi.mock('../../src/utils/lock', () => ({
-  FileLock: vi.fn().mockImplementation(() => ({
-    acquire: vi.fn().mockResolvedValue(vi.fn()),
-  })),
 }));
 
 // 注意：install 命令是 Commander.js 的 action，
@@ -75,10 +62,8 @@ describe('install command logic', () => {
     // 验证选项
     const options = installCommand.options;
     const optionNames = options.map((o) => o.long);
-    expect(optionNames).toContain('--agent');
     expect(optionNames).toContain('--tag');
     expect(optionNames).toContain('--global');
-    expect(optionNames).toContain('--no-config');
     expect(optionNames).toContain('--no-deps');
     expect(optionNames).toContain('--force');
   });

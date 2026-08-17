@@ -148,7 +148,7 @@ export const publishCommand = new Command('publish')
         try {
           await apiClient.publishTeamPackage(teamId, {
             name: manifest.name,
-            type: manifest.type as 'mcp' | 'skill',
+            type: manifest.type as 'skill',
             description: manifest.description,
             visibility: 'team',
             owner_type: 'team',
@@ -172,7 +172,7 @@ export const publishCommand = new Command('publish')
           await apiClient.createPackage({
             name: manifest.name,
             scope: scope,
-            type: manifest.type as 'mcp' | 'skill',
+            type: manifest.type as 'skill',
             description: manifest.description,
             license: manifest.license,
             owner_type: ownerType,

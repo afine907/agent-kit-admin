@@ -57,7 +57,6 @@
 ### akit (CLI)
 - 用户认证
 - 包发布和下载
-- Agent 配置自动写入
 
 ### PostgreSQL (数据库)
 - 用户和团队数据
@@ -73,15 +72,14 @@
 
 ### 包安装流程
 ```
-1. 用户执行: akit install @team/web-search-mcp
-2. CLI 请求: GET /api/packages/team/web-search-mcp
+1. 用户执行: akit install @team/web-search-skill
+2. CLI 请求: GET /api/packages/team/web-search-skill
 3. API 返回包元数据和最新版本信息
-4. CLI 请求: GET /api/packages/team/web-search-mcp/versions/1.0.0/download
+4. CLI 请求: GET /api/packages/team/web-search-skill/versions/1.0.0/download
 5. API 返回 MinIO 预签名 URL
 6. CLI 从 MinIO 下载 tarball
-7. CLI 解压到 ~/.akit/packages/@team/web-search-mcp/
-8. CLI 检测 Agent 类型，写入对应配置
-9. CLI 记录下载统计
+7. CLI 解压到 ~/.akit/packages/@team/web-search-skill/
+8. CLI 记录下载统计
 ```
 
 ### 包发布流程
@@ -89,7 +87,7 @@
 1. 用户执行: akit publish ./
 2. CLI 读取 akit.json (manifest)
 3. CLI 打包当前目录为 tarball
-4. CLI 请求: POST /api/packages/team/web-search-mcp/versions
+4. CLI 请求: POST /api/packages/team/web-search-skill/versions
 5. API 返回 MinIO 上传 URL
 6. CLI 上传 tarball 到 MinIO
 7. API 记录版本信息到数据库

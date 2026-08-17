@@ -1,12 +1,12 @@
 # 端到端测试报告
 
-> 执行时间: 2026-06-15 | 工具: CDP MCP (Chrome DevTools Protocol)
+> 执行时间: 2026-06-15 | 工具: CDP (Chrome DevTools Protocol)
 
 ## 测试环境
 
 - Server: `http://localhost:8000` (FastAPI + SQLite)
 - Web: `http://localhost:5173` (Vite dev server)
-- 浏览器: Chrome (CDP MCP 控制)
+- 浏览器: Chrome (CDP 控制)
 
 ## 测试结果
 

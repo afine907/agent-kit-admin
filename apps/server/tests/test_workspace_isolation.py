@@ -76,7 +76,7 @@ async def team_public_package(db, team):
     pkg = Package(
         name="team-public",
         scope="@test-team",
-        type="mcp",
+        type="skill",
         full_name="@test-team/team-public",
         description="Team public package",
         owner_id=team.id,
@@ -94,7 +94,7 @@ async def team_team_package(db, team):
     pkg = Package(
         name="team-scoped",
         scope="@test-team",
-        type="mcp",
+        type="skill",
         full_name="@test-team/team-scoped",
         description="Team team-scoped package",
         owner_id=team.id,
@@ -112,7 +112,7 @@ async def team_private_package(db, team):
     pkg = Package(
         name="team-private",
         scope="@test-team",
-        type="mcp",
+        type="skill",
         full_name="@test-team/team-private",
         description="Team private package",
         owner_id=team.id,
@@ -133,7 +133,7 @@ async def user_public_package(db, test_user):
     pkg = Package(
         name="user-public",
         scope="@test",
-        type="mcp",
+        type="skill",
         full_name="@test/user-public",
         description="User public package",
         owner_id=test_user.id,
@@ -151,7 +151,7 @@ async def user_private_package(db, test_user):
     pkg = Package(
         name="user-private",
         scope="@test",
-        type="mcp",
+        type="skill",
         full_name="@test/user-private",
         description="User private package",
         owner_id=test_user.id,
@@ -416,7 +416,7 @@ class TestCreateTeamPackage:
             json={
                 "name": "new-package",
                 "scope": f"@{team.slug}",
-                "type": "mcp",
+                "type": "skill",
                 "visibility": "team",
                 "owner_type": "team",
             },
@@ -432,7 +432,7 @@ class TestCreateTeamPackage:
             json={
                 "name": "new-package-2",
                 "scope": f"@{team.slug}",
-                "type": "mcp",
+                "type": "skill",
                 "visibility": "team",
                 "owner_type": "team",
             },
@@ -447,7 +447,7 @@ class TestCreateTeamPackage:
             json={
                 "name": "new-public",
                 "scope": f"@{team.slug}",
-                "type": "mcp",
+                "type": "skill",
                 "visibility": "public",
             },
         )
@@ -474,7 +474,7 @@ class TestCreateTeamPackage:
             json={
                 "name": "member-created",
                 "scope": f"@{team.slug}",
-                "type": "mcp",
+                "type": "skill",
                 "visibility": "public",
             },
         )

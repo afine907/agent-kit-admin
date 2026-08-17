@@ -39,7 +39,6 @@
 | 3. 登录 | ✅ login | ✅ OAuth/Token | ✅ Web 登录 | ✅ OAuth |
 | 4. 探索 | ✅ search/info | ✅ 包 CRUD | ✅ 包列表/详情 | ✅ |
 | 5. 首次安装 | ✅ install | - | - | ✅ |
-| 6. 验证 MCP | - | - | - | - (需真实 Agent) |
 | 7. 进阶使用 | ✅ list/update/uninstall | ✅ | ✅ | ✅ |
 | 8. 发布 | ✅ init/publish | ✅ 版本发布/下载 | ✅ 发布向导 | ✅ |
 | 9. 日常使用 | ✅ | ✅ | ✅ | ✅ |
@@ -95,7 +94,7 @@ Web 页面 → MSW Mock → 验证 UI 状态
 
 覆盖：阶段 1、2、3、4、8
 
-**注意**：阶段 5（install 后在 Claude Code 中验证 MCP）需要真实 Agent 环境，E2E 不覆盖。
+**注意**：阶段 5（install 后验证）需要真实 Agent 环境，E2E 不覆盖。
 
 ## 文件结构
 

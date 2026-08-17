@@ -14,10 +14,10 @@
 ### 复现步骤
 ```bash
 # 终端 1
-akit publish ./my-mcp  # 版本 1.0.0
+akit publish ./my-skill  # 版本 1.0.0
 
 # 终端 2 (几乎同时)
-akit publish ./my-mcp  # 版本 1.0.0
+akit publish ./my-skill  # 版本 1.0.0
 ```
 
 ### 处理方式
@@ -51,42 +51,42 @@ akit publish ./my-mcp  # 版本 1.0.0
 
 ---
 
-## EC-02: 配置文件损坏
+## EC-02: 安装记录文件损坏
 
 ### 场景
-`~/.claude/mcp.json` 格式错误（手动编辑失误）。
+`~/.akit/installed.json` 格式错误（手动编辑失误或写入中断）。
 
 ### 复现步骤
 ```bash
 # 手动编辑导致 JSON 格式错误
-echo "invalid json" > ~/.claude/mcp.json
+echo "invalid json" > ~/.akit/installed.json
 
 # 尝试安装
 akit install @team/web-search
 ```
 
 ### 处理方式
-1. CLI 读取配置文件
+1. CLI 读取已安装列表
 2. JSON 解析失败
-3. 备份损坏文件为 `mcp.json.corrupt.20240115`
-4. 创建新的空配置文件
+3. 备份损坏文件为 `installed.json.corrupt.20240115`
+4. 创建新的空记录文件
 5. 继续安装流程
 
 ### CLI 提示
 ```
-⚠ Warning: Config file corrupted
-  Backed up to: ~/.claude/mcp.json.corrupt.20240115
-  Created new config file
+⚠ Warning: Install record corrupted
+  Backed up to: ~/.akit/installed.json.corrupt.20240115
+  Created new record file
 
 ✔ Installed @team/web-search successfully
 ```
 
 ---
 
-## EC-03: 配置写入冲突
+## EC-03: 包已安装冲突
 
 ### 场景
-安装的包名在配置中已存在。
+安装的包已在本地存在。
 
 ### 复现步骤
 ```bash
@@ -95,15 +95,15 @@ akit install @team/web-search  # 再次安装（可能不同版本）
 ```
 
 ### 处理方式
-1. 检测到配置已存在
-2. 备份当前配置为 `mcp.json.bak`
-3. 覆盖写入新配置
+1. 检测到本地包目录已存在
+2. 备份当前包目录为 `~/.akit/packages/@team/web-search.bak`
+3. 覆盖写入新版本包
 4. 提示用户
 
 ### CLI 提示
 ```
-⚠ Config for @team/web-search already exists
-  Backed up to: ~/.claude/mcp.json.bak
+⚠ Package @team/web-search already exists
+  Backed up to: ~/.akit/packages/@team/web-search.bak
   Updated to new version
 
 ✔ Installed @team/web-search@1.2.0 successfully
@@ -119,7 +119,7 @@ akit install @team/web-search  # 再次安装（可能不同版本）
 ### 复现步骤
 ```bash
 # 开始安装
-akit install @team/large-mcp
+akit install @team/large-skill
 
 # 下载过程中断网
 ```
@@ -132,7 +132,7 @@ akit install @team/large-mcp
 
 ### CLI 提示
 ```
-⠋ Downloading @team/large-mcp@1.0.0...
+⠋ Downloading @team/large-skill@1.0.0...
 ⚠ Network error, retrying... (1/3)
 ⚠ Network error, retrying... (2/3)
 ⚠ Network error, retrying... (3/3)
@@ -182,10 +182,10 @@ akit install @team/large-mcp
 
 ---
 
-## EC-06: Agent 未安装
+## EC-06: 无可用 Agent
 
 ### 场景
-用户尝试安装 MCP，但没有安装任何支持的 Agent。
+用户安装 Skill，但没有安装任何支持的 Agent。
 
 ### 复现步骤
 ```bash
@@ -194,30 +194,16 @@ akit install @team/web-search
 ```
 
 ### 处理方式
-1. CLI 检测所有支持的 Agent
-2. 没有检测到任何 Agent
-3. 下载包但跳过配置写入
-4. 提示用户手动配置
+1. 下载并解压包
+2. 记录到已安装列表
+3. 提示用户：包已就绪，安装 Agent 后即可使用
 
 ### CLI 提示
 ```
-⚠ Warning: No supported Agent detected
-  - Claude Code: not found
-  - Codex: not found
+✔ Package downloaded to: ~/.akit/packages/@team/web-search/
+  Recorded in ~/.akit/installed.json
 
-  Package downloaded to: ~/.akit/packages/@team/web-search/
-  
-  To use this MCP, manually add it to your Agent config:
-  
-  Claude Code (~/.claude/mcp.json):
-  {
-    "mcpServers": {
-      "web-search": {
-        "command": "node",
-        "args": ["~/.akit/packages/@team/web-search/index.js"]
-      }
-    }
-  }
+  Skill 包已就绪。安装 Claude Code / Codex 等 Agent 后即可使用。
 ```
 
 ---
@@ -291,7 +277,7 @@ CLI 使用的 JWT Token 已过期。
 ### 复现步骤
 ```bash
 # Token 已过期 (24h)
-akit publish ./my-mcp
+akit publish ./my-skill
 ```
 
 ### 处理方式
@@ -328,7 +314,7 @@ akit publish ./my-mcp
 
 ---
 
-## EC-11: 并发写入配置文件
+## EC-11: 并发安装冲突
 
 ### 场景
 多个终端同时执行 install 命令。
@@ -336,10 +322,10 @@ akit publish ./my-mcp
 ### 复现步骤
 ```bash
 # 终端 1
-akit install @team/mcp-a
+akit install @team/skill-a
 
 # 终端 2 (几乎同时)
-akit install @team/mcp-b
+akit install @team/skill-b
 ```
 
 ### 处理方式
@@ -349,11 +335,11 @@ akit install @team/mcp-b
 
 ### CLI 提示
 ```
-⚠ Waiting for config lock...
-✖ Error: Config file is locked
+⚠ Waiting for install lock...
+✖ Error: Install is locked
   Another akit process is running
   
-  If no other process is running, delete: ~/.akit/config.lock
+  If no other process is running, delete: ~/.akit/install.lock
 ```
 
 ---
@@ -373,10 +359,10 @@ akit install @team/mcp-b
 ✖ Error: Missing dependencies
 
   @team/skill-a requires:
-    @team/mcp-helper@^1.0.0 - NOT FOUND
+    @team/skill-helper@^1.0.0 - NOT FOUND
   
   Please install missing dependencies first:
-  akit install @team/mcp-helper
+  akit install @team/skill-helper
 ```
 
 ---
@@ -448,7 +434,7 @@ akit install @team/mcp-b
     - type
   
   Invalid fields:
-    - transport: must be one of [stdio, sse, streamable-http]
+    - skill.content: must be a non-empty string
   
   See: https://docs.agent-kit.dev/manifest
 ```

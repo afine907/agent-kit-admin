@@ -25,35 +25,33 @@ class TestPublishInstallFlow:
         create_response = await client.post(
             "/api/v1/packages",
             json={
-                "name": "integration-test-mcp",
+                "name": "integration-test-skill",
                 "scope": "@test",
-                "type": "mcp",
-                "description": "Integration test MCP",
+                "type": "skill",
+                "description": "Integration test Skill",
             },
             headers=auth_headers,
         )
         assert create_response.status_code == 201
         package_data = create_response.json()
-        assert package_data["name"] == "integration-test-mcp"
-        assert package_data["full_name"] == "@test/integration-test-mcp"
+        assert package_data["name"] == "integration-test-skill"
+        assert package_data["full_name"] == "@test/integration-test-skill"
 
         # 2. 发布版本 1.0.0
         tarball = create_test_tarball()
         manifest = json.dumps(
             {
-                "name": "integration-test-mcp",
+                "name": "integration-test-skill",
                 "version": "1.0.0",
-                "type": "mcp",
-                "mcp": {
-                    "transport": "stdio",
-                    "command": "node",
-                    "args": ["index.js"],
+                "type": "skill",
+                "skill": {
+                    "content": "## 测试 Skill\n\n测试内容。",
                 },
             }
         )
 
         publish_response = await client.post(
-            "/api/v1/packages/@test/integration-test-mcp/versions",
+            "/api/v1/packages/@test/integration-test-skill/versions",
             data={"version": "1.0.0", "manifest": manifest, "tag": "latest"},
             files={"tarball": ("package.tar.gz", tarball, "application/gzip")},
             headers=auth_headers,
@@ -66,17 +64,17 @@ class TestPublishInstallFlow:
         assert search_response.status_code == 200
         search_data = search_response.json()
         assert len(search_data["data"]) > 0
-        assert search_data["data"][0]["name"] == "integration-test-mcp"
+        assert search_data["data"][0]["name"] == "integration-test-skill"
 
         # 4. 获取包详情
-        detail_response = await client.get("/api/v1/packages/@test/integration-test-mcp")
+        detail_response = await client.get("/api/v1/packages/@test/integration-test-skill")
         assert detail_response.status_code == 200
         detail_data = detail_response.json()
         assert detail_data["latest_version"] == "1.0.0"
         assert detail_data["downloads_count"] == 0
 
         # 5. 获取版本列表
-        versions_response = await client.get("/api/v1/packages/@test/integration-test-mcp/versions")
+        versions_response = await client.get("/api/v1/packages/@test/integration-test-skill/versions")
         assert versions_response.status_code == 200
         versions_data = versions_response.json()
         assert len(versions_data["data"]) == 1
@@ -86,19 +84,17 @@ class TestPublishInstallFlow:
         tarball2 = create_test_tarball()
         manifest2 = json.dumps(
             {
-                "name": "integration-test-mcp",
+                "name": "integration-test-skill",
                 "version": "1.1.0",
-                "type": "mcp",
-                "mcp": {
-                    "transport": "stdio",
-                    "command": "node",
-                    "args": ["index.js"],
+                "type": "skill",
+                "skill": {
+                    "content": "## 测试 Skill\n\n测试内容。",
                 },
             }
         )
 
         publish_response2 = await client.post(
-            "/api/v1/packages/@test/integration-test-mcp/versions",
+            "/api/v1/packages/@test/integration-test-skill/versions",
             data={"version": "1.1.0", "manifest": manifest2, "tag": "latest"},
             files={"tarball": ("package.tar.gz", tarball2, "application/gzip")},
             headers=auth_headers,
@@ -107,25 +103,25 @@ class TestPublishInstallFlow:
         assert publish_response2.json()["version"] == "1.1.0"
 
         # 7. 验证最新版本已更新
-        updated_detail = await client.get("/api/v1/packages/@test/integration-test-mcp")
+        updated_detail = await client.get("/api/v1/packages/@test/integration-test-skill")
         assert updated_detail.status_code == 200
         assert updated_detail.json()["latest_version"] == "1.1.0"
 
         # 8. 获取更新后的版本列表
-        updated_versions = await client.get("/api/v1/packages/@test/integration-test-mcp/versions")
+        updated_versions = await client.get("/api/v1/packages/@test/integration-test-skill/versions")
         assert updated_versions.status_code == 200
         assert len(updated_versions.json()["data"]) == 2
 
         # 9. 下载版本
         download_response = await client.get(
-            "/api/v1/packages/@test/integration-test-mcp/versions/1.0.0/download",
+            "/api/v1/packages/@test/integration-test-skill/versions/1.0.0/download",
             follow_redirects=False,
         )
         assert download_response.status_code == 302
 
         # 10. 下载最新版本
         latest_download_response = await client.get(
-            "/api/v1/packages/@test/integration-test-mcp/download",
+            "/api/v1/packages/@test/integration-test-skill/download",
             follow_redirects=False,
         )
         assert latest_download_response.status_code == 302
@@ -141,9 +137,9 @@ class TestPublishInstallFlow:
 
         # 创建多个不同类型的包
         packages = [
-            {"name": "mcp-1", "type": "mcp", "description": "First MCP"},
-            {"name": "mcp-2", "type": "mcp", "description": "Second MCP"},
             {"name": "skill-1", "type": "skill", "description": "First Skill"},
+            {"name": "skill-2", "type": "skill", "description": "Second Skill"},
+            {"name": "skill-3", "type": "skill", "description": "Third Skill"},
         ]
 
         for pkg in packages:
@@ -165,10 +161,10 @@ class TestPublishInstallFlow:
         assert len(list_response.json()["data"]) >= 3
 
         # 测试按类型筛选
-        mcp_response = await client.get("/api/v1/packages?type=mcp")
-        assert mcp_response.status_code == 200
-        for pkg in mcp_response.json()["data"]:
-            assert pkg["type"] == "mcp"
+        skill_response = await client.get("/api/v1/packages?type=skill")
+        assert skill_response.status_code == 200
+        for pkg in skill_response.json()["data"]:
+            assert pkg["type"] == "skill"
 
         skill_response = await client.get("/api/v1/packages?type=skill")
         assert skill_response.status_code == 200
@@ -176,7 +172,7 @@ class TestPublishInstallFlow:
             assert pkg["type"] == "skill"
 
         # 测试搜索
-        search_response = await client.get("/api/v1/packages?search=mcp-1")
+        search_response = await client.get("/api/v1/packages?search=skill-1")
         assert search_response.status_code == 200
         assert len(search_response.json()["data"]) > 0
 
@@ -198,10 +194,10 @@ class TestPublishInstallFlow:
         create_response = await client.post(
             "/api/v1/packages",
             json={
-                "name": "error-test-mcp",
+                "name": "error-test-skill",
                 "scope": "@test",
-                "type": "mcp",
-                "description": "Error test MCP",
+                "type": "skill",
+                "description": "Error test Skill",
             },
             headers=auth_headers,
         )
@@ -211,9 +207,9 @@ class TestPublishInstallFlow:
         duplicate_response = await client.post(
             "/api/v1/packages",
             json={
-                "name": "error-test-mcp",
+                "name": "error-test-skill",
                 "scope": "@test",
-                "type": "mcp",
+                "type": "skill",
             },
             headers=auth_headers,
         )
@@ -224,19 +220,17 @@ class TestPublishInstallFlow:
         tarball = create_test_tarball()
         manifest = json.dumps(
             {
-                "name": "error-test-mcp",
+                "name": "error-test-skill",
                 "version": "1.0.0",
-                "type": "mcp",
-                "mcp": {
-                    "transport": "stdio",
-                    "command": "node",
-                    "args": ["index.js"],
+                "type": "skill",
+                "skill": {
+                    "content": "## 测试 Skill\n\n测试内容。",
                 },
             }
         )
 
         publish_response = await client.post(
-            "/api/v1/packages/@test/error-test-mcp/versions",
+            "/api/v1/packages/@test/error-test-skill/versions",
             data={"version": "1.0.0", "manifest": manifest},
             files={"tarball": ("package.tar.gz", tarball, "application/gzip")},
             headers=auth_headers,
@@ -245,7 +239,7 @@ class TestPublishInstallFlow:
 
         # 5. 尝试发布重复版本
         duplicate_version_response = await client.post(
-            "/api/v1/packages/@test/error-test-mcp/versions",
+            "/api/v1/packages/@test/error-test-skill/versions",
             data={"version": "1.0.0", "manifest": manifest},
             files={"tarball": ("package.tar.gz", tarball, "application/gzip")},
             headers=auth_headers,
@@ -254,19 +248,19 @@ class TestPublishInstallFlow:
 
         # 6. 删除包
         delete_response = await client.delete(
-            "/api/v1/packages/@test/error-test-mcp",
+            "/api/v1/packages/@test/error-test-skill",
             headers=auth_headers,
         )
         assert delete_response.status_code == 204
 
         # 7. 验证包已被软删除
-        deleted_response = await client.get("/api/v1/packages/@test/error-test-mcp")
+        deleted_response = await client.get("/api/v1/packages/@test/error-test-skill")
         assert deleted_response.status_code == 410
         assert deleted_response.json()["error"]["code"] == 20005
 
         # 8. 尝试删除已删除的包
         already_deleted_response = await client.delete(
-            "/api/v1/packages/@test/error-test-mcp",
+            "/api/v1/packages/@test/error-test-skill",
             headers=auth_headers,
         )
         assert already_deleted_response.status_code == 410
@@ -291,10 +285,10 @@ class TestMultiUserFlow:
         create_response = await client.post(
             "/api/v1/packages",
             json={
-                "name": "owned-mcp",
+                "name": "owned-skill",
                 "scope": "@test",
-                "type": "mcp",
-                "description": "Owned MCP",
+                "type": "skill",
+                "description": "Owned Skill",
             },
             headers=auth_headers,
         )
@@ -302,14 +296,14 @@ class TestMultiUserFlow:
 
         # 2. 用户 B 尝试删除用户 A 的包
         delete_response = await client.delete(
-            "/api/v1/packages/@test/owned-mcp",
+            "/api/v1/packages/@test/owned-skill",
             headers=another_auth_headers,
         )
         assert delete_response.status_code == 403
 
         # 3. 用户 A 可以删除自己的包
         delete_own_response = await client.delete(
-            "/api/v1/packages/@test/owned-mcp",
+            "/api/v1/packages/@test/owned-skill",
             headers=auth_headers,
         )
         assert delete_own_response.status_code == 204
@@ -328,10 +322,10 @@ class TestMultiUserFlow:
         create_response = await client.post(
             "/api/v1/packages",
             json={
-                "name": "concurrent-mcp",
+                "name": "concurrent-skill",
                 "scope": "@test",
-                "type": "mcp",
-                "description": "Concurrent test MCP",
+                "type": "skill",
+                "description": "Concurrent test Skill",
             },
             headers=auth_headers,
         )
@@ -340,13 +334,11 @@ class TestMultiUserFlow:
         # 准备两个并发发布请求
         manifest = json.dumps(
             {
-                "name": "concurrent-mcp",
+                "name": "concurrent-skill",
                 "version": "1.0.0",
-                "type": "mcp",
-                "mcp": {
-                    "transport": "stdio",
-                    "command": "node",
-                    "args": ["index.js"],
+                "type": "skill",
+                "skill": {
+                    "content": "## 测试 Skill\n\n测试内容。",
                 },
             }
         )
@@ -355,7 +347,7 @@ class TestMultiUserFlow:
             """发送发布请求"""
             tarball = create_test_tarball(content=tarball_content)
             return await client.post(
-                "/api/v1/packages/@test/concurrent-mcp/versions",
+                "/api/v1/packages/@test/concurrent-skill/versions",
                 data={"version": "1.0.0", "manifest": manifest},
                 files={"tarball": ("package.tar.gz", tarball, "application/gzip")},
                 headers=auth_headers,

@@ -26,7 +26,7 @@ interface PublishFormData {
   // 步骤 1: 基本信息
   name: string;
   scope: string;
-  type: 'mcp' | 'skill';
+  type: 'skill';
   description: string;
   license: string;
   repository: string;
@@ -45,7 +45,7 @@ interface PublishFormData {
 const INITIAL_FORM: PublishFormData = {
   name: '',
   scope: '',
-  type: 'mcp',
+  type: 'skill',
   description: '',
   license: 'MIT',
   repository: '',
@@ -308,38 +308,6 @@ export default function Publish() {
                   placeholder={t('publish.step1.namePlaceholder')}
                   className="w-full px-3 py-2 bg-background border border-border rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                 />
-              </div>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                {t('publish.step1.type')} *
-              </label>
-              <div className="flex items-center gap-4">
-                {[
-                  { value: 'mcp', label: 'MCP Server', desc: t('publish.step1.mcpDesc') },
-                  { value: 'skill', label: 'Agent Skill', desc: t('publish.step1.skillDesc') },
-                ].map(({ value, label, desc }) => (
-                  <label
-                    key={value}
-                    className={`flex-1 p-4 border rounded-lg cursor-pointer transition-colors ${
-                      form.type === value
-                        ? 'border-primary bg-primary/10'
-                        : 'border-border hover:bg-muted'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="type"
-                      value={value}
-                      checked={form.type === value}
-                      onChange={(e) => updateForm({ type: e.target.value as 'mcp' | 'skill' })}
-                      className="sr-only"
-                    />
-                    <div className="font-medium">{label}</div>
-                    <div className="text-xs text-muted-foreground mt-1">{desc}</div>
-                  </label>
-                ))}
               </div>
             </div>
 

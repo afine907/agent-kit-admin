@@ -55,6 +55,33 @@ async def get_version(
     return ver
 
 
+@router.get("/{version}/content")
+async def get_version_content(
+    scope: str,
+    name: str,
+    version: str,
+    current_user: UserType | None = Depends(get_current_user_optional),
+    db: AsyncSession = Depends(get_db),
+):
+    """获取版本内容（Skill content，供聊天页展示及通用测试）"""
+    package_service = PackageService(db)
+    package = await package_service.get_package(scope, name, current_user)
+
+    version_service = VersionService(db)
+    content, source = await version_service.get_skill_content(str(package.id), version)
+
+    return {
+        "content": content,
+        "source": source,
+        "package": {
+            "scope": package.scope,
+            "name": package.name,
+            "full_name": package.full_name,
+        },
+        "version": version,
+    }
+
+
 @router.post("", response_model=VersionResponse, status_code=201)
 async def publish_version(
     scope: str,

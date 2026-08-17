@@ -5,6 +5,7 @@
     "myPackages": "我的包",
     "teams": "团队",
     "publish": "发布包",
+    "test": "测试",
     "logout": "退出登录",
     "login": "登录"
   },

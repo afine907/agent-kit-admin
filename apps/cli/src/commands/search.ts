@@ -11,7 +11,6 @@ import { formatNumber, truncate } from '../utils/format.js';
 export const searchCommand = new Command('search')
   .description('搜索 Registry 中的包')
   .argument('<query>', '搜索关键词')
-  .option('--type <type>', '按类型筛选 (mcp/skill)')
   .option('--page <page>', '页码', '1')
   .option('--limit <limit>', '每页数量', '20')
   .action(async (query: string, options) => {
@@ -22,7 +21,6 @@ export const searchCommand = new Command('search')
 
       const result = await apiClient.listPackages({
         search: query,
-        type: options.type as 'mcp' | 'skill' | undefined,
         page: parseInt(options.page),
         per_page: parseInt(options.limit),
       });
@@ -37,7 +35,7 @@ export const searchCommand = new Command('search')
 
       // 显示结果
       for (const pkg of result.items) {
-        const typeLabel = pkg.type === 'mcp' ? 'MCP' : 'Skill';
+        const typeLabel = 'Skill';
         const downloads = formatNumber(pkg.downloads_count);
         const description = truncate(pkg.description || '-', 50);
 

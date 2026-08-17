@@ -54,7 +54,7 @@ DFX (Design for X) 是指在设计阶段就考虑的各种非功能性需求。
 | R-001 | 数据库备份 | P0 | 支持手动 `pg_dump` |
 | R-002 | 优雅关闭 | P0 | 处理完当前请求再关闭 |
 | R-003 | 自动重试 | P0 | CLI 网络请求 3 次重试 |
-| R-004 | 配置备份 | P0 | 写入 Agent 配置前备份 |
+| R-004 | 配置备份 | P0 | 更新本地包文件前备份 |
 | R-005 | 事务保证 | P0 | 版本发布原子性 |
 | R-006 | 心跳检测 | P1 | 定期检查服务健康 |
 | R-007 | 自动恢复 | P1 | 服务崩溃自动重启 |
@@ -187,7 +187,6 @@ agent-kit-admin/
 ├── cli/              # Node.js CLI
 │   ├── src/
 │   │   ├── commands/ # 命令层
-│   │   ├── agents/   # Agent 适配器
 │   │   ├── api/      # API 客户端
 │   │   └── utils/    # 工具函数
 │   └── tests/
@@ -407,28 +406,14 @@ agent-kit-admin/
 
 | ID | 需求 | 优先级 | 验收标准 |
 |---|---|---|---|
-| E-001 | Agent 适配器 | P0 | 插件化，新增不改核心 |
-| E-002 | OAuth Provider | P0 | 适配器模式 |
-| E-003 | 存储后端 | P1 | 接口抽象，可替换 S3 |
-| E-004 | 包类型 | P1 | 支持扩展新的包类型 |
-| E-005 | Webhook | P2 | 事件驱动扩展 |
+| E-001 | OAuth Provider | P0 | 适配器模式 |
+| E-002 | 存储后端 | P1 | 接口抽象，可替换 S3 |
+| E-003 | 包类型 | P1 | 支持扩展新的包类型 |
+| E-004 | Webhook | P2 | 事件驱动扩展 |
 
 ### Agent 适配器扩展
 
-```typescript
-// 只需实现接口，注册即可
-interface AgentAdapter {
-  name: string
-  detect(): Promise<boolean>
-  getConfigPath(): string
-  readConfig(): Promise<any>
-  writeConfig(entry: MCPEntry): Promise<void>
-  removeConfig(name: string): Promise<void>
-}
-
-// 注册
-agentRegistry.register(new CursorAdapter())
-```
+> 注：v0.3.0 起已移除 MCP 支持，现仅支持 skill 类型。Agent 适配器机制已随 MCP 支持一同移除，`akit install` 只下载解压并记录，不再写入任何 Agent 配置。
 
 ---
 
@@ -487,6 +472,6 @@ MVP 中文优先，v1.0 支持英文。
 - [ ] M-007: API 文档生成
 - [ ] O-001: 结构化日志
 - [ ] O-004: 健康检查端点
-- [ ] E-001: Agent 适配器设计
+- [ ] E-001: OAuth Provider 适配器模式
 - [ ] C-001: Node.js >= 18
 - [ ] I-001: CLI 中文输出

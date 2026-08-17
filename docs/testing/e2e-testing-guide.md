@@ -47,7 +47,6 @@ URL: http://localhost:5173
 
 在快照中查找：
 - "全部" 按钮
-- "MCP" 按钮
 - "Skill" 按钮
 
 #### 1.5 测试搜索功能
@@ -58,8 +57,8 @@ URL: http://localhost:5173
 
 #### 1.6 测试类型筛选
 
-1. 使用 `mcp__chrome-devtools__click` 点击 "MCP" 按钮
-2. 使用 `mcp__chrome-devtools__take_snapshot` 验证只显示 MCP 类型的包
+1. 使用 `mcp__chrome-devtools__click` 点击 "Skill" 按钮
+2. 使用 `mcp__chrome-devtools__take_snapshot` 验证只显示 Skill 类型的包
 
 #### 1.7 测试包点击跳转
 
@@ -91,16 +90,16 @@ URL: http://localhost:5173/login
 #### 3.1 导航到包详情页
 
 ```
-URL: http://localhost:5173/packages/@team/pg-mcp
+URL: http://localhost:5173/packages/@team/pg-skill
 ```
 
 #### 3.2 验证包信息
 
 在快照中查找：
-- 包名 "@team/pg-mcp"
-- 类型标签 "MCP"
+- 包名 "@team/pg-skill"
+- 类型标签 "SKILL"
 - 描述信息
-- 安装命令 "akit install @team/pg-mcp"
+- 安装命令 "akit install @team/pg-skill"
 
 #### 3.3 验证版本列表
 
@@ -151,8 +150,8 @@ sleep 3
 使用 mcp__chrome-devtools__take_snapshot 验证结果
 
 # 步骤 5: 测试类型筛选
-使用 mcp__chrome-devtools__click 点击 "MCP" 按钮
-使用 mcp__chrome-devtools__take_snapshot 验证只显示 MCP 类型
+使用 mcp__chrome-devtools__click 点击 "Skill" 按钮
+使用 mcp__chrome-devtools__take_snapshot 验证只显示 Skill 类型
 
 # 步骤 6: 点击包查看详情
 使用 mcp__chrome-devtools__click 点击第一个包

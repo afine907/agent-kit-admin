@@ -122,7 +122,7 @@ ${t('cli.examples')}
   akit init
   akit publish
   akit install @team/web-search
-  akit search mcp
+  akit search <关键词>
   akit config list
     `);
     });

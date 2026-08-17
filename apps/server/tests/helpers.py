@@ -6,9 +6,9 @@ import tarfile
 
 
 def create_test_tarball(
-    name: str = "test-mcp",
+    name: str = "test-skill",
     version: str = "1.0.0",
-    pkg_type: str = "mcp",
+    pkg_type: str = "skill",
     content: bytes = b"test content",
 ) -> io.BytesIO:
     """创建测试 tarball
@@ -16,7 +16,7 @@ def create_test_tarball(
     Args:
         name: 包名
         version: 版本号
-        pkg_type: 包类型 (mcp/skill)
+        pkg_type: 包类型 (skill)
         content: index.js 文件内容
 
     Returns:
@@ -30,10 +30,8 @@ def create_test_tarball(
                 "name": name,
                 "version": version,
                 "type": pkg_type,
-                "mcp": {
-                    "transport": "stdio",
-                    "command": "node",
-                    "args": ["index.js"],
+                "skill": {
+                    "content": "## 测试 Skill\n\n这是一个用于测试的 Skill 内容。",
                 },
             }
         ).encode()

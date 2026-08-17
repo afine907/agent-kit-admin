@@ -58,6 +58,37 @@ class VersionService:
         )
         return result.scalar_one_or_none()
 
+    async def get_skill_content(self, package_id: str, version: str) -> tuple[str, str]:
+        """获取 Skill content，返回 (content, source)
+
+        source: "inline" 表示 content 内联在 manifest；"minio" 表示存储在 MinIO。
+        """
+        ver = await self.get_version(package_id, version)
+        if not ver:
+            raise AppError(
+                code=ErrorCodes.VERSION_NOT_FOUND,
+                message=f"版本 {version} 不存在",
+                status_code=404,
+            )
+
+        manifest = ver.manifest or {}
+        skill = manifest.get("skill") or {}
+        content = skill.get("content")
+        if content:
+            return content, "inline"
+
+        content_url = skill.get("content_url")
+        if content_url:
+            storage = get_storage_service()
+            data = await storage.read_content(content_url)
+            return data.decode("utf-8"), "minio"
+
+        raise AppError(
+            code=ErrorCodes.PACKAGE_INVALID_MANIFEST,
+            message="Skill 包缺少 content",
+            status_code=400,
+        )
+
     async def _prepare_version(
         self,
         package_id: str,
@@ -285,58 +316,27 @@ class VersionService:
                     status_code=400,
                 )
 
-        # 检查类型
-        if manifest["type"] not in ("mcp", "skill"):
+        # 检查类型 - 仅支持 skill
+        if manifest["type"] != "skill":
             raise AppError(
                 code=ErrorCodes.PACKAGE_INVALID_MANIFEST,
-                message="type must be 'mcp' or 'skill'",
-                status_code=400,
-            )
-
-        # MCP 包必须有 mcp 配置
-        if manifest["type"] == "mcp" and "mcp" not in manifest:
-            raise AppError(
-                code=ErrorCodes.PACKAGE_INVALID_MANIFEST,
-                message="MCP packages must include mcp config",
+                message="type must be 'skill'",
                 status_code=400,
             )
 
         # Skill 包必须有 skill 配置
-        if manifest["type"] == "skill" and "skill" not in manifest:
+        if "skill" not in manifest:
             raise AppError(
                 code=ErrorCodes.PACKAGE_INVALID_MANIFEST,
                 message="Skill packages must include skill config",
                 status_code=400,
             )
 
-        # MCP transport 验证
-        if manifest["type"] == "mcp":
-            mcp = manifest["mcp"]
-            if "transport" not in mcp:
-                raise AppError(
-                    code=ErrorCodes.PACKAGE_INVALID_MANIFEST,
-                    message="mcp config must include transport",
-                    status_code=400,
-                )
-            if mcp["transport"] not in ("stdio", "sse", "streamable-http"):
-                raise AppError(
-                    code=ErrorCodes.PACKAGE_INVALID_MANIFEST,
-                    message="transport must be 'stdio', 'sse', or 'streamable-http'",
-                    status_code=400,
-                )
-            if "command" not in mcp:
-                raise AppError(
-                    code=ErrorCodes.PACKAGE_INVALID_MANIFEST,
-                    message="mcp config must include command",
-                    status_code=400,
-                )
-
         # Skill content 验证
-        if manifest["type"] == "skill":
-            skill = manifest["skill"]
-            if "content" not in skill:
-                raise AppError(
-                    code=ErrorCodes.PACKAGE_INVALID_MANIFEST,
-                    message="skill config must include content",
-                    status_code=400,
-                )
+        skill = manifest["skill"]
+        if "content" not in skill:
+            raise AppError(
+                code=ErrorCodes.PACKAGE_INVALID_MANIFEST,
+                message="skill config must include content",
+                status_code=400,
+            )

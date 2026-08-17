@@ -8,24 +8,9 @@ import inquirer from 'inquirer';
 import fs from 'fs';
 import path from 'path';
 
-
-// 包类型选项
-const PACKAGE_TYPES = [
-  { name: 'MCP Server (模型上下文协议服务器)', value: 'mcp' },
-  { name: 'Agent Skill (Agent 技能包)', value: 'skill' },
-];
-
-// Transport 选项
-const MCP_TRANSPORTS = [
-  { name: 'stdio (标准输入输出)', value: 'stdio' },
-  { name: 'sse (Server-Sent Events)', value: 'sse' },
-  { name: 'streamable-http (HTTP 流)', value: 'streamable-http' },
-];
-
 export const initCommand = new Command('init')
   .description('初始化 Agent Kit 项目')
   .option('--name <name>', '包名')
-  .option('--type <type>', '包类型 (mcp/skill)')
   .option('--yes', '使用默认配置')
   .action(async (options) => {
     try {
@@ -50,7 +35,6 @@ export const initCommand = new Command('init')
 
       // 收集信息
       let name = options.name;
-      let type = options.type;
 
       if (!options.yes) {
         const answers = await inquirer.prompt([
@@ -66,89 +50,42 @@ export const initCommand = new Command('init')
               return true;
             },
           },
-          {
-            type: 'list',
-            name: 'type',
-            message: '包类型:',
-            choices: PACKAGE_TYPES,
-            when: !type,
-          },
         ]);
 
         name = name || answers.name;
-        type = type || answers.type;
       }
 
       // 默认值
       name = name || path.basename(process.cwd()).toLowerCase().replace(/[^a-z0-9-]/g, '-');
-      type = type || 'mcp';
+      const type = 'skill';
 
       // 构建 manifest
       const manifest: Record<string, unknown> = {
         name,
         version: '0.1.0',
         type,
-        description: `${name} - Agent Kit ${type === 'mcp' ? 'MCP Server' : 'Skill'}`,
+        description: `${name} - Agent Kit Skill`,
         license: 'MIT',
       };
 
-      // 根据类型添加配置
-      if (type === 'mcp') {
-        let transport = 'stdio';
-        let command = 'node';
-        let args = ['index.js'];
+      // Skill 内容（始终是 skill 类型）
+      let content = '# Skill Name\n\nDescribe your skill here.';
 
-        if (!options.yes) {
-          const mcpAnswers = await inquirer.prompt([
-            {
-              type: 'list',
-              name: 'transport',
-              message: 'MCP Transport:',
-              choices: MCP_TRANSPORTS,
-            },
-            {
-              type: 'input',
-              name: 'command',
-              message: '启动命令:',
-              default: 'node',
-            },
-            {
-              type: 'input',
-              name: 'args',
-              message: '启动参数 (逗号分隔):',
-              default: 'index.js',
-            },
-          ]);
-
-          transport = mcpAnswers.transport;
-          command = mcpAnswers.command;
-          args = mcpAnswers.args.split(',').map((a: string) => a.trim()).filter(Boolean);
-        }
-
-        manifest.mcp = {
-          transport,
-          command,
-          args,
-        };
-      } else if (type === 'skill') {
-        let content = '# Skill Name\n\nDescribe your skill here.';
-
-        if (!options.yes) {
-          const skillAnswers = await inquirer.prompt([
-            {
-              type: 'editor',
-              name: 'content',
-              message: 'Skill 内容 (Markdown):',
-              default: content,
-            },
-          ]);
-          content = skillAnswers.content;
-        }
-
-        manifest.skill = {
-          content,
-        };
+      if (!options.yes) {
+        const skillAnswers = await inquirer.prompt([
+          {
+            type: 'editor',
+            name: 'content',
+            message: 'Skill 内容 (Markdown):',
+            default: content,
+          },
+        ]);
+        content = skillAnswers.content;
       }
+
+      manifest.skill = {
+        content,
+      };
 
       // 写入 akit.json
       fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');

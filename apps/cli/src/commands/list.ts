@@ -8,7 +8,6 @@ import chalk from 'chalk';
 import { existsSync, readdirSync, readFileSync, statSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
-import { agentRegistry } from '../agents/registry.js';
 import { apiClient } from '../api/client.js';
 import { configManager } from '../config/manager.js';
 import { formatTable } from '../utils/format.js';
@@ -21,7 +20,6 @@ interface LocalPackage {
   name: string;
   version: string;
   type: string;
-  agents: string[];
 }
 
 /**
@@ -128,7 +126,7 @@ async function listTeamPackages(slugs: string[], options: { json: boolean }): Pr
 /**
  * 输出本地已安装包列表
  */
-async function listLocalPackages(options: { agent?: string; json: boolean }): Promise<void> {
+async function listLocalPackages(options: { json: boolean }): Promise<void> {
   const packages: LocalPackage[] = [];
 
   if (existsSync(PACKAGES_DIR)) {
@@ -151,22 +149,11 @@ async function listLocalPackages(options: { agent?: string; json: boolean }): Pr
               name,
               version: manifest.version || 'unknown',
               type: manifest.type || 'unknown',
-              agents: [],
             });
           } catch {
             // 跳过无效的包
           }
         }
-      }
-    }
-  }
-
-  // 检测 Agent 配置
-  const detected = await agentRegistry.detectAll();
-  for (const pkg of packages) {
-    for (const adapter of detected) {
-      if (await adapter.hasConfig(pkg.name)) {
-        pkg.agents.push(adapter.name);
       }
     }
   }
@@ -186,7 +173,6 @@ async function listLocalPackages(options: { agent?: string; json: boolean }): Pr
   const rows = packages.map((pkg) => [
     `${pkg.scope}/${pkg.name}@${pkg.version}`,
     pkg.type.toUpperCase(),
-    pkg.agents.join(', ') || '-',
   ]);
 
   console.log(formatTable(rows));
@@ -198,7 +184,6 @@ export const listCommand = new Command('list')
   .description('列出已安装的包或团队包')
   .option('--team <slug...>', '指定团队 slug（可多个）')
   .option('--team-id <id>', '指定团队 ID')
-  .option('--agent <name>', '按 Agent 筛选（仅本地包）')
   .option('--json', '输出 JSON 格式')
   .argument('[packages...>', '包名（已在本地安装）')
   .action(async (args: string[], options) => {
@@ -224,7 +209,7 @@ export const listCommand = new Command('list')
       }
 
       // 本地包模式
-      await listLocalPackages({ agent: options.agent, json: options.json });
+      await listLocalPackages({ json: options.json });
     } catch (error: unknown) {
       console.error(chalk.red(`\n✖ ${error instanceof Error ? error.message : String(error)}`));
       process.exit(1);

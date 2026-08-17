@@ -17,7 +17,7 @@
 
 ## Architecture Docs (Detailed)
 
-Located in [`architecture/`](architecture/) — 21 design documents:
+Located in [`architecture/`](architecture/) — design documents:
 
 | Doc | Topic |
 |---|---|
@@ -29,7 +29,6 @@ Located in [`architecture/`](architecture/) — 21 design documents:
 | 06-cli-design.md | CLI commands and agent adapter logic |
 | 07-auth-design.md | OAuth, JWT, RBAC, API Key auth |
 | 08-deployment.md | Docker Compose, env vars, production |
-| 09-roadmap.md | Version planning and milestones |
 | 10-user-stories.md | User personas and scenarios |
 | 11-mvp-spec.md | MVP scope and acceptance criteria |
 | 12-dfx.md | Non-functional requirements, CI/CD |
@@ -39,13 +38,11 @@ Located in [`architecture/`](architecture/) — 21 design documents:
 | 16-developer-quickstart.md | Backend layering patterns |
 | 17-akit-skill-design.md | Skill package format |
 | 18-manifest-schema.md | JSON Schema for akit.json |
-| 19-database-migrations.md | Alembic migration strategy |
 | 20-frontend-types.md | TypeScript types and hooks |
-| 21-review-issue-search.md | Review and search feature |
 
 ## Phase Specs
 
-Located in [`specs/`](specs/) — feature implementation plans.
+Located in [`specs/`](specs/) — feature verification and planning docs.
 
 ## Testing
 

@@ -1,28 +1,13 @@
 {
   "name": "filesystem",
   "version": "1.0.0",
-  "type": "mcp",
-  "description": "File system access MCP server",
+  "type": "skill",
+  "description": "文件系统访问 Skill",
   "license": "MIT",
-  "keywords": ["filesystem", "files", "mcp"],
-  "mcp": {
-    "transport": "stdio",
-    "command": "npx",
-    "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"],
-    "capabilities": ["tools"],
-    "tools": [
-      {
-        "name": "list_files",
-        "description": "List files in a directory"
-      },
-      {
-        "name": "read_file",
-        "description": "Read file contents"
-      },
-      {
-        "name": "write_file",
-        "description": "Write content to a file"
-      }
-    ]
+  "keywords": ["filesystem", "files", "skill"],
+  "skill": {
+    "content": "## 文件系统 Skill\n\n帮助用户列出、读取和写入文件系统内容。\n\n### 用法\n\n- **list_files**: 列出指定目录的文件\n- **read_file**: 读取文件内容\n- **write_file**: 写入内容到文件",
+    "trigger": "文件系统",
+    "permissions": ["read", "write"]
   }
 }

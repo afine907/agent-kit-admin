@@ -27,16 +27,6 @@ vi.mock('../../src/api/client', () => ({
   },
 }));
 
-vi.mock('../../src/agents/registry', () => ({
-  agentRegistry: {
-    get: vi.fn(),
-  },
-}));
-
-vi.mock('../../src/utils/manifest', () => ({
-  readManifest: vi.fn(),
-}));
-
 describe('update command', () => {
   let tempDir: string;
 
@@ -55,11 +45,6 @@ describe('update command', () => {
 
     expect(updateCommand.name()).toBe('update');
     expect(updateCommand.description()).toBeTruthy();
-
-    // 验证选项
-    const options = updateCommand.options;
-    const optionNames = options.map((o) => o.long);
-    expect(optionNames).toContain('--agent');
   });
 
   it('should export updateCommand as Commander instance', async () => {

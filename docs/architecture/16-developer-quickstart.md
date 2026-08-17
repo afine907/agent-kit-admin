@@ -169,11 +169,6 @@ agent-kit-admin/
 │   │   │   ├── list.ts
 │   │   │   ├── search.ts
 │   │   │   └── info.ts
-│   │   ├── agents/          # Agent 适配器
-│   │   │   ├── types.ts
-│   │   │   ├── registry.ts
-│   │   │   ├── claude.ts    # JSON 格式 (~/.claude/mcp.json)
-│   │   │   └── codex.ts    # TOML 格式 (~/.codex/config.toml)
 │   │   ├── api/             # API 客户端
 │   │   │   └── client.ts
 │   │   ├── config/          # 配置管理
@@ -484,7 +479,7 @@ from datetime import datetime
 class PackageCreate(BaseModel):
     name: str
     scope: str | None = None
-    type: str  # mcp / skill
+    type: str  # skill
     description: str | None = None
     license: str = "MIT"
 
@@ -686,15 +681,15 @@ async def client():
 
 async def test_create_package(client):
     response = await client.post("/api/v1/packages/", json={
-        "name": "test-mcp",
+        "name": "test-skill",
         "scope": "@test",
-        "type": "mcp",
-        "description": "Test MCP"
+        "type": "skill",
+        "description": "Test Skill"
     })
     assert response.status_code == 200
     data = response.json()
-    assert data["name"] == "test-mcp"
-    assert data["full_name"] == "@test/test-mcp"
+    assert data["name"] == "test-skill"
+    assert data["full_name"] == "@test/test-skill"
 ```
 
 ### CLI 测试
@@ -724,10 +719,10 @@ describe('info command', () => {
     vi.mock('../../src/api/client', () => ({
       apiClient: {
         getPackage: vi.fn().mockResolvedValue({
-          full_name: '@team/test-mcp',
-          description: 'Test MCP',
+          full_name: '@team/test-skill',
+          description: 'Test Skill',
           latest_version: '1.0.0',
-          type: 'mcp',
+          type: 'skill',
           license: 'MIT',
           downloads_count: 100,
           rating_avg: 4.5,
@@ -736,10 +731,10 @@ describe('info command', () => {
       }
     }))
 
-    await infoCommand.parseAsync(['@team/test-mcp'], { from: 'user' })
+    await infoCommand.parseAsync(['@team/test-skill'], { from: 'user' })
 
     expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('@team/test-mcp')
+      expect.stringContaining('@team/test-skill')
     )
   })
 })
@@ -776,7 +771,7 @@ uvicorn app.main:app --reload --log-level debug
 
 ```bash
 # 使用 Node.js 调试器
-node --inspect dist/bin/akit.js info @team/test-mcp
+node --inspect dist/bin/akit.js info @team/test-skill
 
 # 使用 VS Code 调试器
 # .vscode/launch.json
@@ -788,7 +783,7 @@ node --inspect dist/bin/akit.js info @team/test-mcp
       "type": "node",
       "request": "launch",
       "program": "${workspaceFolder}/cli/src/bin/akit.ts",
-      "args": ["info", "@team/test-mcp"],
+      "args": ["info", "@team/test-skill"],
       "runtimeArgs": ["-r", "tsx/cjs"]
     }
   ]

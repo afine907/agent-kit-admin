@@ -70,9 +70,6 @@
   "init": {
     "description": "Initialize project",
     "title": "📦 Agent Kit Admin - Initialize Project",
-    "selectType": "Select package type:",
-    "mcpServer": "MCP Server (Model Context Protocol Server)",
-    "agentSkill": "Agent Skill",
     "packageName": "Package name (e.g., @scope/my-package):",
     "packageDescription": "Description (optional):",
     "initializing": "Initializing project...",
@@ -95,9 +92,6 @@
     "fetchingInfo": "Fetching package info...",
     "fetchingDownloadUrl": "Fetching download URL...",
     "downloading": "Downloading...",
-    "configuringAgent": "Configuring agent...",
-    "noAgentDetected": "No installed agent detected",
-    "installAgentHint": "Please install Claude Code or Codex",
     "installSuccess": "Installed successfully",
     "installFailed": "Install failed"
   },

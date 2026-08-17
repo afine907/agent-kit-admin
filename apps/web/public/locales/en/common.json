@@ -5,6 +5,7 @@
     "myPackages": "My Packages",
     "teams": "Teams",
     "publish": "Publish",
+    "test": "Test",
     "logout": "Logout",
     "login": "Login"
   },

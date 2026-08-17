@@ -52,16 +52,16 @@ describe('info command', () => {
 
   it('should display package info', async () => {
     mockGetPackage.mockResolvedValue({
-      name: 'pg-mcp',
+      name: 'pg-skill',
       scope: '@team',
-      full_name: '@team/pg-mcp',
-      type: 'mcp',
-      description: 'PostgreSQL MCP tool',
+      full_name: '@team/pg-skill',
+      type: 'skill',
+      description: 'PostgreSQL Skill',
       license: 'MIT',
       latest_version: '1.2.0',
       downloads_count: 234,
       visibility: 'public',
-      repository: 'https://github.com/team/pg-mcp',
+      repository: 'https://github.com/team/pg-skill',
     });
 
     mockGetVersions.mockResolvedValue({
@@ -84,35 +84,35 @@ describe('info command', () => {
     });
 
     const { infoCommand } = await import('../../src/commands/info');
-    await infoCommand.parseAsync(['node', 'test', '@team/pg-mcp']);
+    await infoCommand.parseAsync(['node', 'test', '@team/pg-skill']);
 
-    expect(mockGetPackage).toHaveBeenCalledWith('@team', 'pg-mcp');
-    expect(mockGetVersions).toHaveBeenCalledWith('@team', 'pg-mcp');
+    expect(mockGetPackage).toHaveBeenCalledWith('@team', 'pg-skill');
+    expect(mockGetVersions).toHaveBeenCalledWith('@team', 'pg-skill');
 
     // 验证输出包含关键信息
     const logCalls = mockConsoleLog.mock.calls.flat().join('\n');
-    expect(logCalls).toContain('@team/pg-mcp');
-    expect(logCalls).toContain('MCP');
+    expect(logCalls).toContain('@team/pg-skill');
+    expect(logCalls).toContain('Skill');
     expect(logCalls).toContain('MIT');
     expect(logCalls).toContain('1.2.0');
   });
 
   it('should display install command', async () => {
     mockGetPackage.mockResolvedValue({
-      name: 'pg-mcp',
+      name: 'pg-skill',
       scope: '@team',
-      full_name: '@team/pg-mcp',
-      type: 'mcp',
-      description: 'PostgreSQL MCP tool',
+      full_name: '@team/pg-skill',
+      type: 'skill',
+      description: 'PostgreSQL Skill',
     });
 
     mockGetVersions.mockResolvedValue({ items: [] });
 
     const { infoCommand } = await import('../../src/commands/info');
-    await infoCommand.parseAsync(['node', 'test', '@team/pg-mcp']);
+    await infoCommand.parseAsync(['node', 'test', '@team/pg-skill']);
 
     const logCalls = mockConsoleLog.mock.calls.flat().join('\n');
-    expect(logCalls).toContain('akit install @team/pg-mcp');
+    expect(logCalls).toContain('akit install @team/pg-skill');
   });
 
   it('should handle package not found', async () => {
@@ -132,17 +132,17 @@ describe('info command', () => {
 
   it('should handle versions fetch failure gracefully', async () => {
     mockGetPackage.mockResolvedValue({
-      name: 'pg-mcp',
+      name: 'pg-skill',
       scope: '@team',
-      full_name: '@team/pg-mcp',
-      type: 'mcp',
-      description: 'PostgreSQL MCP tool',
+      full_name: '@team/pg-skill',
+      type: 'skill',
+      description: 'PostgreSQL Skill',
     });
 
     mockGetVersions.mockRejectedValue(new Error('Failed to fetch versions'));
 
     const { infoCommand } = await import('../../src/commands/info');
-    await infoCommand.parseAsync(['node', 'test', '@team/pg-mcp']);
+    await infoCommand.parseAsync(['node', 'test', '@team/pg-skill']);
 
     // 应该仍然显示包信息，只是版本列表获取失败
     expect(mockGetPackage).toHaveBeenCalled();
@@ -150,11 +150,11 @@ describe('info command', () => {
 
   it('should display multiple versions', async () => {
     mockGetPackage.mockResolvedValue({
-      name: 'pg-mcp',
+      name: 'pg-skill',
       scope: '@team',
-      full_name: '@team/pg-mcp',
-      type: 'mcp',
-      description: 'PostgreSQL MCP tool',
+      full_name: '@team/pg-skill',
+      type: 'skill',
+      description: 'PostgreSQL Skill',
       latest_version: '1.3.0',
       downloads_count: 500,
     });
@@ -169,7 +169,7 @@ describe('info command', () => {
     });
 
     const { infoCommand } = await import('../../src/commands/info');
-    await infoCommand.parseAsync(['node', 'test', '@team/pg-mcp']);
+    await infoCommand.parseAsync(['node', 'test', '@team/pg-skill']);
 
     const logCalls = mockConsoleLog.mock.calls.flat().join('\n');
     expect(logCalls).toContain('1.3.0');

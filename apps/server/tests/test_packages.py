@@ -29,15 +29,6 @@ class TestPackageList:
         assert data["pagination"]["total"] > 0
 
     @pytest.mark.asyncio
-    async def test_list_packages_filter_by_type_mcp(self, client: AsyncClient, multiple_packages: list):
-        """测试按类型筛选 - MCP"""
-        response = await client.get("/api/v1/packages?type=mcp")
-        assert response.status_code == 200
-        data = response.json()
-        for pkg in data["data"]:
-            assert pkg["type"] == "mcp"
-
-    @pytest.mark.asyncio
     async def test_list_packages_filter_by_type_skill(self, client: AsyncClient, multiple_packages: list):
         """测试按类型筛选 - Skill"""
         response = await client.get("/api/v1/packages?type=skill")
@@ -173,20 +164,20 @@ class TestPackageCreate:
         response = await client.post(
             "/api/v1/packages",
             json={
-                "name": "new-mcp",
+                "name": "new-skill",
                 "scope": "@test",
-                "type": "mcp",
-                "description": "New MCP package",
+                "type": "skill",
+                "description": "New Skill package",
             },
             headers=auth_headers,
         )
         assert response.status_code == 201
         data = response.json()
-        assert data["name"] == "new-mcp"
+        assert data["name"] == "new-skill"
         assert data["scope"] == "@test"
-        assert data["full_name"] == "@test/new-mcp"
-        assert data["type"] == "mcp"
-        assert data["description"] == "New MCP package"
+        assert data["full_name"] == "@test/new-skill"
+        assert data["type"] == "skill"
+        assert data["description"] == "New Skill package"
 
     @pytest.mark.asyncio
     async def test_create_package_skill_type(self, client: AsyncClient, auth_headers: dict):
@@ -213,7 +204,7 @@ class TestPackageCreate:
             json={
                 "name": "test",
                 "scope": "@test",
-                "type": "mcp",
+                "type": "skill",
             },
         )
         assert response.status_code == 401
@@ -226,7 +217,7 @@ class TestPackageCreate:
             json={
                 "name": test_package["name"],
                 "scope": test_package["scope"],
-                "type": "mcp",
+                "type": "skill",
             },
             headers=auth_headers,
         )
@@ -242,7 +233,7 @@ class TestPackageCreate:
             json={
                 "name": "INVALID_NAME",
                 "scope": "@test",
-                "type": "mcp",
+                "type": "skill",
             },
             headers=auth_headers,
         )
@@ -256,7 +247,7 @@ class TestPackageCreate:
             json={
                 "name": "invalid@name",
                 "scope": "@test",
-                "type": "mcp",
+                "type": "skill",
             },
             headers=auth_headers,
         )

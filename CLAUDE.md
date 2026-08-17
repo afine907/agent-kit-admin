@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Agent Kit Admin is a private Package Registry for AI Agent ecosystems. It manages MCP (Model Context Protocol) servers and Agent Skills for teams using Claude Code, Codex, and other AI agents. Think "npm registry" but for AI agent capabilities.
+Agent Kit Admin is a private Package Registry for AI Agent ecosystems. It manages Agent Skills for teams using Claude Code, Codex, and other AI agents. Think "npm registry" but for AI agent capabilities.
 
-**Core flow:** `akit publish` (upload package) → Registry stores in PostgreSQL + MinIO → `akit install` (download + auto-configure Agent)
+**Core flow:** `akit publish` (upload package) → Registry stores in PostgreSQL + MinIO → `akit install` (download + record)
 
 ## Architecture
 
@@ -20,8 +20,6 @@ Three components, one deployment:
 
 Infrastructure: PostgreSQL 16 (metadata) + MinIO (package tarballs) + Caddy (gateway/TLS) — all via Docker Compose.
 
-**Key design pattern — Agent Adapters:** The CLI uses an adapter registry (`apps/cli/src/agents/registry.ts`) to write package configs to different AI agents. Each adapter implements `AgentAdapter` interface (detect, readConfig, writeConfig, removeConfig). MVP supports Claude Code (`~/.claude/mcp.json`, JSON) and Codex (`~/.codex/config.toml`, TOML via smol-toml).
-
 ## Design Documents (docs/architecture/)
 
 All implementation specs live in `docs/architecture/`. Read these before writing code:
@@ -33,10 +31,9 @@ All implementation specs live in `docs/architecture/`. Read these before writing
 | `03-tech-stack.md` | Technology choices, versions, and rationale |
 | `04-data-model.md` | Before writing models/migrations — full SQL schema, indexes, soft delete strategy, JSONB manifest structures |
 | `05-api-design.md` | Before writing API routes — all endpoints, request/response formats, error codes, version tag rules, search strategy |
-| `06-cli-design.md` | Before writing CLI commands — all commands, interactive flows, Agent config write logic, output formats |
+| `06-cli-design.md` | Before writing CLI commands — all commands, interactive flows, output formats |
 | `07-auth-design.md` | Before implementing auth — OAuth flows (WeChat Work/Feishu/DingTalk), JWT, RBAC, API Key auth |
 | `08-deployment.md` | Docker Compose setup, environment variables, production deployment |
-| `09-roadmap.md` | Version planning, feature milestones |
 | `10-user-stories.md` | User personas and usage scenarios |
 | `11-mvp-spec.md` | Before starting MVP — scope, Agent adapter architecture with TypeScript code, acceptance criteria |
 | `12-dfx.md` | Non-functional requirements: deployability, reliability, **CI/CD pipeline design** |
@@ -46,9 +43,7 @@ All implementation specs live in `docs/architecture/`. Read these before writing
 | `16-developer-quickstart.md` | Before writing any backend code — layered architecture (Route → Service → Model), middleware chain, dependency injection pattern, error handling |
 | `17-akit-skill-design.md` | Skill package format and capabilities |
 | `18-manifest-schema.md` | Before implementing package validation — JSON Schema for `akit.json`, validation rules |
-| `19-database-migrations.md` | Alembic migration strategy and conventions |
 | `20-frontend-types.md` | Before writing frontend — TypeScript types, TanStack Query hooks, Zustand stores |
-| `21-review-issue-search.md` | Review and search feature design |
 
 Diagrams in `docs/architecture/diagrams/` (Mermaid format): architecture overview, data flow sequences, ER diagrams, user interaction flows.
 
@@ -67,8 +62,7 @@ Use FastAPI `Depends()` for dependency injection (auth, db session, service inst
 ## Package Manifest (akit.json)
 
 Every published package requires an `akit.json` (schema in `18-manifest-schema.md`):
-- Required: `name` (lowercase + hyphens), `version` (semver), `type` (`mcp` | `skill`)
-- MCP packages require `mcp` config: `transport`, `command`, optional `args`, `env`, `capabilities`, `tools`
+- Required: `name` (lowercase + hyphens), `version` (semver), `type` (`skill`)
 - Skill packages require `skill` config: `content` (max 50KB, >10KB stored in MinIO), optional `trigger`, `command`, `hooks`, `permissions`
 
 ## Soft Delete Strategy

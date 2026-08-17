@@ -56,7 +56,7 @@ erDiagram
         varchar name
         varchar scope
         varchar full_name "computed"
-        varchar type "mcp/skill"
+        varchar type "skill"
         uuid owner_id
         varchar owner_type "user/team"
         text description
@@ -359,7 +359,7 @@ flowchart TB
     subgraph "示例"
         Example1["用户 zhangsan → @zhangsan"]
         Example2["团队 frontend → @frontend"]
-        Example3["@zhangsan/web-mcp"]
+        Example3["@zhangsan/web-skill"]
         Example4["@frontend/ui-components"]
     end
 

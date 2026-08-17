@@ -107,12 +107,12 @@ async def test_register_duplicate_username(client: AsyncClient, db):
 
 @pytest.mark.asyncio
 async def test_search_packages(client: AsyncClient, db, test_user: User):
-    for name, desc in [("pg-mcp", "PostgreSQL MCP tool"), ("redis-mcp", "Redis MCP tool")]:
+    for name, desc in [("pg-skill", "PostgreSQL Skill tool"), ("redis-skill", "Redis Skill tool")]:
         db.add(
             Package(
                 name=name,
                 scope="@team",
-                type="mcp",
+                type="skill",
                 full_name=f"@team/{name}",
                 description=desc,
                 owner_id=test_user.id,
@@ -125,7 +125,7 @@ async def test_search_packages(client: AsyncClient, db, test_user: User):
     assert resp.status_code == 200
     data = resp.json()
     assert "data" in data
-    assert any(p["name"] == "pg-mcp" for p in data["data"])
+    assert any(p["name"] == "pg-skill" for p in data["data"])
 
 
 @pytest.mark.asyncio
@@ -135,7 +135,7 @@ async def test_list_packages_pagination(client: AsyncClient, db, test_user: User
             Package(
                 name=f"pkg-{i:02d}",
                 scope="@test",
-                type="mcp",
+                type="skill",
                 full_name=f"@test/pkg-{i:02d}",
                 description=f"Test {i}",
                 owner_id=test_user.id,
@@ -155,17 +155,6 @@ async def test_list_packages_pagination(client: AsyncClient, db, test_user: User
 async def test_list_packages_filter_by_type(client: AsyncClient, db, test_user: User):
     db.add(
         Package(
-            name="mcp-pkg",
-            scope="@test",
-            type="mcp",
-            full_name="@test/mcp-pkg",
-            description="MCP",
-            owner_id=test_user.id,
-            visibility="public",
-        )
-    )
-    db.add(
-        Package(
             name="skill-pkg",
             scope="@test",
             type="skill",
@@ -175,11 +164,22 @@ async def test_list_packages_filter_by_type(client: AsyncClient, db, test_user: 
             visibility="public",
         )
     )
+    db.add(
+        Package(
+            name="skill-pkg-2",
+            scope="@test",
+            type="skill",
+            full_name="@test/skill-pkg-2",
+            description="Skill",
+            owner_id=test_user.id,
+            visibility="public",
+        )
+    )
     await db.flush()
 
-    resp = await client.get("/api/v1/packages?type=mcp")
+    resp = await client.get("/api/v1/packages?type=skill")
     assert resp.status_code == 200
-    assert all(p["type"] == "mcp" for p in resp.json()["data"])
+    assert all(p["type"] == "skill" for p in resp.json()["data"])
 
 
 @pytest.mark.asyncio
@@ -187,7 +187,7 @@ async def test_get_package_detail(client: AsyncClient, db, test_user: User):
     pkg = Package(
         name="detail-test",
         scope="@test",
-        type="mcp",
+        type="skill",
         full_name="@test/detail-test",
         description="Detail test",
         license="MIT",
@@ -201,7 +201,7 @@ async def test_get_package_detail(client: AsyncClient, db, test_user: User):
     ver = Version(
         package_id=pkg.id,
         version="1.2.0",
-        manifest={"name": "detail-test", "version": "1.2.0", "type": "mcp"},
+        manifest={"name": "detail-test", "version": "1.2.0", "type": "skill"},
         tarball_hash="sha256:abc123",
         tarball_size=2048,
         tarball_path="packages/@test/detail-test/1.2.0.tar.gz",
@@ -225,7 +225,7 @@ async def test_get_package_versions(client: AsyncClient, db, test_user: User):
     pkg = Package(
         name="ver-test",
         scope="@test",
-        type="mcp",
+        type="skill",
         full_name="@test/ver-test",
         description="Version test",
         owner_id=test_user.id,
@@ -239,7 +239,7 @@ async def test_get_package_versions(client: AsyncClient, db, test_user: User):
             Version(
                 package_id=pkg.id,
                 version=v,
-                manifest={"name": "ver-test", "version": v, "type": "mcp"},
+                manifest={"name": "ver-test", "version": v, "type": "skill"},
                 tarball_hash=f"sha256:v{v.replace('.', '')}",
                 tarball_size=1024,
                 tarball_path=f"packages/@test/ver-test/{v}.tar.gz",
@@ -270,7 +270,7 @@ async def test_private_package_hidden(client: AsyncClient, db, test_user: User):
         Package(
             name="secret-pkg",
             scope="@test",
-            type="mcp",
+            type="skill",
             full_name="@test/secret-pkg",
             description="Private",
             owner_id=test_user.id,
@@ -295,7 +295,7 @@ async def test_list_my_packages(client: AsyncClient, db, auth_headers, test_user
         Package(
             name="my-pkg",
             scope="@test",
-            type="mcp",
+            type="skill",
             full_name="@test/my-pkg",
             description="My pkg",
             owner_id=test_user.id,
@@ -314,7 +314,7 @@ async def test_update_package(client: AsyncClient, db, auth_headers, test_user: 
     pkg = Package(
         name="update-test",
         scope="@test",
-        type="mcp",
+        type="skill",
         full_name="@test/update-test",
         description="Original",
         owner_id=test_user.id,
@@ -337,7 +337,7 @@ async def test_delete_package(client: AsyncClient, db, auth_headers, test_user: 
     pkg = Package(
         name="del-test",
         scope="@test",
-        type="mcp",
+        type="skill",
         full_name="@test/del-test",
         description="To delete",
         owner_id=test_user.id,
@@ -358,7 +358,7 @@ async def test_cannot_delete_other_package(client: AsyncClient, db, auth_headers
     pkg = Package(
         name="not-yours",
         scope="@test",
-        type="mcp",
+        type="skill",
         full_name="@test/not-yours",
         description="Not yours",
         owner_id=another_user.id,
@@ -385,8 +385,8 @@ def _pub(client, scope, name, version, headers):
         {
             "name": name,
             "version": version,
-            "type": "mcp",
-            "mcp": {"transport": "stdio", "command": "node", "args": ["index.js"]},
+            "type": "skill",
+            "skill": {"content": "## 测试 Skill"},
         }
     )
     resp = client.post(
@@ -403,7 +403,7 @@ async def test_create_and_publish_package(client: AsyncClient, db, auth_headers,
     # 创建包
     resp = await client.post(
         "/api/v1/packages",
-        json={"name": "pub-test", "scope": "@test", "type": "mcp", "description": "Publish test"},
+        json={"name": "pub-test", "scope": "@test", "type": "skill", "description": "Publish test"},
         headers=auth_headers,
     )
     assert resp.status_code == 201, f"创建包失败: {resp.status_code} {resp.text}"
@@ -423,7 +423,7 @@ async def test_create_and_publish_package(client: AsyncClient, db, auth_headers,
 async def test_publish_multiple_versions(client: AsyncClient, db, auth_headers, test_user: User):
     resp = await client.post(
         "/api/v1/packages",
-        json={"name": "multi-ver", "scope": "@test", "type": "mcp", "description": "Multi version"},
+        json={"name": "multi-ver", "scope": "@test", "type": "skill", "description": "Multi version"},
         headers=auth_headers,
     )
     assert resp.status_code == 201
@@ -445,7 +445,7 @@ async def test_publish_multiple_versions(client: AsyncClient, db, auth_headers, 
 async def test_publish_duplicate_version_fails(client: AsyncClient, db, auth_headers, test_user: User):
     resp = await client.post(
         "/api/v1/packages",
-        json={"name": "dup-ver", "scope": "@test", "type": "mcp", "description": "Dup version"},
+        json={"name": "dup-ver", "scope": "@test", "type": "skill", "description": "Dup version"},
         headers=auth_headers,
     )
     assert resp.status_code == 201
@@ -461,7 +461,7 @@ async def test_publish_duplicate_version_fails(client: AsyncClient, db, auth_hea
 async def test_download_package_tarball(client: AsyncClient, db, auth_headers, test_user: User):
     resp = await client.post(
         "/api/v1/packages",
-        json={"name": "dl-test", "scope": "@test", "type": "mcp", "description": "Download test"},
+        json={"name": "dl-test", "scope": "@test", "type": "skill", "description": "Download test"},
         headers=auth_headers,
     )
     assert resp.status_code == 201
@@ -478,7 +478,7 @@ async def test_download_package_tarball(client: AsyncClient, db, auth_headers, t
 async def test_download_specific_version(client: AsyncClient, db, auth_headers, test_user: User):
     resp = await client.post(
         "/api/v1/packages",
-        json={"name": "ver-dl", "scope": "@test", "type": "mcp", "description": "Ver download"},
+        json={"name": "ver-dl", "scope": "@test", "type": "skill", "description": "Ver download"},
         headers=auth_headers,
     )
     assert resp.status_code == 201
@@ -495,7 +495,7 @@ async def test_download_specific_version(client: AsyncClient, db, auth_headers, 
 async def test_download_nonexistent_version(client: AsyncClient, db, auth_headers, test_user: User):
     resp = await client.post(
         "/api/v1/packages",
-        json={"name": "no-ver", "scope": "@test", "type": "mcp", "description": "No ver"},
+        json={"name": "no-ver", "scope": "@test", "type": "skill", "description": "No ver"},
         headers=auth_headers,
     )
     assert resp.status_code == 201
@@ -519,7 +519,7 @@ async def test_full_journey(client: AsyncClient, db, auth_headers, test_user: Us
         json={
             "name": "full-journey",
             "scope": "@test",
-            "type": "mcp",
+            "type": "skill",
             "description": "Full journey test",
             "license": "MIT",
         },
@@ -538,9 +538,9 @@ async def test_full_journey(client: AsyncClient, db, auth_headers, test_user: Us
     assert any(p["full_name"] == pkg_name for p in resp.json()["data"])
 
     # 4. 按类型筛选
-    resp = await client.get("/api/v1/packages?type=mcp")
+    resp = await client.get("/api/v1/packages?type=skill")
     assert resp.status_code == 200
-    assert all(p["type"] == "mcp" for p in resp.json()["data"])
+    assert all(p["type"] == "skill" for p in resp.json()["data"])
 
     # 5. 获取包详情
     resp = await client.get(f"/api/v1/packages/{pkg_name}")
@@ -591,7 +591,7 @@ async def test_team_package_management_journey(
         f"/api/v1/teams/{team_id}/packages",
         json={
             "name": "team-pkg",
-            "type": "mcp",
+            "type": "skill",
             "description": "Team package for E2E",
         },
         headers=auth_headers,
@@ -602,7 +602,7 @@ async def test_team_package_management_journey(
     # 4. 发布版本到团队包
     resp = await client.post(
         f"/api/v1/teams/{team_id}/packages/{package_id}/versions",
-        json={"version": "1.0.0", "manifest": {"name": "team-pkg", "version": "1.0.0", "type": "mcp"}},
+        json={"version": "1.0.0", "manifest": {"name": "team-pkg", "version": "1.0.0", "type": "skill"}},
         headers=auth_headers,
     )
     assert resp.status_code == 201, f"发布版本失败: {resp.status_code} {resp.text}"

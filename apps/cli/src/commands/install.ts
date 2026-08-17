@@ -5,16 +5,13 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import ora from 'ora';
-import inquirer from 'inquirer';
 import { existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 import { apiClient } from '../api/client.js';
-import { agentRegistry } from '../agents/registry.js';
 import { readManifest } from '../utils/manifest.js';
 import { extractTarball } from '../utils/tarball.js';
 import { parsePackageName } from '../utils/package-name.js';
-import { FileLock } from '../utils/lock.js';
 import { t } from '../i18n.js';
 import { recordInstall } from '../utils/install-record.js';
 import { satisfiesSemverConstraint } from '../utils/semver.js';
@@ -49,10 +46,8 @@ export const installCommand = new Command('install');
 installCommand
   .description(t('commands:install.description'))
   .argument('<package>', '包名 (例如: @scope/name)')
-  .option('--agent <name>', '目标 Agent (claude/codex)')
   .option('--tag <tag>', '版本标签', 'latest')
   .option('--global', '全局安装到 ~/.akit/packages')
-  .option('--no-config', '仅下载包，不写入 Agent 配置')
   .option('--no-deps', '跳过依赖检查')
   .option('--force', '强制安装已撤回的版本')
   .option('--dry-run', '仅显示依赖树，不安装')
@@ -245,92 +240,14 @@ installCommand
         }
       }
 
-      // 6. 配置 Agent（--no-config 跳过）
-      if (options.config === false) {
-        // 跳过 Agent 配置
-        const version = pkg!.latest_version || 'unknown';
-        console.log(chalk.green(`\n✔ 已下载 ${fullName}@${version}`));
-        console.log(chalk.gray(`  目录: ${packageDir}`));
-        console.log('');
-      } else {
-        const spinner4 = ora('配置 Agent...').start();
+      // 6. 更新已安装记录
+      const version = pkg!.latest_version || 'unknown';
+      recordInstall({ scope, name, version });
 
-        let agentName = options.agent;
-        if (!agentName) {
-          // 自动检测
-          const detected = await agentRegistry.detectAll();
-          if (detected.length === 0) {
-            spinner4.fail('未检测到已安装的 Agent');
-            console.error(chalk.red('\n✖ 请安装 Claude Code 或 Codex'));
-            process.exit(1);
-          }
-
-          if (detected.length === 1) {
-            agentName = detected[0].name.toLowerCase();
-          } else {
-            spinner4.stop();
-            const answer = await inquirer.prompt([
-              {
-                type: 'list',
-                name: 'agent',
-                message: '选择目标 Agent:',
-                choices: detected.map((a) => ({ name: a.name, value: a.name.toLowerCase() })),
-              },
-            ]);
-            agentName = answer.agent;
-          }
-        }
-
-        const adapter = agentRegistry.get(agentName);
-        if (!adapter) {
-          spinner4.fail(`未找到 Agent 适配器: ${agentName}`);
-          process.exit(1);
-        }
-
-        // 写入配置（使用文件锁保护并发写入）
-        if (manifest.type === 'mcp' && manifest.mcp) {
-          const configPath = adapter.getConfigPath();
-          const lock = new FileLock(configPath);
-
-          // 确保配置文件存在
-          if (!existsSync(configPath)) {
-            const fs = await import('fs');
-            const configDir = join(configPath, '..');
-            if (!existsSync(configDir)) {
-              mkdirSync(configDir, { recursive: true });
-            }
-            fs.writeFileSync(configPath, '{}');
-          }
-
-          let release: (() => Promise<void>) | undefined;
-          try {
-            release = await lock.acquire({ timeout: 10000 });
-            await adapter.writeConfig({
-              name: name,
-              command: manifest.mcp.command,
-              args: manifest.mcp.args || [],
-              env: {},
-            });
-            spinner4.succeed(`配置已写入: ${configPath}`);
-          } finally {
-            if (release) {
-              await release();
-            }
-          }
-        } else {
-          spinner4.info('非 MCP 包，跳过 Agent 配置');
-        }
-
-        // 7. 更新已安装记录
-        const version = pkg!.latest_version || 'unknown';
-        recordInstall({ scope, name, version, agent: agentName });
-
-        // 显示成功信息
-        console.log(chalk.green(`\n✔ 已安装 ${fullName}@${version}`));
-        console.log(chalk.gray(`  Agent: ${adapter.name}`));
-        console.log(chalk.gray(`  Config: ${adapter.getConfigPath()} 已更新`));
-        console.log('');
-      }
+      // 显示成功信息
+      console.log(chalk.green(`\n✔ 已安装 ${fullName}@${version}`));
+      console.log(chalk.gray(`  目录: ${packageDir}`));
+      console.log('');
     } catch (error: unknown) {
       console.error(chalk.red(`\n✖ 安装失败: ${error instanceof Error ? error.message : String(error)}`));
       process.exit(1);

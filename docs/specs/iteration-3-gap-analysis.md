@@ -132,7 +132,7 @@
 ### 7. CLI 文件锁
 
 **实现方案**：
-- `install`/`uninstall` 写入 `mcp.json` 前获取 lockfile
+- `install`/`uninstall` 写入 `akit.json` 前获取 lockfile
 - 使用 `proper-lockfile` 包，超时 10s
 - 死锁自动释放
 

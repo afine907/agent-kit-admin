@@ -12,6 +12,7 @@
 - /api/v1/packages/*/download -> 100 req/min
 - /api/v1/packages/*/versions -> 10 req/min (publish)
 - /api/v1/reviews     -> 5 req/min
+- /api/v1/agent       -> 10 req/min (LLM 调用)
 """
 
 import asyncio
@@ -30,6 +31,7 @@ RATE_LIMITS: dict[str, dict[str, int]] = {
     "/api/v1/auth": {"requests": 10, "window": 60},
     "/api/v1/packages": {"requests": 60, "window": 60},
     "/api/v1/reviews": {"requests": 5, "window": 60},
+    "/api/v1/agent": {"requests": 10, "window": 60},  # LLM 调用成本高，限流更严
 }
 
 # 按前缀长度降序排序，确保最长匹配优先

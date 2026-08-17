@@ -10,7 +10,7 @@
 
 **小明** - 前端开发工程师
 - 使用 Claude Code 进行日常开发
-- 团队 10 人，想共享 MCP 工具
+- 团队 10 人，想共享 Skill 工具
 - 技术水平：中等，熟悉 npm/Docker
 
 ---
@@ -26,13 +26,13 @@
 ## 阶段 1: 发现产品
 
 ### 场景
-小明在团队群里看到同事分享了一个 MCP 工具，附带了一行命令：
+小明在团队群里看到同事分享了一个 Skill 工具，附带了一行命令：
 ```bash
 akit install @team/web-search
 ```
 
 ### 用户心理
-> "这是什么？看起来很方便，比我手动配置 MCP 简单多了。"
+> "这是什么？看起来很方便，比我手动管理包文件简单多了。"
 
 ### 行动
 1. 点击链接访问项目首页
@@ -42,7 +42,7 @@ akit install @team/web-search
 ```markdown
 # Agent Kit Admin
 
-📦 一键安装团队的 MCP 和 Skills
+📦 一键安装团队的 Skills
 
 ## 快速开始
 
@@ -52,7 +52,7 @@ npm install -g @agent-kit-admin/cli
 # 2. 登录
 akit login --server https://your-company.com
 
-# 3. 安装 MCP
+# 3. 安装 Skill
 akit install @team/web-search
 
 就是这么简单！
@@ -89,7 +89,7 @@ akit/0.1.0 darwin-arm64 node-v20.10.0
 
 ### akit --help 输出
 ```
-Agent Kit Admin CLI - 管理团队的 MCP 和 Skills
+Agent Kit Admin CLI - 管理团队的 Skills
 
 Usage: akit <command>
 
@@ -188,7 +188,7 @@ akit login --server https://registry.company.com --token your-api-token
 ## 阶段 4: 探索可用的包
 
 ### 场景
-小明想看看团队里有哪些可用的 MCP。
+小明想看看团队里有哪些可用的 Skill。
 
 ### 用户旅程
 
@@ -198,18 +198,18 @@ $ akit search database
 
 Found 3 packages:
 
-  @team/pg-mcp@1.2.0
-    PostgreSQL MCP tool for querying databases
+  @team/pg-skill@1.2.0
+    PostgreSQL skill for querying databases
     ⭐ 4.8 (12 reviews) · 📦 234 downloads
     Updated: 2024-01-10
 
-  @team/redis-mcp@1.0.0
-    Redis MCP tool for caching and key-value operations
+  @team/redis-skill@1.0.0
+    Redis skill for caching and key-value operations
     ⭐ 4.5 (8 reviews) · 📦 156 downloads
     Updated: 2024-01-08
 
-  @zhangsan/sqlite-mcp@0.3.0
-    Lightweight SQLite MCP tool
+  @zhangsan/sqlite-skill@0.3.0
+    Lightweight SQLite skill
     ⭐ 4.2 (5 reviews) · 📦 89 downloads
     Updated: 2024-01-05
 
@@ -218,44 +218,36 @@ Run 'akit info <package>' for more details
 
 ```bash
 # 查看详情
-$ akit info @team/pg-mcp
+$ akit info @team/pg-skill
 
-@team/pg-mcp
+@team/pg-skill
 
-  PostgreSQL MCP tool for querying databases
+  PostgreSQL skill for querying databases
 
   Version: 1.2.0
-  Type: mcp
+  Type: skill
   License: MIT
   Author: team (Team)
   Published: 2024-01-10
   Downloads: 234
   Rating: ⭐ 4.8 (12 reviews)
 
-  Repository: https://github.com/team/pg-mcp
+  Repository: https://github.com/team/pg-skill
 
-  MCP Configuration:
-    Transport: stdio
-    Command: node index.js
-    Capabilities: tools
-    Tools:
-      - query: Execute SQL queries
-      - list_tables: List all tables
-      - describe_table: Describe table schema
+  Skill Configuration:
+    Trigger: command
+    Command: pg-query
+    Content: 根据自然语言执行 SQL 查询并返回结果
 
   Install:
-    akit install @team/pg-mcp
-
-  Environment Variables:
-    DATABASE_URL (required) - PostgreSQL connection string
+    akit install @team/pg-skill
 ```
 
 ### 体验要求
 - [ ] 搜索结果 < 1 秒返回
 - [ ] 结果按相关性排序
 - [ ] 显示关键信息（评分、下载量、更新时间）
-- [ ] 详情页显示 MCP tools 列表
-- [ ] 显示环境变量要求
+- [ ] 详情页显示 Skill 触发方式和内容摘要
 
 ### Web UI 探索
 
@@ -268,18 +260,18 @@ $ akit info @team/pg-mcp
 │                                                         │
 │  Popular Packages                                       │
 │  ┌─────────────────────────────────────────────────┐   │
-│  │ 📦 @team/pg-mcp                                │   │
-│  │ PostgreSQL MCP tool                            │   │
+│  │ 📦 @team/pg-skill                              │   │
+│  │ PostgreSQL skill                               │   │
 │  │ ⭐ 4.8 · 📦 234 downloads · Updated 3 days ago│   │
 │  └─────────────────────────────────────────────────┘   │
 │  ┌─────────────────────────────────────────────────┐   │
 │  │ 📦 @team/web-search                            │   │
-│  │ Web search MCP tool                            │   │
+│  │ Web search skill                               │   │
 │  │ ⭐ 4.6 · 📦 189 downloads · Updated 5 days ago│   │
 │  └─────────────────────────────────────────────────┘   │
 │                                                         │
 │  Categories                                             │
-│  [All] [MCP] [Skill] [Database] [Search] [Utility]    │
+│  [All] [Skill] [Database] [Search] [Utility]           │
 │                                                         │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -292,109 +284,73 @@ $ akit info @team/pg-mcp
 
 ---
 
-## 阶段 5: 首次安装 MCP
+## 阶段 5: 首次安装 Skill
 
 ### 场景
-小明决定安装 `@team/pg-mcp`。
+小明决定安装 `@team/pg-skill`。
 
 ### 用户旅程
 
 ```bash
-$ akit install @team/pg-mcp
+$ akit install @team/pg-skill
 
-⠋ Resolving @team/pg-mcp@latest...
-  Found: @team/pg-mcp@1.2.0
+⠋ Resolving @team/pg-skill@latest...
+  Found: @team/pg-skill@1.2.0
 
-⠋ Downloading @team/pg-mcp@1.2.0...
+⠋ Downloading @team/pg-skill@1.2.0...
   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ 100% (2.3 MB)
 
 ⠋ Extracting package...
-  → ~/.akit/packages/@team/pg-mcp/
+  → ~/.akit/packages/@team/pg-skill/
 
-⠋ Detecting Agent...
-  ✓ Claude Code detected
+⠋ Recording install...
+  → ~/.akit/installed.json
 
-⠋ Writing configuration...
-  → ~/.claude/mcp.json (backup: ~/.claude/mcp.json.bak)
+✔ Installed @team/pg-skill@1.2.0 successfully!
 
-✔ Installed @team/pg-mcp@1.2.0 successfully!
-
-  📁 Package: ~/.akit/packages/@team/pg-mcp/
-  ⚙️  Config: ~/.claude/mcp.json
-  🔄 Restart Claude Code to use the new MCP
-
-  Required environment variables:
-    DATABASE_URL - PostgreSQL connection string
-
-  Set them in your shell profile or Agent config:
-    export DATABASE_URL="postgresql://user:pass@localhost:5432/mydb"
+  📁 Package: ~/.akit/packages/@team/pg-skill/
+  📝 Recorded in: ~/.akit/installed.json
+  🔄 重启 Claude Code 后即可使用该 Skill
 ```
 
 ### 体验要求
 - [ ] 安装 < 5 秒（10MB 包，100Mbps 网络）
 - [ ] 进度条实时更新
-- [ ] 自动检测 Agent 并写入配置
-- [ ] 配置写入前自动备份
-- [ ] 显示环境变量要求
-- [ ] 提示重启 Agent
+- [ ] 自动下载、解压并记录
+- [ ] 展示包信息和后续步骤
 
 ### 异常场景
 
-**场景 1: 配置已存在**
+**场景 1: 包已安装**
 ```bash
-$ akit install @team/pg-mcp
+$ akit install @team/pg-skill
 
-⚠ Config for @team/pg-mcp already exists in Claude Code
+⚠ Package @team/pg-skill already exists
   Current version: 1.1.0
   New version: 1.2.0
 
 ? Overwrite? (y/N) y
 
-  Backed up to: ~/.claude/mcp.json.bak
+  Backed up to: ~/.akit/packages/@team/pg-skill.bak
 
-✔ Updated @team/pg-mcp to 1.2.0
+✔ Updated @team/pg-skill to 1.2.0
 ```
 
-**场景 2: Agent 未安装**
+**场景 2: 无可用 Agent**
 ```bash
-$ akit install @team/pg-mcp
+$ akit install @team/pg-skill
 
-⚠ Warning: No supported Agent detected
-  - Claude Code: not found
-  - Codex: not found
+✔ Package downloaded to: ~/.akit/packages/@team/pg-skill/
+  Recorded in ~/.akit/installed.json
 
-  Package downloaded to: ~/.akit/packages/@team/pg-mcp/
-
-  To use this MCP, manually add it to your Agent config:
-
-  Claude Code (~/.claude/mcp.json):
-  {
-    "mcpServers": {
-      "pg-mcp": {
-        "command": "node",
-        "args": ["~/.akit/packages/@team/pg-mcp/index.js"],
-        "env": {
-          "DATABASE_URL": "your-database-url"
-        }
-      }
-    }
-  }
-
-  Codex (~/.codex/config.toml):
-  [mcp_servers.pg-mcp]
-  command = "node"
-  args = ["~/.akit/packages/@team/pg-mcp/index.js"]
-  enabled = true
-
-  [mcp_servers.pg-mcp.env]
-  DATABASE_URL = "your-database-url"
+  Skill 包已就绪。安装 Claude Code / Codex 等 Agent 后即可使用。
 ```
 
 **场景 3: 网络中断**
 ```bash
-$ akit install @team/pg-mcp
+$ akit install @team/pg-skill
 
-⠋ Downloading @team/pg-mcp@1.2.0...
+⠋ Downloading @team/pg-skill@1.2.0...
   ▓▓▓▓▓▓▓▓▓░░░░░░░░░░░ 35%
 
 ⚠ Network error, retrying... (1/3)
@@ -407,10 +363,10 @@ $ akit install @team/pg-mcp
 
 ---
 
-## 阶段 6: 验证 MCP 工作
+## 阶段 6: 验证 Skill 工作
 
 ### 场景
-小明重启 Claude Code，验证新安装的 MCP 是否正常工作。
+小明重启 Claude Code，验证新安装的 Skill 是否正常工作。
 
 ### 用户旅程
 
@@ -418,12 +374,10 @@ $ akit install @team/pg-mcp
 # 1. 重启 Claude Code
 $ claude
 
-# 2. 使用 MCP 工具
-> 查询数据库中所有用户
+# 2. 使用 Skill
+> /pg-query 查询数据库中所有用户
 
 Claude: 我来帮你查询数据库中的所有用户。
-
-[调用 pg-mcp.query 工具]
 
 查询结果如下：
 | id | name | email |
@@ -436,51 +390,23 @@ Claude: 我来帮你查询数据库中的所有用户。
 ```
 
 ### 体验要求
-- [ ] 重启后 MCP 自动加载
-- [ ] 工具调用正常
-- [ ] 错误信息清晰（如 DATABASE_URL 未设置）
+- [ ] 重启后 Skill 自动加载
+- [ ] 触发命令调用正常
+- [ ] 错误信息清晰可操作
 
 ### 异常场景
 
-**场景 1: 环境变量未设置**
+**场景 1: 数据库连接失败**
 ```bash
-> 查询数据库中所有用户
+> /pg-query 查询数据库中所有用户
 
 Claude: 我来帮你查询数据库中的所有用户。
-
-[调用 pg-mcp.query 工具]
-
-Error: DATABASE_URL environment variable is not set
-
-请在 Claude Code 配置中设置 DATABASE_URL：
-
-~/.claude/mcp.json:
-{
-  "mcpServers": {
-    "pg-mcp": {
-      "command": "node",
-      "args": ["~/.akit/packages/@team/pg-mcp/index.js"],
-      "env": {
-        "DATABASE_URL": "postgresql://user:pass@localhost:5432/mydb"
-      }
-    }
-  }
-}
-```
-
-**场景 2: 数据库连接失败**
-```bash
-> 查询数据库中所有用户
-
-Claude: 我来帮你查询数据库中的所有用户。
-
-[调用 pg-mcp.query 工具]
 
 Error: Connection refused to localhost:5432
 
 请检查：
 1. PostgreSQL 服务是否启动
-2. DATABASE_URL 是否正确
+2. 连接配置是否正确
 3. 网络连接是否正常
 ```
 
@@ -498,23 +424,20 @@ $ akit list
 
 Installed packages:
 
-  MCP:
-    @team/pg-mcp@1.2.0 (latest: 1.3.0) ⚠️ update available
-    @team/web-search@1.0.0
-    @team/redis-mcp@1.0.0
-
-  Skill:
-    @team/code-review@1.0.0
+  @team/pg-skill@1.2.0 (latest: 1.3.0) ⚠️ update available
+  @team/web-search@1.0.0
+  @team/redis-skill@1.0.0
+  @team/code-review@1.0.0
 
 Total: 4 packages
 
-Run 'akit update @team/pg-mcp' to update
+Run 'akit update @team/pg-skill' to update
 ```
 
 ### 7.2 更新包
 
 ```bash
-$ akit update @team/pg-mcp
+$ akit update @team/pg-skill
 
 ⠋ Checking for updates...
   Current: 1.2.0
@@ -522,12 +445,12 @@ $ akit update @team/pg-mcp
 
 ? Update to 1.3.0? (Y/n) y
 
-⠋ Downloading @team/pg-mcp@1.3.0...
+⠋ Downloading @team/pg-skill@1.3.0...
   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ 100%
 
-⠋ Updating configuration...
+⠋ Updating package files...
 
-✔ Updated @team/pg-mcp to 1.3.0
+✔ Updated @team/pg-skill to 1.3.0
 
   Changelog:
   - Added connection pooling
@@ -538,76 +461,58 @@ $ akit update @team/pg-mcp
 ### 7.3 卸载包
 
 ```bash
-$ akit uninstall @team/redis-mcp
+$ akit uninstall @team/redis-skill
 
-? Remove @team/redis-mcp and clean up Agent config? (y/N) y
+? Remove @team/redis-skill? (y/N) y
 
 ⠋ Removing package...
-  ✓ Deleted ~/.akit/packages/@team/redis-mcp/
-  ✓ Cleaned up Claude Code config
+  ✓ Deleted ~/.akit/packages/@team/redis-skill/
+  ✓ Removed from ~/.akit/installed.json
 
-✔ Uninstalled @team/redis-mcp successfully
-```
-
-### 7.4 指定 Agent 安装
-
-```bash
-# 安装到 Codex（而不是 Claude Code）
-$ akit install --agent codex @team/web-search
-
-⠋ Installing @team/web-search@1.0.0 to Codex...
-  ✓ Detected Codex
-  ✓ Wrote configuration to ~/.codex/config.json
-
-✔ Installed successfully
+✔ Uninstalled @team/redis-skill successfully
 ```
 
 ---
 
-## 阶段 8: 发布自己的 MCP
+## 阶段 8: 发布自己的 Skill
 
 ### 场景
-小明开发了一个 MCP 工具，想分享给团队。
+小明开发了一个 Skill 工具，想分享给团队。
 
 ### 8.1 初始化项目
 
 ```bash
-$ cd my-awesome-mcp
+$ cd my-awesome-skill
 $ akit init
 
 ┌─────────────────────────────────────────────┐
 │         Initialize Package Configuration    │
 ├─────────────────────────────────────────────┤
 │                                             │
-│  ? Package name: my-awesome-mcp             │
+│  ? Package name: my-awesome-skill           │
 │  ? Scope (optional): @xiaoming              │
 │  ? Version: 1.0.0                           │
-│  ? Type: (Use arrow keys)                   │
-│    ❯ MCP                                   │
-│      Skill                                 │
-│  ? Description: My awesome MCP tool         │
+│  ? Description: My awesome Skill tool       │
 │  ? License: MIT                             │
-│  ? Entry point: index.js                    │
-│  ? Transport: stdio                         │
-│  ? Command: node                            │
-│  ? Args: index.js                           │
+│  ? Trigger: command                         │
+│  ? Command: my-tool                         │
+│  ? Content: 工具描述内容                     │
 │                                             │
 └─────────────────────────────────────────────┘
 
 ✔ Created akit.json
 
 {
-  "name": "my-awesome-mcp",
+  "name": "my-awesome-skill",
   "scope": "@xiaoming",
   "version": "1.0.0",
-  "type": "mcp",
-  "description": "My awesome MCP tool",
+  "type": "skill",
+  "description": "My awesome Skill tool",
   "license": "MIT",
-  "main": "index.js",
-  "mcp": {
-    "transport": "stdio",
-    "command": "node",
-    "args": ["index.js"]
+  "skill": {
+    "trigger": "command",
+    "command": "my-tool",
+    "content": "工具描述内容"
   }
 }
 
@@ -622,10 +527,9 @@ Next steps:
 $ akit publish
 
 ⠋ Validating akit.json...
-  ✓ Name: @xiaoming/my-awesome-mcp
+  ✓ Name: @xiaoming/my-awesome-skill
   ✓ Version: 1.0.0
-  ✓ Type: mcp
-  ✓ Entry point: index.js
+  ✓ Type: skill
 
 ⠋ Packaging...
   ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ 100% (156 KB)
@@ -635,13 +539,13 @@ $ akit publish
 
 ⠋ Publishing...
 
-✔ Published @xiaoming/my-awesome-mcp@1.0.0 successfully!
+✔ Published @xiaoming/my-awesome-skill@1.0.0 successfully!
 
-  📦 Package: https://registry.company.com/@xiaoming/my-awesome-mcp
-  📋 Install: akit install @xiaoming/my-awesome-mcp
+  📦 Package: https://registry.company.com/@xiaoming/my-awesome-skill
+  📋 Install: akit install @xiaoming/my-awesome-skill
 
   Share with your team:
-  akit install @xiaoming/my-awesome-mcp
+  akit install @xiaoming/my-awesome-skill
 ```
 
 ### 8.3 更新版本
@@ -658,7 +562,7 @@ $ akit publish
 ⠋ Packaging...
 ⠋ Uploading...
 
-✔ Published @xiaoming/my-awesome-mcp@1.0.1 successfully!
+✔ Published @xiaoming/my-awesome-skill@1.0.1 successfully!
 
   Changelog: (not provided)
   Add changelog: akit publish --changelog "Fixed bug in ..."
@@ -689,38 +593,38 @@ $ akit update --all
 
 # 开发新功能
 $ akit search authentication
-# 搜索相关的 MCP
+# 搜索相关的 Skill
 
-$ akit install @team/auth-mcp
-# 安装需要的 MCP
+$ akit install @team/auth-skill
+# 安装需要的 Skill
 
-# 开发自己的 MCP
-$ cd my-new-mcp
+# 开发自己的 Skill
+$ cd my-new-skill
 $ akit init
 $ akit publish
 
 # 分享给同事
-# "你可以用 akit install @xiaoming/my-new-mcp 安装"
+# "你可以用 akit install @xiaoming/my-new-skill 安装"
 ```
 
 ### 9.2 团队协作场景
 
 ```bash
-# 同事在群里说：新发布了一个 MCP
-# @xiaoming/web-scraper-mcp - 网页抓取工具
+# 同事在群里说：新发布了一个 Skill
+# @xiaoming/web-scraper-skill - 网页抓取工具
 
-$ akit install @xiaoming/web-scraper-mcp
+$ akit install @xiaoming/web-scraper-skill
 
 # 使用后觉得不错，给个好评
-$ akit info @xiaoming/web-scraper-mcp
+$ akit info @xiaoming/web-scraper-skill
 # → 在 Web UI 上评分
 ```
 
 ### 9.3 CI/CD 集成
 
 ```yaml
-# .github/workflows/publish-mcp.yml
-name: Publish MCP
+# .github/workflows/publish-skill.yml
+name: Publish Skill
 
 on:
   push:
@@ -807,10 +711,10 @@ jobs:
 
 | 痛点 | 解决方案 |
 |---|---|
-| 不知道有哪些 MCP 可用 | Web UI 首页推荐 + 搜索 |
-| 手动配置 MCP 太麻烦 | CLI 自动写入配置 |
-| 配置文件格式记不住 | CLI 自动处理，无需记忆 |
-| 不知道 MCP 需要哪些环境变量 | 安装时提示 |
-| 团队 MCP 版本不一致 | akit update --all |
+| 不知道有哪些 Skill 可用 | Web UI 首页推荐 + 搜索 |
+| 手动管理包文件太麻烦 | CLI 自动下载解压并记录 |
+| 包文件格式记不住 | CLI 自动处理，无需记忆 |
+| 不知道 Skill 需要什么配置 | 安装时提示 |
+| 团队 Skill 版本不一致 | akit update --all |
 | 发布流程复杂 | akit init + akit publish 两步完成 |
-| 不知道 MCP 是否工作正常 | 安装后提示验证方法 |
+| 不知道 Skill 是否工作正常 | 安装后提示验证方法 |

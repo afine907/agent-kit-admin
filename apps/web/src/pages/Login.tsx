@@ -121,14 +121,14 @@ export default function Login() {
               <span className="text-primary">高效、稳定、开放</span>
             </h1>
             <p className="text-muted-foreground text-base leading-relaxed max-w-sm">
-              发现、安装和分享 MCP 工具与 AI 技能。内置团队协作、版本管理和安全沙箱。
+              发现、安装和分享 AI 技能包。内置团队协作、版本管理和安全沙箱。
             </p>
           </div>
 
           {/* Feature pills */}
           <div className="flex flex-wrap gap-2">
             {[
-              { icon: '🔗', text: 'MCP 协议兼容' },
+              { icon: '🧠', text: 'Agent Skill 生态' },
               { icon: '👥', text: '团队私有包' },
               { icon: '📦', text: '一键安装' },
               { icon: '🔒', text: '安全沙箱' },

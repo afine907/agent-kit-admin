@@ -13,7 +13,7 @@ async def test_publish_and_install_flow(client: AsyncClient, auth_headers: dict)
         json={
             "name": "e2e-test",
             "scope": "@test",
-            "type": "mcp",
+            "type": "skill",
             "description": "E2E test package",
         },
         headers=auth_headers,
@@ -28,7 +28,7 @@ async def test_publish_and_install_flow(client: AsyncClient, auth_headers: dict)
     assert data["full_name"] == "@test/e2e-test"
 
     # 2. 发布版本
-    manifest = '{"name":"e2e-test","version":"1.0.0","type":"mcp","mcp":{"transport":"stdio","command":"npx"}}'
+    manifest = '{"name":"e2e-test","version":"1.0.0","type":"skill","skill":{"content":"## 测试 Skill"}}'
     resp = await client.post(
         "/api/v1/packages/@test/e2e-test/versions",
         data={

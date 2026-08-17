@@ -2,7 +2,7 @@
 
 ## 定位
 
-**Agent Kit Admin** 是一个 AI-native 管理平台，专为中小团队设计，用于管理和分发 MCP (Model Context Protocol) 和 Agent Skills。
+**Agent Kit Admin** 是一个 AI-native 管理平台，专为中小团队设计，用于管理和分发 Agent Skills。
 
 核心价值：**AI Agent 生态的私有化 Package Registry**
 
@@ -15,10 +15,10 @@
 ## 核心场景
 
 ### 1. 技能发布
-团队成员开发了一个 MCP 工具或 Skill，通过 CLI 发布到私有 Registry，供团队其他成员使用。
+团队成员开发了一个 Skill，通过 CLI 发布到私有 Registry，供团队其他成员使用。
 
 ### 2. 技能安装
-开发者需要使用某个能力，通过 `akit install` 一键安装，CLI 自动配置到对应的 Agent（Claude Code / Codex）。
+开发者需要使用某个能力，通过 `akit install` 一键安装，CLI 下载解压并记录，供对应的 Agent（Claude Code / Codex）使用。
 
 ### 3. 版本管理
 技能有版本迭代，支持语义化版本控制，团队可以锁定特定版本或升级到最新版。

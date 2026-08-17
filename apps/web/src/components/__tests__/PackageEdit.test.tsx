@@ -44,7 +44,7 @@ const mockPackage = {
   name: 'test-pkg',
   scope: 'test-scope',
   full_name: 'test-scope/test-pkg',
-  type: 'mcp' as const,
+  type: 'skill' as const,
   description: 'Original description',
   visibility: 'public',
   tags: ['ai', 'tool'],
@@ -99,9 +99,9 @@ describe('PackageEdit', () => {
 
     const tagsInput = screen.getByLabelText(/tags/i);
     await user.clear(tagsInput);
-    await user.type(tagsInput, 'mcp, search');
+    await user.type(tagsInput, 'skill, search');
 
-    expect(tagsInput).toHaveValue('mcp, search');
+    expect(tagsInput).toHaveValue('skill, search');
   });
 
   it('allows changing visibility', async () => {

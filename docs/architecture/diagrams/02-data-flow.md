@@ -11,9 +11,9 @@ sequenceDiagram
     participant DB as PostgreSQL
     participant MinIO as MinIO
 
-    User->>CLI: akit install @team/web-search-mcp
+    User->>CLI: akit install @team/web-search-skill
 
-    CLI->>Caddy: GET /api/v1/packages/team/web-search-mcp
+    CLI->>Caddy: GET /api/v1/packages/team/web-search-skill
     Caddy->>API: 转发请求
 
     API->>DB: 查询包元数据
@@ -22,7 +22,7 @@ sequenceDiagram
     API-->>Caddy: 包元数据
     Caddy-->>CLI: 包元数据
 
-    CLI->>Caddy: GET /api/v1/packages/team/web-search-mcp/versions/1.0.0/download
+    CLI->>Caddy: GET /api/v1/packages/team/web-search-skill/versions/1.0.0/download
     Caddy->>API: 转发请求
 
     API->>DB: 查询版本信息
@@ -40,9 +40,8 @@ sequenceDiagram
     CLI->>MinIO: GET 预签名 URL (下载 tarball)
     MinIO-->>CLI: tarball 文件
 
-    CLI->>CLI: 解压到 ~/.akit/packages/@team/web-search-mcp/
-    CLI->>CLI: 检测 Agent 类型
-    CLI->>CLI: 写入 Agent 配置 (Claude Code / Codex)
+    CLI->>CLI: 解压到 ~/.akit/packages/@team/web-search-skill/
+    CLI->>CLI: 记录安装信息到 akit.json
 
     CLI-->>User: ✔ 安装成功
 ```
@@ -66,7 +65,7 @@ sequenceDiagram
 
     CLI->>CLI: 计算 SHA256 hash
 
-    CLI->>Caddy: POST /api/v1/packages/team/web-search-mcp/versions
+    CLI->>Caddy: POST /api/v1/packages/team/web-search-skill/versions
     Caddy->>API: 转发请求
 
     API->>API: 验证 JWT Token
@@ -85,7 +84,7 @@ sequenceDiagram
     CLI->>MinIO: PUT tarball (上传文件)
     MinIO-->>CLI: 上传成功
 
-    CLI->>Caddy: PATCH /api/v1/packages/team/web-search-mcp/versions/1.0.0
+    CLI->>Caddy: PATCH /api/v1/packages/team/web-search-skill/versions/1.0.0
     Note over CLI,API: 确认上传完成，更新版本状态
 
     Caddy->>API: 转发请求
@@ -96,7 +95,7 @@ sequenceDiagram
 
     API-->>Caddy: 发布成功
     Caddy-->>CLI: 发布成功
-    CLI-->>User: ✔ @team/web-search-mcp@1.0.0 已发布
+    CLI-->>User: ✔ @team/web-search-skill@1.0.0 已发布
 ```
 
 ## OAuth 认证流程

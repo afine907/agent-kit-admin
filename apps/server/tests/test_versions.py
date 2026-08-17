@@ -22,11 +22,9 @@ class TestVersionPublish:
             {
                 "name": test_package["name"],
                 "version": "1.0.0",
-                "type": "mcp",
-                "mcp": {
-                    "transport": "stdio",
-                    "command": "node",
-                    "args": ["index.js"],
+                "type": "skill",
+                "skill": {
+                    "content": "## 测试 Skill\n\n测试内容。",
                 },
             }
         )
@@ -60,7 +58,7 @@ class TestVersionPublish:
             {
                 "name": test_package_with_version["name"],
                 "version": "1.0.0",
-                "type": "mcp",
+                "type": "skill",
             }
         )
 
@@ -84,7 +82,7 @@ class TestVersionPublish:
     ):
         """测试无效版本号"""
         tarball = create_test_tarball()
-        manifest = json.dumps({"name": test_package["name"], "type": "mcp"})
+        manifest = json.dumps({"name": test_package["name"], "type": "skill"})
 
         response = await client.post(
             f"/api/v1/packages/{test_package['scope']}/{test_package['name']}/versions",
@@ -105,7 +103,7 @@ class TestVersionPublish:
     ):
         """测试未认证发布版本"""
         tarball = create_test_tarball()
-        manifest = json.dumps({"name": test_package["name"], "type": "mcp"})
+        manifest = json.dumps({"name": test_package["name"], "type": "skill"})
 
         response = await client.post(
             f"/api/v1/packages/{test_package['scope']}/{test_package['name']}/versions",
@@ -125,7 +123,7 @@ class TestVersionPublish:
     ):
         """测试发布到不存在的包"""
         tarball = create_test_tarball()
-        manifest = json.dumps({"name": "nonexistent", "type": "mcp"})
+        manifest = json.dumps({"name": "nonexistent", "type": "skill"})
 
         response = await client.post(
             "/api/v1/packages/@nonexist/nope/versions",
@@ -152,11 +150,9 @@ class TestVersionPublish:
             {
                 "name": test_package["name"],
                 "version": "1.0.0",
-                "type": "mcp",
-                "mcp": {
-                    "transport": "stdio",
-                    "command": "node",
-                    "args": ["index.js"],
+                "type": "skill",
+                "skill": {
+                    "content": "## 测试 Skill\n\n测试内容。",
                 },
             }
         )
@@ -175,11 +171,9 @@ class TestVersionPublish:
             {
                 "name": test_package["name"],
                 "version": "1.1.0",
-                "type": "mcp",
-                "mcp": {
-                    "transport": "stdio",
-                    "command": "node",
-                    "args": ["index.js"],
+                "type": "skill",
+                "skill": {
+                    "content": "## 测试 Skill\n\n测试内容。",
                 },
             }
         )

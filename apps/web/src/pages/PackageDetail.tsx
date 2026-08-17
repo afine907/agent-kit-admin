@@ -26,6 +26,7 @@ import {
   Loader2,
   Star,
   Pencil,
+  Bot,
 } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 
@@ -68,8 +69,6 @@ export default function PackageDetail() {
     );
   }
 
-  const isMCP = pkg.type === 'mcp';
-
   return (
     <div className="container mx-auto py-8">
       {/* 面包屑 */}
@@ -98,15 +97,18 @@ export default function PackageDetail() {
                   Edit
                 </Link>
               )}
-              <span
-                className={`inline-flex items-center px-2.5 py-0.5 text-xs font-mono font-medium rounded-md ${
-                  isMCP
-                    ? 'bg-primary/10 text-primary border border-primary/20'
-                    : 'bg-accent/10 text-accent border border-accent/20'
-                }`}
-              >
-                {isMCP ? 'MCP' : 'SKILL'}
+              <span className="inline-flex items-center px-2.5 py-0.5 text-xs font-mono font-medium rounded-md bg-accent/10 text-accent border border-accent/20">
+                SKILL
               </span>
+              {pkg.latest_version && (
+                <Link
+                  to={`/agent?scope=${scope}&name=${name}&version=${pkg.latest_version}`}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-primary/10 text-primary rounded-md border border-primary/20 hover:bg-primary/20 transition-colors"
+                >
+                  <Bot className="w-3 h-3" />
+                  {t('packageDetail.testSkill')}
+                </Link>
+              )}
             </div>
             <p className="text-muted-foreground mt-2 leading-relaxed">
               {pkg.description || t('empty.noDescription')}

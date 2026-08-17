@@ -26,8 +26,8 @@
 │ id                                      │
 │ name              (包名，不含 scope)    │
 │ scope             (如 @team)           │
-│ full_name         (如 @team/web-mcp)   │
-│ type              (mcp / skill)        │
+│ full_name         (如 @team/web-skill) │
+│ type              (skill)              │
 │ owner_id          (User 或 Team)       │
 │ owner_type        (user / team)        │
 │ description                             │
@@ -149,7 +149,7 @@ CREATE TABLE packages (
     name VARCHAR(100) NOT NULL,
     scope VARCHAR(50) NOT NULL,  -- @team 或 @username
     full_name VARCHAR(150) GENERATED ALWAYS AS (scope || '/' || name) STORED,
-    type VARCHAR(10) NOT NULL,   -- mcp / skill
+    type VARCHAR(10) NOT NULL,   -- skill
     owner_id UUID NOT NULL,
     owner_type VARCHAR(10) NOT NULL,  -- user / team
     description TEXT,
@@ -318,7 +318,6 @@ CREATE INDEX idx_api_keys_hash ON api_keys(key_hash);
 
 ### 存储策略
 
-- **MCP Manifest**：完整存储在 `versions.manifest` JSONB 字段中
 - **Skill Manifest**：`content` 字段（Prompt 内容）如果超过 **10KB**，存储为独立文件到 MinIO，manifest 中用 `content_url` 字段引用；小于 10KB 的直接存储在 JSONB 中
 - 安装时 CLI 根据 `content_url` 是否存在决定从数据库还是 MinIO 读取 Skill 内容
 
@@ -327,31 +326,6 @@ CREATE INDEX idx_api_keys_hash ON api_keys(key_hash);
 > - **绝对上限**：50KB — manifest schema 中 `content` 字段的 maxLength（见 [18-manifest-schema.md](18-manifest-schema.md)）
 > - 超过 50KB 的内容会被 CLI 校验拒绝，不允许发布
 > - 10KB~50KB 的 content 会被自动存储到 MinIO，manifest 中替换为 `content_url`
-
-### MCP Manifest
-
-```json
-{
-  "type": "mcp",
-  "transport": "stdio",
-  "command": "node",
-  "args": ["index.js"],
-  "env": [
-    {
-      "name": "API_KEY",
-      "required": true,
-      "description": "API key for the service"
-    }
-  ],
-  "capabilities": ["tools", "resources"],
-  "tools": [
-    {
-      "name": "search",
-      "description": "Search the web"
-    }
-  ]
-}
-```
 
 ### Skill Manifest
 

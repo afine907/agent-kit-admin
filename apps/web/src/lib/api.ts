@@ -119,7 +119,7 @@ export interface PackageResponse {
   name: string;
   scope: string;
   full_name: string;
-  type: 'mcp' | 'skill';
+  type: 'skill';
   description?: string;
   license?: string;
   repository?: string;
@@ -246,6 +246,40 @@ export interface AppConfig {
   oauth_provider: string;
 }
 
+// Skill content 端点响应
+export interface SkillContentResponse {
+  content: string;
+  source: 'inline' | 'minio';
+  package: {
+    scope: string;
+    name: string;
+    full_name: string;
+  };
+  version: string;
+}
+
+// 聊天消息
+export interface ChatMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+}
+
+// SSE 错误事件抛出的异常
+export class AgentChatError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'AgentChatError';
+  }
+}
+
+// 聊天请求
+export interface ChatRequest {
+  scope: string;
+  name: string;
+  version?: string;
+  messages: ChatMessage[];
+}
+
 // 团队相关类型
 export interface Team {
   id: string;
@@ -271,7 +305,7 @@ export interface TeamPackage {
   name: string;
   scope: string;
   full_name: string;
-  type: 'mcp' | 'skill';
+  type: 'skill';
   description?: string;
   visibility: 'team' | 'public';
   owner_type: 'team' | 'user';
@@ -285,7 +319,7 @@ export interface TeamPackage {
 
 export interface PublishTeamPackageData {
   name: string;
-  type: 'mcp' | 'skill';
+  type: 'skill';
   description?: string;
   visibility?: 'team' | 'public';
   owner_type: 'team';
@@ -341,7 +375,7 @@ export const api = {
   createPackage: (data: {
     name: string;
     scope: string;
-    type: 'mcp' | 'skill';
+    type: 'skill';
     description?: string;
     license?: string;
     repository?: string;
@@ -366,6 +400,10 @@ export const api = {
 
   listVersions: (scope: string, name: string) =>
     client.get<VersionListResponse>(`/api/v1/packages/${scope}/${name}/versions`).then((r) => r.data),
+
+  // Skill content（供聊天页展示）
+  getContent: (scope: string, name: string, version: string) =>
+    client.get<SkillContentResponse>(`/api/v1/packages/${scope}/${name}/versions/${version}/content`).then((r) => r.data),
 
   getDownloadUrl: (scope: string, name: string, version?: string) =>
     `/api/v1/packages/${scope}/${name}/download${version ? `?version=${version}` : ''}`,
@@ -489,5 +527,79 @@ export const api = {
 
     getDownloadTrends: (days: number = 30) =>
       client.get<DownloadTrendsResponse>('/api/v1/admin/stats/downloads', { params: { days } }).then((r) => r.data),
+  },
+
+  // 聊天 Agent（SSE 流式，使用原生 fetch + ReadableStream）
+  agent: {
+    chat: (
+      data: ChatRequest,
+      options: {
+        signal?: AbortSignal;
+        onDelta: (text: string) => void;
+        onMeta?: (model: string) => void;
+      },
+    ): Promise<void> => {
+      const token = useAuthStore.getState().getToken();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
+      return fetch(`${BASE_URL}/api/v1/agent/chat`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(data),
+        signal: options.signal,
+      }).then(async (response) => {
+        if (!response.ok) {
+          throw new Error(`API Error (${response.status}): ${response.statusText}`);
+        }
+        const reader = response.body?.getReader();
+        if (!reader) {
+          throw new Error('Response body is not readable');
+        }
+        // stream:true 必须开启，否则中文 token 跨块乱码
+        // 注意：stream 选项在运行时有效，但 TS lib 的 TextDecodeOptions 类型未收录，需断言
+        const decoder = new TextDecoder('utf-8');
+        let buffer = '';
+
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true } as { stream: boolean });
+
+          // 按 SSE 事件边界 \n\n 切分
+          const events = buffer.split('\n\n');
+          buffer = events.pop() || ''; // 最后一个可能不完整，留到下次
+
+          for (const block of events) {
+            const line = block.split('\n').find((l) => l.startsWith('data:'));
+            if (!line) continue;
+            const payload = line.slice('data:'.length).trim();
+            if (!payload) continue;
+
+            if (payload === '[DONE]') return;
+
+            try {
+              const json = JSON.parse(payload) as Record<string, unknown>;
+              if (typeof json.delta === 'string') {
+                options.onDelta(json.delta);
+              } else if (json.meta && typeof json.meta === 'object') {
+                const meta = json.meta as Record<string, unknown>;
+                if (typeof meta.model === 'string') options.onMeta?.(meta.model);
+              } else if (json.error && typeof json.error === 'object') {
+                const error = json.error as Record<string, unknown>;
+                throw new AgentChatError(String(error.message || '聊天请求失败'));
+              }
+            } catch (e) {
+              // AgentChatError 来自 SSE 错误事件，直接向上传播；其余（JSON 解析失败）忽略不完整块
+              if (e instanceof AgentChatError) throw e;
+              continue;
+            }
+          }
+        }
+      });
+    },
   },
 };

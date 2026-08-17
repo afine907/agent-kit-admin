@@ -83,7 +83,7 @@ Query Parameters:
 
 | 参数 | 类型 | 默认值 | 说明 |
 |---|---|---|---|
-| type | string | - | mcp / skill |
+| type | string | - | skill |
 | search | string | - | 搜索关键词 |
 | scope | string | - | 按 scope 筛选 |
 | tag | string | - | 按标签筛选 |
@@ -120,8 +120,8 @@ Response:
       "name": "web-search",
       "scope": "@team",
       "full_name": "@team/web-search",
-      "type": "mcp",
-      "description": "Web search MCP tool",
+      "type": "skill",
+      "description": "Web search skill",
       "license": "MIT",
       "downloads_count": 1234,
       "rating_avg": 4.5,
@@ -151,8 +151,8 @@ Response:
   "name": "web-search",
   "scope": "@team",
   "full_name": "@team/web-search",
-  "type": "mcp",
-  "description": "Web search MCP tool",
+  "type": "skill",
+  "description": "Web search skill",
   "license": "MIT",
   "repository": "https://github.com/team/web-search",
   "homepage": "https://team.dev/web-search",
@@ -197,8 +197,8 @@ Request:
 {
   "name": "web-search",
   "scope": "@team",
-  "type": "mcp",
-  "description": "Web search MCP tool",
+  "type": "skill",
+  "description": "Web search skill",
   "license": "MIT",
   "repository": "https://github.com/team/web-search",
   "visibility": "public"
@@ -346,7 +346,7 @@ Response:
         "avatar_url": "https://..."
       },
       "rating": 5,
-      "comment": "很好用的 MCP 工具",
+      "comment": "很好用的 Skill 工具",
       "version": "1.2.0",
       "created_at": "2024-01-15T10:30:00Z"
     }
@@ -374,7 +374,7 @@ Request:
 ```json
 {
   "rating": 5,
-  "comment": "很好用的 MCP 工具",
+  "comment": "很好用的 Skill 工具",
   "version": "1.2.0"
 }
 ```

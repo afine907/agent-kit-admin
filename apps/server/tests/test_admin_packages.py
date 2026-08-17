@@ -41,11 +41,11 @@ class TestAdminPackageList:
         self, client: AsyncClient, admin_headers: dict, test_package: dict
     ):
         """按类型筛选包"""
-        response = await client.get("/api/v1/admin/packages?type=mcp", headers=admin_headers)
+        response = await client.get("/api/v1/admin/packages?type=skill", headers=admin_headers)
         assert response.status_code == 200
         data = response.json()
         for pkg in data["data"]:
-            assert pkg["type"] == "mcp"
+            assert pkg["type"] == "skill"
 
     @pytest.mark.asyncio
     async def test_admin_list_packages_pagination(

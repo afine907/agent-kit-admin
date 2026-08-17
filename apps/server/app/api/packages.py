@@ -59,7 +59,7 @@ async def list_tags(
 @router.get("", response_model=PackageListResponse)
 async def list_packages(
     search: str | None = Query(None, description="搜索关键词"),
-    type: str | None = Query(None, description="包类型: mcp/skill"),
+    type: str | None = Query(None, description="包类型: skill"),
     scope: str | None = Query(None, description="按 scope 筛选"),
     sort: str = Query("updated_at", description="排序字段"),
     order: str = Query("desc", description="排序方向"),

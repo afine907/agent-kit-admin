@@ -70,9 +70,6 @@
   "init": {
     "description": "初始化项目",
     "title": "📦 Agent Kit Admin - 初始化项目",
-    "selectType": "选择包类型:",
-    "mcpServer": "MCP Server (模型上下文协议服务器)",
-    "agentSkill": "Agent Skill (Agent 技能包)",
     "packageName": "包名 (例如: @scope/my-package):",
     "packageDescription": "描述 (可选):",
     "initializing": "正在初始化项目...",
@@ -95,9 +92,6 @@
     "fetchingInfo": "获取包信息...",
     "fetchingDownloadUrl": "获取下载链接...",
     "downloading": "下载中...",
-    "configuringAgent": "配置 Agent...",
-    "noAgentDetected": "未检测到已安装的 Agent",
-    "installAgentHint": "请安装 Claude Code 或 Codex",
     "installSuccess": "安装成功",
     "installFailed": "安装失败"
   },

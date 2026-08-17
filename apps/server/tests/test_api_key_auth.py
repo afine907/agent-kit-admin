@@ -80,7 +80,7 @@ class TestAPIKeyAuthentication:
             json={
                 "name": "api-key-pkg",
                 "scope": "@test",
-                "type": "mcp",
+                "type": "skill",
                 "description": "Created with API Key",
             },
             headers=headers,

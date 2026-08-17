@@ -22,7 +22,6 @@ akit install @scope/package-name
 # ✅ 包下载成功
 # ✅ 文件解压到 ~/.akit/packages/@scope/package-name/
 # ✅ akit.json 存在于包目录
-# ✅ Agent 配置已写入（如 ~/.claude/mcp.json）
 ```
 
 ### 1.2 update 命令
@@ -34,7 +33,6 @@ akit update @scope/package-name
 # 验证点：
 # ✅ 检查新版本
 # ✅ 下载并解压新版本
-# ✅ Agent 配置更新为 manifest 中的实际值
 # ✅ 版本记录更新
 ```
 
@@ -165,7 +163,6 @@ curl http://localhost:8000/api/v1/packages/{scope}/{name}/download
 4. 使用 CLI 更新：`akit update @scope/package`
 5. 验证点：
    - ✅ 完整流程无错误
-   - ✅ Agent 配置正确更新
 
 ### 4.2 团队包管理完整流程
 

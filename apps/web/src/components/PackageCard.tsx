@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next'
 import { PackageResponse } from '../lib/api'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Download, Tag, Zap, Boxes } from 'lucide-react'
+import { Download, Tag, Boxes } from 'lucide-react'
 
 interface PackageCardProps {
   package: PackageResponse
@@ -16,14 +16,12 @@ interface PackageCardProps {
 }
 
 const TYPE_META = {
-  mcp: { icon: Zap, color: 'text-primary bg-primary/10 border-primary/20', label: 'MCP' },
   skill: { icon: Boxes, color: 'text-amber-500 bg-amber-500/10 border-amber-500/20', label: 'SKILL' },
 }
 
 export const PackageCard = React.memo(function PackageCard({ package: pkg, index = 0 }: PackageCardProps) {
   const { t } = useTranslation('common')
-  const isMCP = pkg.type === 'mcp'
-  const meta = isMCP ? TYPE_META.mcp : TYPE_META.skill
+  const meta = TYPE_META.skill
   const TypeIcon = meta.icon
 
   return (

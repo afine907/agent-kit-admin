@@ -5,7 +5,7 @@
 import React, { useCallback, useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
-import { Terminal, LogOut, User, Boxes, Shield, Languages, Plus, Users } from 'lucide-react';
+import { Terminal, LogOut, User, Boxes, Shield, Languages, Plus, Users, MessagesSquare } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 
@@ -70,6 +70,13 @@ export const Header = React.memo(function Header() {
 
           {isAuthenticated ? (
             <>
+              <Link
+                to="/agent"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground rounded-md hover:bg-secondary/50 transition-colors focus-visible:ring-2 focus-visible:ring-primary/20"
+              >
+                <MessagesSquare className="w-3.5 h-3.5" />
+                {t('nav.test')}
+              </Link>
               <Link
                 to="/publish"
                 className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors focus-visible:ring-2 focus-visible:ring-green-500/20"

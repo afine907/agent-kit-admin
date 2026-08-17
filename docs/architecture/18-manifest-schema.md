@@ -2,7 +2,7 @@
 
 ## 概述
 
-`akit.json` 是 Agent Kit Admin 的包描述文件，类似于 Node.js 的 `package.json`。每个发布的 MCP 或 Skill 包都必须包含此文件。
+`akit.json` 是 Agent Kit Admin 的包描述文件，类似于 Node.js 的 `package.json`。每个发布的 Skill 包都必须包含此文件。
 
 ---
 
@@ -43,8 +43,8 @@
 
     "type": {
       "type": "string",
-      "enum": ["mcp", "skill"],
-      "description": "包类型：mcp（MCP 服务器）或 skill（Agent 技能）"
+      "const": "skill",
+      "description": "包类型：固定为 skill（Agent 技能）"
     },
 
     "description": {
@@ -107,85 +107,13 @@
       "description": "运行环境版本要求"
     },
 
-    "mcp": {
-      "$ref": "#/$defs/mcpConfig",
-      "description": "MCP 服务器配置（type=mcp 时必填）"
-    },
-
     "skill": {
       "$ref": "#/$defs/skillConfig",
       "description": "Skill 配置（type=skill 时必填）"
     }
   },
 
-  "if": {
-    "properties": { "type": { "const": "mcp" } }
-  },
-  "then": {
-    "required": ["mcp"]
-  },
-
   "$defs": {
-    "mcpConfig": {
-      "type": "object",
-      "required": ["transport", "command"],
-      "properties": {
-        "transport": {
-          "type": "string",
-          "enum": ["stdio", "sse", "streamable-http"],
-          "description": "传输协议类型"
-        },
-        "command": {
-          "type": "string",
-          "description": "启动命令"
-        },
-        "args": {
-          "type": "array",
-          "items": { "type": "string" },
-          "description": "命令参数"
-        },
-        "url": {
-          "type": "string",
-          "format": "uri",
-          "description": "远程 MCP 服务器 URL（transport=sse 或 streamable-http 时使用）"
-        },
-        "env": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "required": ["name"],
-            "properties": {
-              "name": { "type": "string" },
-              "required": { "type": "boolean", "default": false },
-              "description": { "type": "string" },
-              "default": { "type": "string" }
-            }
-          },
-          "description": "环境变量定义"
-        },
-        "capabilities": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "enum": ["tools", "resources", "prompts"]
-          },
-          "description": "MCP 能力声明"
-        },
-        "tools": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "required": ["name"],
-            "properties": {
-              "name": { "type": "string" },
-              "description": { "type": "string" }
-            }
-          },
-          "description": "工具列表（自描述）"
-        }
-      }
-    },
-
     "skillConfig": {
       "type": "object",
       "required": ["content"],
@@ -232,72 +160,18 @@
 
 ## 必填字段规则
 
-| 字段 | MCP 包 | Skill 包 | 说明 |
-|---|---|---|---|
-| `name` | ✅ 必填 | ✅ 必填 | 包名 |
-| `version` | ✅ 必填 | ✅ 必填 | 版本号 |
-| `type` | ✅ 必填 | ✅ 必填 | 固定为 `mcp` 或 `skill` |
-| `mcp` | ✅ 必填 | ❌ 不需要 | MCP 配置 |
-| `skill` | ❌ 不需要 | ✅ 必填 | Skill 配置 |
-| `description` | 推荐 | 推荐 | 描述信息 |
-| `main` | 推荐 | 可选 | 入口文件 |
+| 字段 | 必填 | 说明 |
+|---|---|---|
+| `name` | ✅ 必填 | 包名 |
+| `version` | ✅ 必填 | 版本号 |
+| `type` | ✅ 必填 | 固定为 `skill` |
+| `skill` | ✅ 必填 | Skill 配置 |
+| `description` | 推荐 | 描述信息 |
+| `main` | 可选 | 入口文件 |
 
 ---
 
 ## 示例
-
-### MCP 包 (stdio 模式)
-
-```json
-{
-  "name": "web-search",
-  "scope": "@team",
-  "version": "1.2.0",
-  "type": "mcp",
-  "description": "Web search MCP tool",
-  "license": "MIT",
-  "repository": "https://github.com/team/web-search",
-  "main": "index.js",
-  "files": ["index.js", "lib/", "README.md"],
-  "keywords": ["search", "web", "mcp"],
-  "mcp": {
-    "transport": "stdio",
-    "command": "node",
-    "args": ["index.js"],
-    "env": [
-      {
-        "name": "SEARCH_API_KEY",
-        "required": true,
-        "description": "API key for search service"
-      }
-    ],
-    "capabilities": ["tools"],
-    "tools": [
-      {
-        "name": "web_search",
-        "description": "Search the web"
-      }
-    ]
-  }
-}
-```
-
-### MCP 包 (SSE 远程模式)
-
-```json
-{
-  "name": "remote-api",
-  "scope": "@team",
-  "version": "1.0.0",
-  "type": "mcp",
-  "description": "Remote MCP server via SSE",
-  "mcp": {
-    "transport": "sse",
-    "url": "https://mcp.example.com/sse",
-    "capabilities": ["tools", "resources"]
-  }
-}
-```
 
 ### Skill 包
 
@@ -326,17 +200,17 @@
   "name": "enhanced-search",
   "scope": "@team",
   "version": "2.0.0",
-  "type": "mcp",
+  "type": "skill",
   "description": "Enhanced search with caching",
   "dependencies": {
     "@team/web-search": "^1.0.0",
-    "@team/cache-mcp": "^1.2.0"
+    "@team/cache-skill": "^1.2.0"
   },
-  "mcp": {
-    "transport": "stdio",
-    "command": "node",
-    "args": ["index.js"],
-    "capabilities": ["tools"]
+  "skill": {
+    "trigger": "command",
+    "command": "search",
+    "content": "Search the web and cache results for faster subsequent queries...",
+    "permissions": ["network-access"]
   }
 }
 ```
@@ -382,10 +256,9 @@ $ akit publish
 ⠋ Validating akit.json...
   ✓ name: web-search
   ✓ version: 1.2.0
-  ✓ type: mcp
-  ✓ mcp.transport: stdio
-  ✓ mcp.command: node
-  ✗ mcp.env[0].name: required field missing
+  ✓ type: skill
+  ✓ skill.content: 最大 50000 字符
+  ✗ skill.content: required field missing
 
 ✖ Error: Invalid manifest
   See: https://agent-kit.dev/schemas/akit-manifest.json

@@ -249,17 +249,15 @@ flowchart TB
         Latest --> Download
 
         Download --> Extract["解压文件"]
-        Extract --> Detect["检测 Agent 类型"]
-        Detect --> Config["写入配置"]
-        Config --> Done["✔ 安装成功"]
+        Extract --> Record["记录安装信息"]
+        Record --> Done["✔ 安装成功"]
     end
 
     subgraph "命令行输出"
-        Output1["$ akit install @team/web-search-mcp"]
+        Output1["$ akit install @team/web-search-skill"]
         Output2["⠋ Resolving package..."]
-        Output3["⠋ Downloading @team/web-search-mcp@1.0.0..."]
-        Output4["✔ Installed @team/web-search-mcp@1.0.0"]
-        Output5["  Added to Claude Code config"]
+        Output3["⠋ Downloading @team/web-search-skill@1.0.0..."]
+        Output4["✔ Installed @team/web-search-skill@1.0.0"]
     end
 
     style Start fill:#E3F2FD
@@ -291,8 +289,8 @@ flowchart TB
         Output1["$ akit publish ./"]
         Output2["⠋ Reading manifest..."]
         Output3["⠋ Packing files..."]
-        Output4["⠋ Uploading @team/web-search-mcp@1.1.0..."]
-        Output5["✔ Published @team/web-search-mcp@1.1.0"]
+        Output4["⠋ Uploading @team/web-search-skill@1.1.0..."]
+        Output5["✔ Published @team/web-search-skill@1.1.0"]
     end
 
     style Start fill:#E3F2FD

@@ -4,9 +4,9 @@
 
 ## Repository Overview
 
-**Agent Kit Admin** — a private Package Registry for AI Agent ecosystems. Manages MCP servers and Agent Skills for teams using Claude Code, Codex, and other AI agents. Think "npm registry" but for AI agent capabilities.
+**Agent Kit Admin** — a private Package Registry for AI Agent ecosystems. Manages Agent Skills for teams using Claude Code, Codex, and other AI agents. Think "npm registry" but for AI agent capabilities.
 
-**Core flow:** `akit publish` (upload package) → Registry stores in PostgreSQL + MinIO → `akit install` (download + auto-configure Agent)
+**Core flow:** `akit publish` (upload package) → Registry stores in PostgreSQL + MinIO → `akit install` (download + record)
 
 | Component | Stack | Directory | Purpose |
 |---|---|---|---|
@@ -91,10 +91,15 @@ make db-reset               # Reset database
 /dwp-verify                 # Run conformance check
 ```
 
+## Project Conventions
+
+> 详细的项目规范（分层架构、Package Manifest、软删除策略、Scope Namespace、代码质量门）见 [CLAUDE.md](CLAUDE.md)。
+
 ## Documentation Index
 
 | Document | Purpose |
 |---|---|
+| [CLAUDE.md](CLAUDE.md) | 项目规范（架构约定、Manifest、质量门） |
 | [docs/README.md](docs/README.md) | Documentation index |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System architecture overview |
 | [docs/TESTING_GUIDE.md](docs/TESTING_GUIDE.md) | Testing conventions and commands |
@@ -104,7 +109,7 @@ make db-reset               # Reset database
 | [docs/AI_AGENT_ONBOARDING.md](docs/AI_AGENT_ONBOARDING.md) | AI agent onboarding guide |
 | [docs/AI_AGENT_COLLAB.md](docs/AI_AGENT_COLLAB.md) | Agent collaboration patterns |
 | [docs/PERFORMANCE.md](docs/PERFORMANCE.md) | Performance considerations |
-| [docs/architecture/](docs/architecture/) | Detailed architecture docs (21 files) |
+| [docs/architecture/](docs/architecture/) | Detailed architecture docs |
 | [docs/specs/](docs/specs/) | Phase specs and feature plans |
 
 ## Agent & Skill Catalog
@@ -115,22 +120,6 @@ See [.agents/docs/skills_agents_catalog.md](.agents/docs/skills_agents_catalog.m
 |---|---|---|
 | Skill | `akit` | Trigger-style CLI operations (install, search, publish) |
 | Skill | `akit-agent` | Proactive team package monitoring |
-
-## Design Documents
-
-All implementation specs live in `docs/architecture/`. Read these before writing code:
-
-| Document | When to read |
-|---|---|
-| `01-project-overview.md` | Project vision and target users |
-| `02-architecture.md` | Before building any component |
-| `04-data-model.md` | Before writing models/migrations |
-| `05-api-design.md` | Before writing API routes |
-| `06-cli-design.md` | Before writing CLI commands |
-| `11-mvp-spec.md` | MVP scope and acceptance criteria |
-| `13-edge-cases.md` | Before writing error handling |
-| `16-developer-quickstart.md` | Backend layering patterns |
-| `18-manifest-schema.md` | Package validation rules |
 
 ## Git Branches
 

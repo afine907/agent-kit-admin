@@ -58,11 +58,9 @@ export default function Home() {
 
   const TYPE_FILTERS = [
     { value: undefined, label: t('home.filterAll') },
-    { value: 'mcp', label: 'MCP' },
     { value: 'skill', label: 'Skill' },
   ] as const
 
-  const mcpCount = data?.data.filter((p: PackageResponse) => p.type === 'mcp').length ?? 0
   const skillCount = data?.data.filter((p: PackageResponse) => p.type === 'skill').length ?? 0
 
   return (
@@ -95,12 +93,6 @@ export default function Home() {
                 <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
                 <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
                   <span className="font-mono font-semibold text-foreground">{data.pagination.total}</span> 全部
-                </span>
-              </button>
-              <button onClick={() => handleTypeChange('mcp')} className="flex items-center gap-2 group">
-                <div className="w-2 h-2 rounded-full bg-green-400" />
-                <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
-                  <span className="font-mono font-semibold text-foreground">{mcpCount}</span> MCP
                 </span>
               </button>
               <button onClick={() => handleTypeChange('skill')} className="flex items-center gap-2 group">

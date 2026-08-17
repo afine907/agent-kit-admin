@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS packages (
     name VARCHAR(100) NOT NULL,
     scope VARCHAR(50) NOT NULL,  -- @team 或 @username
     full_name VARCHAR(150) GENERATED ALWAYS AS (scope || '/' || name) STORED,
-    type VARCHAR(10) NOT NULL,   -- mcp / skill
+    type VARCHAR(10) NOT NULL,   -- skill
     owner_id UUID NOT NULL,
     owner_type VARCHAR(10) NOT NULL,  -- user / team
     description TEXT,
@@ -170,17 +170,17 @@ VALUES ('testuser', 'test@example.com', 'Test User', 'wechat_work', 'wx_test_001
 ON CONFLICT DO NOTHING;
 
 -- 插入测试包
-INSERT INTO packages (name, scope, type, description, owner_id, owner_type, visibility, tags, manifest)
+-- 注意: manifest 存储在 versions 表（packages 表没有 manifest 列）
+INSERT INTO packages (name, scope, type, description, owner_id, owner_type, visibility, tags)
 SELECT
     'filesystem',
     '@testuser',
-    'mcp',
-    'File system access MCP server',
+    'skill',
+    'File system access Skill',
     u.id,
     'user',
     'public',
-    '["filesystem", "mcp"]'::jsonb,
-    '{"transport": "stdio", "command": "npx", "args": ["-y", "@modelcontextprotocol/server-filesystem"]}'::jsonb
+    '["filesystem", "skill"]'::jsonb
 FROM users u WHERE u.username = 'testuser'
 ON CONFLICT DO NOTHING;
 
@@ -189,7 +189,7 @@ INSERT INTO versions (package_id, version, manifest, tarball_hash, tarball_size,
 SELECT
     p.id,
     '1.0.0',
-    '{"name": "filesystem", "version": "1.0.0", "type": "mcp", "mcp": {"transport": "stdio", "command": "npx", "args": ["-y", "@modelcontextprotocol/server-filesystem"]}}'::jsonb,
+    '{"name": "filesystem", "version": "1.0.0", "type": "skill", "skill": {"content": "## File System Skill\\n\\n帮助用户列出、读取和写入文件系统内容。\\n\\n### 用法\\n\\n- **list_files**: 列出指定目录的文件\\n- **read_file**: 读取文件内容\\n- **write_file**: 写入内容到文件"}}'::jsonb,
     'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
     1024,
     'packages/testuser/filesystem/1.0.0.tar.gz',
@@ -205,5 +205,5 @@ WHERE full_name = '@testuser/filesystem' AND latest_version IS NULL;
 -- ============================================
 -- 验证 JSONB 查询
 -- ============================================
--- SELECT manifest->>'type' FROM packages;
--- SELECT tags FROM packages WHERE tags @> '["mcp"]'::jsonb;
+-- SELECT manifest->>'type' FROM versions;
+-- SELECT tags FROM packages WHERE tags @> '["skill"]'::jsonb;

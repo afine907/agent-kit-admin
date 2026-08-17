@@ -51,7 +51,7 @@ export type SortOrder = 'asc' | 'desc'
 /**
  * 包类型
  */
-export type PackageType = 'mcp' | 'skill'
+export type PackageType = 'skill'
 
 /**
  * 包可见性
@@ -236,20 +236,6 @@ export interface VersionDetail {
 }
 
 /**
- * MCP Manifest 结构
- */
-export interface MCPManifest {
-  type: 'mcp'
-  transport: 'stdio' | 'sse' | 'streamable-http'
-  command?: string
-  args?: string[]
-  url?: string
-  env?: EnvVar[]
-  capabilities?: ('tools' | 'resources' | 'prompts')[]
-  tools?: ToolInfo[]
-}
-
-/**
  * Skill Manifest 结构
  */
 export interface SkillManifest {
@@ -261,19 +247,7 @@ export interface SkillManifest {
   permissions?: string[]
 }
 
-export type Manifest = MCPManifest | SkillManifest
-
-export interface EnvVar {
-  name: string
-  required: boolean
-  description?: string
-  default?: string
-}
-
-export interface ToolInfo {
-  name: string
-  description?: string
-}
+export type Manifest = SkillManifest
 
 /**
  * 评分

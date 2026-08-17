@@ -2,7 +2,7 @@
 
 ## 目标
 
-最小可用版本，核心流程闭环。用户能在 3 分钟内完成从零到安装第一个 MCP。
+最小可用版本，核心流程闭环。用户能在 3 分钟内完成从零到安装第一个 skill。
 
 ## 时间
 
@@ -23,10 +23,8 @@ Week 1-3 (3 周)
 
 | ID | 故事 | 验收标准 |
 |---|---|---|
-| US-001 | 作为开发者，我想发布 MCP 包 | `akit publish` 上传成功，Web UI 可见 |
-| US-002 | 作为开发者，我想发布 Skill 包 | `akit publish` 上传成功，Web UI 可见 |
-| US-004 | 作为开发者，我想安装包到 Claude Code | `akit install` 写入 `~/.claude/mcp.json` |
-| US-005 | 作为开发者，我想安装包到 Codex | `akit install` 写入 `~/.codex/config.toml` |
+| US-001 | 作为开发者，我想发布 Skill 包 | `akit publish` 上传成功，Web UI 可见 |
+| US-004 | 作为开发者，我想安装包 | `akit install` 下载并记录到 `~/.akit/packages/` |
 | US-011 | 作为用户，我想浏览包列表 | Web UI 首页显示包列表，支持搜索 |
 | US-012 | 作为用户，我想查看包详情 | Web UI 详情页显示描述、版本、安装命令 |
 | US-013 | 作为用户，我想登录系统 | OAuth 登录成功，获取 JWT Token |
@@ -63,7 +61,6 @@ agent-kit-admin/
 │   ├── src/
 │   │   ├── bin/akit.ts      # CLI 入口
 │   │   ├── commands/        # 命令实现
-│   │   ├── agents/          # Agent 适配器
 │   │   ├── api/             # API 客户端
 │   │   ├── config/          # 配置管理
 │   │   └── utils/           # 工具函数
@@ -209,7 +206,7 @@ MVP 需要的表：
 
 **包列表查询参数:**
 - `search` - 搜索关键词 (ILIKE 匹配 name, description)
-- `type` - 筛选类型 (mcp/skill)
+- `type` - 筛选类型 (skill)
 - `page` - 页码 (默认 1)
 - `per_page` - 每页数量 (默认 20, 最大 100)
 
@@ -304,41 +301,15 @@ class AppError(HTTPException):
 3. 调用 API 获取下载 URL
 4. 下载 .tar.gz 到临时目录
 5. 解压到 ~/.akit/packages/@scope/name/
-6. 检测已安装的 Agent
-7. 写入 Agent 配置
+6. 记录安装信息到 akit.json
 
 参数:
-  --agent <name>     指定 Agent (claude/codex)
   --tag <tag>        版本标签 (默认 latest)
   --global           全局安装 (默认)
 
 输出:
 ✔ Installed @scope/name@1.0.0
-  Agent: Claude Code
-  Config: ~/.claude/mcp.json
 ```
-
-### 4.5 Agent 适配器
-
-**适配器接口:**
-```typescript
-interface AgentAdapter {
-  name: string
-  detect(): Promise<boolean>
-  getConfigPath(): string
-  readConfig(): Promise<MCPConfig>
-  writeConfig(entry: MCPEntry): Promise<void>
-  removeConfig(packageName: string): Promise<void>
-  hasConfig(packageName: string): Promise<boolean>
-}
-```
-
-**MVP 适配器:**
-
-| Agent | 配置路径 | 格式 |
-|---|---|---|
-| Claude Code | `~/.claude/mcp.json` | JSON (`mcpServers`) |
-| Codex | `~/.codex/config.toml` | TOML (`[mcp_servers]`) |
 
 ### 4.6 API 客户端
 
@@ -474,7 +445,6 @@ useQuery({ queryKey: ['package', scope, name], queryFn: () => api.getPackage(sco
 | 依赖管理 | Phase 3 | 增加复杂度 |
 | 包签名 | Phase 3 | 安全增强 |
 | Webhook | Phase 3 | 高级功能 |
-| 多 Agent (Cursor 等) | Phase 2 | 先做 Claude Code + Codex |
 | API Key 认证 | Phase 2 | CI/CD 场景 |
 | 包编辑/删除 | Phase 2 | 非核心 |
 
@@ -487,10 +457,8 @@ useQuery({ queryKey: ['package', scope, name], queryFn: () => api.getPackage(sco
 | 场景 | 验收标准 |
 |---|---|
 | OAuth 登录 | 浏览器授权后获取 JWT Token |
-| 发布 MCP | `akit publish` 成功，Web UI 可见 |
 | 发布 Skill | `akit publish` 成功，Web UI 可见 |
-| 安装到 Claude Code | `akit install` 写入配置，MCP 可用 |
-| 安装到 Codex | `akit install` 写入配置，MCP 可用 |
+| 安装 Skill | `akit install` 下载并记录 |
 | 搜索包 | `akit search` 返回匹配结果 |
 | Docker 部署 | `docker compose up` 一键启动 |
 
@@ -507,7 +475,7 @@ useQuery({ queryKey: ['package', scope, name], queryFn: () => api.getPackage(sco
 
 | 场景 | 目标 |
 |---|---|
-| 零到安装第一个 MCP | < 3 分钟 |
+| 零到安装第一个 skill | < 3 分钟 |
 | 首次 Docker 部署 | < 5 分钟 |
 | 学习成本 | 看 README 即可上手 |
 
@@ -527,12 +495,10 @@ useQuery({ queryKey: ['package', scope, name], queryFn: () => api.getPackage(sco
 
 - [ ] CLI: `login`, `publish`, `install`
 - [ ] API: 包 CRUD + 版本管理
-- [ ] Agent 适配器: Claude Code
 - [ ] Web UI: 登录 + 包列表
 
 ### Week 3: 完善和测试
 
-- [ ] Agent 适配器: Codex
 - [ ] CLI: `list`, `search`, `info`, `uninstall`
 - [ ] Web UI: 包详情 + 个人中心
 - [ ] 集成测试

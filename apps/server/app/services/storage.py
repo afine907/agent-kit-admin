@@ -187,6 +187,21 @@ class StorageService:
                 status_code=500,
             )
 
+    async def read_content(self, object_path: str) -> bytes:
+        """从 MinIO 读取内容文件（用于 Skill content）"""
+        try:
+            loop = asyncio.get_running_loop()
+            return await loop.run_in_executor(
+                None,
+                lambda: self.client.get_object(Bucket=self.bucket, Key=object_path)["Body"].read(),
+            )
+        except Exception as e:
+            raise AppError(
+                code=ErrorCodes.STORAGE_DOWNLOAD_FAILED,
+                message=f"Content read failed: {str(e)}",
+                status_code=500,
+            )
+
     async def get_presigned_url(self, object_path: str, expires: int = 900) -> str:
         """生成预签名下载 URL (默认 15 分钟)"""
         try:

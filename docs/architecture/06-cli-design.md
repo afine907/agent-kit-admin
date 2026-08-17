@@ -2,7 +2,7 @@
 
 ## 概述
 
-`akit` 是 Agent Kit Admin 的命令行工具，用于管理 MCP 和 Skills 的发布与安装。
+`akit` 是 Agent Kit Admin 的命令行工具，用于管理 Skills 的发布与安装。
 
 安装方式：
 ```bash
@@ -66,7 +66,7 @@ Server: https://your-registry.com
 akit publish
 
 # 发布指定目录
-akit publish ./my-mcp-tool
+akit publish ./my-skill
 
 # 指定版本（覆盖 manifest 中的版本）
 akit publish --version 1.2.3
@@ -93,39 +93,20 @@ akit publish --tag beta
 {
   "name": "web-search",
   "version": "1.0.0",
-  "type": "mcp",
-  "description": "Web search MCP tool",
+  "type": "skill",
+  "description": "Web search skill",
   "license": "MIT",
   "repository": "https://github.com/team/web-search",
-  "main": "index.js",
-  "files": [
-    "index.js",
-    "lib/",
-    "README.md"
-  ],
-  "mcp": {
-    "transport": "stdio",
-    "command": "node",
-    "args": ["index.js"],
-    "env": [
-      {
-        "name": "SEARCH_API_KEY",
-        "required": true,
-        "description": "API key for search service"
-      }
-    ],
-    "capabilities": ["tools"],
-    "tools": [
-      {
-        "name": "web_search",
-        "description": "Search the web"
-      }
-    ]
+  "skill": {
+    "trigger": "command",
+    "command": "web-search",
+    "content": "## Web Search\n\n搜索网页并返回结果摘要和链接。",
+    "permissions": ["network-access"]
   }
 }
 ```
 
-**Skill Manifest:**
+**Skill Manifest 详解:**
 
 ```json
 {
@@ -155,7 +136,7 @@ akit publish --tag beta
 akit init
 
 # 指定目录
-akit init ./my-mcp-tool
+akit init ./my-skill
 ```
 
 **交互式问题清单：**
@@ -165,7 +146,7 @@ akit init ./my-mcp-tool
 │         Initialize Package Configuration            │
 ├─────────────────────────────────────────────────────┤
 │                                                     │
-│  ? Package name: (my-mcp-tool)                      │
+│  ? Package name: (my-skill)                         │
 │    → 小写字母、数字、连字符，基于目录名自动生成       │
 │                                                     │
 │  ? Scope (optional, e.g. @team): (@myusername)      │
@@ -174,49 +155,20 @@ akit init ./my-mcp-tool
 │  ? Version: (1.0.0)                                 │
 │    → 默认 1.0.0，必须是合法 semver                  │
 │                                                     │
-│  ? Type: (Use arrow keys)                           │
-│    ❯ MCP                                            │
-│      Skill                                          │
-│                                                     │
-│  ? Description: My awesome MCP tool                 │
+│  ? Description: My awesome skill                    │
 │    → 包描述，最多 500 字符                          │
 │                                                     │
 │  ? License: (MIT)                                   │
 │    → 开源协议，默认 MIT                             │
 │                                                     │
-│  ? Entry point: (index.js)                          │
-│    → 入口文件路径（MCP 类型必填）                   │
-│                                                     │
 │  ? Keywords: (search, web)                          │
 │    → 逗号分隔的关键词                               │
-│                                                     │
-│  ── MCP 配置（type=mcp 时显示）──                   │
-│                                                     │
-│  ? Transport: (Use arrow keys)                      │
-│    ❯ stdio                                          │
-│      sse                                            │
-│      streamable-http                                │
-│                                                     │
-│  ? Command: (node)                                  │
-│    → 启动命令                                       │
-│                                                     │
-│  ? Args: (index.js)                                 │
-│    → 命令参数，空格分隔                             │
-│                                                     │
-│  ? Environment variables? (y/N)                     │
-│    → 是否需要配置环境变量                           │
-│    ? Variable name: API_KEY                         │
-│    ? Required? (Y/n)                                │
-│    ? Description: API key for the service           │
-│    ? Add another? (y/N)                             │
-│                                                     │
-│  ── Skill 配置（type=skill 时显示）──               │
 │                                                     │
 │  ? Trigger: (Use arrow keys)                        │
 │    ❯ command (斜杠命令)                             │
 │      auto (自动触发)                                │
 │                                                     │
-│  ? Command name: (review)                           │
+│  ? Command name: (web-search)                       │
 │    → 斜杠命令名（trigger=command 时显示）           │
 │                                                     │
 │  ? Skill content file: (skill.md)                   │
@@ -232,11 +184,10 @@ akit init ./my-mcp-tool
 | Package name | 当前目录名 | `path.basename(process.cwd())` |
 | Scope | `@{当前登录用户名}` | CLI 配置 |
 | Version | `1.0.0` | 固定 |
-| Type | `mcp` | 固定 |
 | License | `MIT` | 固定 |
-| Entry point | `index.js` | 固定 |
-| Command | `node` | MCP 固定 |
-| Transport | `stdio` | MCP 固定 |
+| Trigger | `command` | 固定 |
+| Command name | 包名 | 固定 |
+| Skill content file | `skill.md` | 固定 |
 
 **生成结果示例：**
 
@@ -246,33 +197,29 @@ $ akit init
 ┌─────────────────────────────────────────────┐
 │         Initialize Package Configuration    │
 ├─────────────────────────────────────────────┤
-│  ? Package name: my-awesome-mcp             │
+│  ? Package name: my-awesome-skill           │
 │  ? Scope: @xiaoming                         │
 │  ? Version: 1.0.0                           │
-│  ? Type: MCP                                │
-│  ? Description: My awesome MCP tool         │
+│  ? Description: My awesome skill            │
 │  ? License: MIT                             │
-│  ? Entry point: index.js                    │
-│  ? Transport: stdio                         │
-│  ? Command: node                            │
-│  ? Args: index.js                           │
-│  ? Environment variables? No                │
+│  ? Trigger: command                         │
+│  ? Command name: my-skill                   │
+│  ? Skill content file: skill.md             │
 └─────────────────────────────────────────────┘
 
 ✔ Created akit.json
 
 {
-  "name": "my-awesome-mcp",
+  "name": "my-awesome-skill",
   "scope": "@xiaoming",
   "version": "1.0.0",
-  "type": "mcp",
-  "description": "My awesome MCP tool",
+  "type": "skill",
+  "description": "My awesome skill",
   "license": "MIT",
-  "main": "index.js",
-  "mcp": {
-    "transport": "stdio",
-    "command": "node",
-    "args": ["index.js"]
+  "skill": {
+    "trigger": "command",
+    "command": "my-skill",
+    "content": "## My Awesome Skill\n\n描述该技能的行为..."
   }
 }
 
@@ -293,7 +240,7 @@ $ akit init
 # 目录名不合法（含大写或特殊字符）
 $ akit init
 
-? Package name: (My-MCP-Tool) my-mcp-tool
+? Package name: (My-Skill-Tool) my-skill-tool
   → 自动转为小写和连字符格式
 ```
 
@@ -309,25 +256,14 @@ akit install @team/web-search
 
 # 安装指定版本
 akit install @team/web-search@1.2.0
-
-# 全局安装（所有 Agent 可用）
-akit install --global @team/web-search
-
-# 仅安装到指定 Agent
-akit install --agent claude @team/web-search
-akit install --agent codex @team/web-search
-
-# 仅下载，不配置 Agent
-akit install --no-config @team/web-search
 ```
 
 **流程：**
 1. 查询包信息和版本
 2. 下载 tarball
 3. 解压到 `~/.akit/packages/@team/web-search/`
-4. 检测已安装的 Agent
-5. 写入 Agent 配置
-6. 输出安装结果
+4. 记录到已安装列表 `~/.akit/installed.json`
+5. 输出安装结果
 
 **安装目录结构:**
 
@@ -352,9 +288,6 @@ akit install --no-config @team/web-search
 
 ```bash
 akit uninstall @team/web-search
-
-# 同时清理 Agent 配置
-akit uninstall --clean @team/web-search
 ```
 
 ---
@@ -380,43 +313,14 @@ akit update --all
 3. 如果已是最新，提示无需更新
 4. 下载新版本 tarball
 5. 解压覆盖到 `~/.akit/packages/@team/web-search/`
-6. 更新 Agent 配置文件
+6. 更新 `~/.akit/installed.json` 中的版本记录
 
-**Agent 配置更新规则：**
+**更新规则：**
 
 | 场景 | 处理方式 |
 |---|---|
-| 仅版本号变化 | 更新配置中的路径/参数，指向新版本 |
-| command 或 args 变化 | 用新版本的 manifest 覆盖配置中的 `command`/`args` |
-| env 变量新增 | 追加新变量到配置，保留已有变量的值 |
-| env 变量删除 | 从配置中移除（提示用户） |
+| 仅版本号变化 | 用新版本覆盖本地包文件，更新版本记录 |
 | 包已被远端删除 | 提示包已不可用，建议 `akit uninstall` |
-
-**MCP 配置更新示例（Claude Code）：**
-
-```
-更新前 ~/.claude/mcp.json:
-{
-  "mcpServers": {
-    "web-search": {
-      "command": "node",
-      "args": ["~/.akit/packages/@team/web-search/index.js"],
-      "env": { "API_KEY": "sk-xxx" }
-    }
-  }
-}
-
-更新后（假设新版本 command 从 node 改为 bun）:
-{
-  "mcpServers": {
-    "web-search": {
-      "command": "bun",                          ← 更新
-      "args": ["~/.akit/packages/@team/web-search/entry.js"],  ← 更新
-      "env": { "API_KEY": "sk-xxx" }             ← 保留用户已有值
-    }
-  }
-}
-```
 
 **`--all` 模式：**
 - 遍历 `~/.akit/installed.json` 中的所有包
@@ -435,7 +339,6 @@ akit update --all
 akit list
 
 # 按类型筛选
-akit list --type mcp
 akit list --type skill
 ```
 
@@ -443,13 +346,10 @@ Output:
 ```
 Installed packages:
 
-  MCP:
-    @team/web-search@1.2.0
-    @team/database-query@2.0.1
-
-  Skill:
-    @team/code-review@1.0.0
-    @zhangsan/api-test@0.3.0
+  @team/web-search@1.2.0
+  @team/database-query@2.0.1
+  @team/code-review@1.0.0
+  @zhangsan/api-test@0.3.0
 ```
 
 ---
@@ -463,7 +363,7 @@ Installed packages:
 akit search "database"
 
 # 按类型筛选
-akit search "search" --type mcp
+akit search "search" --type skill
 
 # 按 scope 筛选
 akit search "api" --scope @team
@@ -474,11 +374,11 @@ Output:
 Found 5 packages:
 
   @team/web-search@1.2.0
-    Web search MCP tool
+    Web search skill
     ⭐ 4.5 (12 reviews) · 📦 1.2k downloads
 
   @team/database-query@2.0.1
-    Database query MCP tool
+    Database query skill
     ⭐ 4.8 (8 reviews) · 📦 856 downloads
 ```
 
@@ -496,21 +396,16 @@ Output:
 ```
 @team/web-search
 
-  Web search MCP tool
+  Web search skill
 
   Version: 1.2.0
-  Type: mcp
+  Type: skill
   License: MIT
   Published: 2024-01-15
   Downloads: 1,234
   Rating: ⭐ 4.5 (12 reviews)
 
   Repository: https://github.com/team/web-search
-
-  MCP Config:
-    Transport: stdio
-    Command: node index.js
-    Tools: web_search
 ```
 
 ---
@@ -546,70 +441,6 @@ akit config list
 
 ---
 
-## Agent 配置自动写入
-
-### Claude Code
-
-配置文件位置：`~/.claude/mcp.json`
-
-```json
-{
-  "mcpServers": {
-    "web-search": {
-      "command": "node",
-      "args": ["~/.akit/packages/@team/web-search/index.js"],
-      "env": {
-        "SEARCH_API_KEY": ""
-      }
-    }
-  }
-}
-```
-
-### Codex
-
-配置文件位置：`~/.codex/config.toml`
-
-**注意：Codex 使用 TOML 格式（非 JSON），MCP 服务器配置在 `[mcp_servers]` 段下。**
-
-```toml
-[mcp_servers.web-search]
-command = "node"
-args = ["~/.akit/packages/@team/web-search/index.js"]
-enabled = true
-
-[mcp_servers.web-search.env]
-SEARCH_API_KEY = ""
-```
-
-### Skill 配置
-
-Claude Code Skills 位置（`.claude/skills/` 是规范路径，`.claude/commands/` 是向后兼容路径，两者功能相同）：
-- 全局：`~/.claude/skills/` 或 `~/.claude/commands/`
-- 项目级：`.claude/skills/` 或 `.claude/commands/`
-
-安装 skill 时，CLI 写入 `.claude/skills/` 目录：
-
-```
-~/.claude/skills/
-└── code-review/
-    └── SKILL.md    # 从 @team/code-review skill 生成
-```
-
-**注意：** Skill 也可以是单文件 `.claude/skills/review.md`，会自动创建 `/review` 斜杠命令。目录形式支持附带脚本等资源文件。
-
-### Agent 自动检测
-
-CLI 会按以下顺序检测已安装的 Agent：
-
-1. 检查 `~/.claude/mcp.json` 文件 → Claude Code
-2. 检查 `~/.codex/config.toml` 文件 → Codex
-3. 检查环境变量 → 自定义 Agent
-
-用户可以通过 `--agent` 参数指定，或在配置中设置 `defaultAgent`。
-
----
-
 ## 配置文件位置
 
 | 文件 | 位置 | 说明 |
@@ -627,7 +458,7 @@ CLI 会按以下顺序检测已安装的 Agent：
 ```
 ✔ Package @team/web-search@1.2.0 installed successfully
   → ~/.akit/packages/@team/web-search/
-  → Claude Code config updated
+  → Recorded in ~/.akit/installed.json
 ```
 
 ### 错误

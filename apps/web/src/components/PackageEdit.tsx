@@ -139,7 +139,7 @@ export function PackageEdit() {
             value={tags}
             onChange={(e) => setTags(e.target.value)}
             className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 font-mono text-sm"
-            placeholder="ai, tool, mcp"
+            placeholder="ai, tool, skill"
           />
           <p className="text-xs text-muted-foreground mt-1">{t('packageEdit.tagsHint')}</p>
         </div>

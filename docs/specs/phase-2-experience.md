@@ -37,34 +37,22 @@ Week 4-6 (3 周)
 2. 检查每个包的最新版本
 3. 显示可更新列表
 4. 下载新版本
-5. 更新 Agent 配置
+5. 更新本地记录
 
 参数:
   --all              更新所有包
-  --agent <name>     指定 Agent
   --tag <tag>        版本标签
 
 输出:
 ✔ Updated @scope/name 1.0.0 → 1.1.0
-  Agent: Claude Code
 ```
-
-**Agent 配置更新规则:**
-
-| 场景 | 行为 |
-|---|---|
-| 命令变化 | 更新 command 和 args |
-| 新增 env | 合并新变量 |
-| 删除 env | 保留旧变量 (安全) |
-| 配置冲突 | 备份后覆盖 |
 
 ### 1.2 `akit init`
 
 ```
 交互流程:
 1. 询问包名 (lowercase + hyphens)
-2. 询问类型 (mcp/skill)
-3. 询问描述
+2. 询问描述
 4. 生成 akit.json
 
 输出:
@@ -82,16 +70,6 @@ export AKIT_TOKEN=<api-key>
 akit publish
 ```
 
-### 1.4 `--agent` 参数
-
-```bash
-# 安装到指定 Agent
-akit install @scope/name --agent codex
-akit install @scope/name --agent claude
-
-# 更新指定 Agent
-akit update --agent claude
-```
 
 ---
 
@@ -193,26 +171,7 @@ API Key 页面:
 
 ---
 
-## 模块 4: Agent 支持扩展
-
-### 4.1 Cursor 适配器
-
-```typescript
-// cli/src/agents/cursor.ts
-export class CursorAdapter implements AgentAdapter {
-  name = 'Cursor'
-
-  getConfigPath(): string {
-    return path.join(os.homedir(), '.cursor', 'mcp.json')
-  }
-
-  // 格式与 Claude Code 相同: { "mcpServers": {...} }
-}
-```
-
----
-
-## 模块 5: 搜索增强
+## 模块 4: 搜索增强
 
 ### 5.1 搜索参数
 
@@ -283,7 +242,6 @@ export class CursorAdapter implements AgentAdapter {
 - [ ] `akit update` 命令
 - [ ] `akit init` 命令
 - [ ] Token 认证支持
-- [ ] `--agent` 参数
 
 ### Week 5: API 增强
 
@@ -298,4 +256,3 @@ export class CursorAdapter implements AgentAdapter {
 - [ ] 包统计面板
 - [ ] API Key 管理
 - [ ] 包编辑页面
-- [ ] Cursor 适配器

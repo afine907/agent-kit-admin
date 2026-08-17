@@ -39,17 +39,17 @@ describe('search command', () => {
       items: [
         {
           scope: '@team',
-          name: 'pg-mcp',
-          type: 'mcp',
-          description: 'PostgreSQL MCP tool',
+          name: 'pg-skill',
+          type: 'skill',
+          description: 'PostgreSQL Skill',
           latest_version: '1.2.0',
           downloads_count: 234,
         },
         {
           scope: '@team',
-          name: 'redis-mcp',
-          type: 'mcp',
-          description: 'Redis MCP tool',
+          name: 'redis-skill',
+          type: 'skill',
+          description: 'Redis Skill',
           latest_version: '1.0.0',
           downloads_count: 156,
         },
@@ -64,7 +64,6 @@ describe('search command', () => {
 
     expect(mockListPackages).toHaveBeenCalledWith({
       search: 'database',
-      type: undefined,
       page: 1,
       per_page: 20,
     });
@@ -88,34 +87,6 @@ describe('search command', () => {
     );
   });
 
-  it('should filter by type', async () => {
-    mockListPackages.mockResolvedValue({
-      items: [
-        {
-          scope: '@team',
-          name: 'pg-mcp',
-          type: 'mcp',
-          description: 'PostgreSQL MCP tool',
-          latest_version: '1.2.0',
-          downloads_count: 234,
-        },
-      ],
-      total: 1,
-      page: 1,
-      per_page: 20,
-    });
-
-    const { searchCommand } = await import('../../src/commands/search');
-    await searchCommand.parseAsync(['node', 'test', 'database', '--type', 'mcp']);
-
-    expect(mockListPackages).toHaveBeenCalledWith({
-      search: 'database',
-      type: 'mcp',
-      page: 1,
-      per_page: 20,
-    });
-  });
-
   it('should handle pagination', async () => {
     mockListPackages.mockResolvedValue({
       items: [],
@@ -133,7 +104,6 @@ describe('search command', () => {
 
     expect(mockListPackages).toHaveBeenCalledWith({
       search: 'test',
-      type: undefined,
       page: 2,
       per_page: 10,
     });

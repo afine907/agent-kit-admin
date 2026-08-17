@@ -32,7 +32,7 @@ async def team_package(db, test_user: User, team_with_member):
     package = Package(
         name="uninstall-pkg",
         scope="@team",
-        type="mcp",
+        type="skill",
         full_name="@team/uninstall-pkg",
         description="Test package for uninstall",
         owner_id=test_user.id,
@@ -116,7 +116,7 @@ class TestUninstallTeamPackage:
         package = Package(
             name="other-pkg",
             scope="@other",
-            type="mcp",
+            type="skill",
             full_name="@other/other-pkg",
             owner_id=test_user.id,
             visibility="public",

@@ -32,7 +32,7 @@
   },
   "home": {
     "title": "Agent Kit Registry",
-    "subtitle": "搜索和安装 AI Agent 包 — MCP 服务器和 Agent Skills",
+    "subtitle": "搜索和安装 AI Agent Skill 技能包",
     "searchPlaceholder": "搜索包名或描述…",
     "filterAll": "全部",
     "noResults": "未找到匹配的包",
@@ -82,7 +82,25 @@
       "totalDownloads": "总下载量",
       "recentDownloads": "近期下载",
       "last30Days": "最近 30 天"
-    }
+    },
+    "testSkill": "测试此 Skill"
+  },
+  "agent": {
+    "title": "Skill 测试对话",
+    "selectSkill": "请从左侧选择一个 Skill 开始对话",
+    "searchPlaceholder": "搜索 Skill 包名…",
+    "searching": "搜索中…",
+    "empty": "选择一个 Skill，然后通过对话测试它的效果",
+    "chatPlaceholder": "输入你的问题…（Enter 发送，Shift+Enter 换行）",
+    "send": "发送",
+    "stop": "停止",
+    "clear": "清空对话",
+    "loginRequired": "请先登录后再使用 Skill 测试对话",
+    "version": "版本",
+    "currentSkill": "当前 Skill 内容",
+    "loading": "加载中…",
+    "inputHint": "对话内容将发送给配置的 LLM 服务",
+    "errorSend": "发送失败，请重试"
   },
   "profile": {
     "pleaseLogin": "请先登录",
@@ -178,9 +196,8 @@
       "scope": "Scope",
       "selectScope": "选择 Scope",
       "name": "包名",
-      "namePlaceholder": "my-mcp-server",
+      "namePlaceholder": "my-skill",
       "type": "类型",
-      "mcpDesc": "Model Context Protocol 服务器",
       "skillDesc": "Agent Skill 技能包",
       "description": "描述",
       "descriptionPlaceholder": "描述你的包…",
@@ -207,7 +224,7 @@
       "requirements": "要求",
       "req1": "包内必须包含 akit.json 清单文件",
       "req2": "文件大小不超过 50MB",
-      "req3": "MCP 包必须包含可执行的命令"
+      "req3": "Skill 包必须包含 skill.content 内容"
     },
     "step4": {
       "title": "确认发布",

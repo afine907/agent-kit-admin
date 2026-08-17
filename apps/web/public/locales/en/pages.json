@@ -32,7 +32,7 @@
   },
   "home": {
     "title": "Agent Kit Registry",
-    "subtitle": "Search and install AI Agent packages — MCP Servers and Agent Skills",
+    "subtitle": "Search and install AI Agent Skill packages",
     "searchPlaceholder": "Search packages…",
     "filterAll": "All",
     "noResults": "No matching packages found",
@@ -82,7 +82,25 @@
       "totalDownloads": "Total Downloads",
       "recentDownloads": "Recent Downloads",
       "last30Days": "Last 30 Days"
-    }
+    },
+    "testSkill": "Test this Skill"
+  },
+  "agent": {
+    "title": "Skill Test Chat",
+    "selectSkill": "Select a Skill from the left to start chatting",
+    "searchPlaceholder": "Search Skill packages…",
+    "searching": "Searching…",
+    "empty": "Select a Skill, then chat to test its capabilities",
+    "chatPlaceholder": "Ask a question… (Enter to send, Shift+Enter for newline)",
+    "send": "Send",
+    "stop": "Stop",
+    "clear": "Clear chat",
+    "loginRequired": "Please sign in to use the Skill test chat",
+    "version": "Version",
+    "currentSkill": "Current Skill Content",
+    "loading": "Loading…",
+    "inputHint": "Conversation will be sent to the configured LLM service",
+    "errorSend": "Failed to send, please try again"
   },
   "profile": {
     "pleaseLogin": "Please sign in first",
@@ -178,9 +196,8 @@
       "scope": "Scope",
       "selectScope": "Select Scope",
       "name": "Package Name",
-      "namePlaceholder": "my-mcp-server",
+      "namePlaceholder": "my-skill",
       "type": "Type",
-      "mcpDesc": "Model Context Protocol Server",
       "skillDesc": "Agent Skill Package",
       "description": "Description",
       "descriptionPlaceholder": "Describe your package…",
@@ -207,7 +224,7 @@
       "requirements": "Requirements",
       "req1": "Package must contain akit.json manifest file",
       "req2": "File size must not exceed 50MB",
-      "req3": "MCP packages must contain an executable command"
+      "req3": "Skill packages must contain skill.content"
     },
     "step4": {
       "title": "Confirm Publish",

@@ -8,19 +8,11 @@ import { join } from 'path';
 export interface Manifest {
   name: string;
   version: string;
-  type: 'mcp' | 'skill';
+  type: 'skill';
   description?: string;
   license?: string;
   scope?: string;
   dependencies?: Record<string, string>;
-  mcp?: {
-    transport: string;
-    command: string;
-    args?: string[];
-    env?: Array<{ name: string; required?: boolean; description?: string; default?: string }>;
-    capabilities?: string[];
-    tools?: Array<{ name: string; description?: string }>;
-  };
   skill?: {
     trigger?: string;
     command?: string;
@@ -80,24 +72,8 @@ export function validateManifest(manifest: Manifest): ValidationError[] {
 
   if (!manifest.type) {
     errors.push({ field: 'type', message: 'required field missing' });
-  } else if (!['mcp', 'skill'].includes(manifest.type)) {
-    errors.push({ field: 'type', message: 'must be "mcp" or "skill"' });
-  }
-
-  // MCP 配置验证
-  if (manifest.type === 'mcp') {
-    if (!manifest.mcp) {
-      errors.push({ field: 'mcp', message: 'required for type=mcp' });
-    } else {
-      if (!manifest.mcp.transport) {
-        errors.push({ field: 'mcp.transport', message: 'required field missing' });
-      } else if (!['stdio', 'sse', 'streamable-http'].includes(manifest.mcp.transport)) {
-        errors.push({ field: 'mcp.transport', message: 'must be stdio, sse, or streamable-http' });
-      }
-      if (!manifest.mcp.command) {
-        errors.push({ field: 'mcp.command', message: 'required field missing' });
-      }
-    }
+  } else if (manifest.type !== 'skill') {
+    errors.push({ field: 'type', message: 'must be "skill"' });
   }
 
   // Skill 配置验证

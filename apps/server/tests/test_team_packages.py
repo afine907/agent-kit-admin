@@ -57,10 +57,10 @@ async def another_team(db, another_user):
 async def team_package_v1(db, team, test_user):
     """团队包 v1.0.0"""
     pkg = Package(
-        name="web-search-mcp",
+        name="web-search-skill",
         scope="@frontend",
-        type="mcp",
-        full_name="@frontend/web-search-mcp",
+        type="skill",
+        full_name="@frontend/web-search-skill",
         description="Web search tool",
         license="MIT",
         owner_id=team.id,
@@ -75,10 +75,10 @@ async def team_package_v1(db, team, test_user):
     ver = Version(
         package_id=pkg.id,
         version="v1.0.0",
-        manifest={"name": "web-search-mcp", "version": "v1.0.0", "type": "mcp"},
+        manifest={"name": "web-search-skill", "version": "v1.0.0", "type": "skill"},
         tarball_hash="sha256:abc123",
         tarball_size=1024,
-        tarball_path="packages/@frontend/web-search-mcp/v1.0.0.tar.gz",
+        tarball_path="packages/@frontend/web-search-skill/v1.0.0.tar.gz",
         tag="latest",
         published_by=test_user.id,
     )
@@ -95,10 +95,10 @@ async def team_package_v2(db, team_package_v1, test_user):
     ver = Version(
         package_id=pkg.id,
         version="v1.1.0",
-        manifest={"name": "web-search-mcp", "version": "v1.1.0", "type": "mcp"},
+        manifest={"name": "web-search-skill", "version": "v1.1.0", "type": "skill"},
         tarball_hash="sha256:def456",
         tarball_size=1024,
-        tarball_path="packages/@frontend/web-search-mcp/v1.1.0.tar.gz",
+        tarball_path="packages/@frontend/web-search-skill/v1.1.0.tar.gz",
         tag="latest",
         published_by=test_user.id,
     )
@@ -136,11 +136,11 @@ class TestPublishTeamPackage:
             f"/api/v1/teams/{team.id}/packages",
             json={
                 "name": "db-toolkit",
-                "type": "mcp",
+                "type": "skill",
                 "description": "Database toolkit",
                 "visibility": "team",
                 "owner_type": "team",
-                "manifest": {"name": "db-toolkit", "version": "0.1.0", "type": "mcp"},
+                "manifest": {"name": "db-toolkit", "version": "0.1.0", "type": "skill"},
                 "tarball": "dGVzdCB0YXJibGxlIGNvbnRlbnQ=",  # base64 dummy
             },
             headers=auth_headers,
@@ -158,12 +158,12 @@ class TestPublishTeamPackage:
         response = await client.post(
             f"/api/v1/teams/{team.id}/packages",
             json={
-                "name": "web-search-mcp",  # 已在 team_package_v1
-                "type": "mcp",
+                "name": "web-search-skill",  # 已在 team_package_v1
+                "type": "skill",
                 "description": "Duplicate",
                 "visibility": "team",
                 "owner_type": "team",
-                "manifest": {"name": "web-search-mcp", "version": "0.1.0", "type": "mcp"},
+                "manifest": {"name": "web-search-skill", "version": "0.1.0", "type": "skill"},
                 "tarball": "dGVzdA==",
             },
             headers=auth_headers,
@@ -177,7 +177,7 @@ class TestPublishTeamPackage:
             f"/api/v1/teams/{team.id}/packages",
             json={
                 "name": "new-pkg",
-                "type": "mcp",
+                "type": "skill",
                 "visibility": "team",
                 "owner_type": "team",
             },
@@ -191,7 +191,7 @@ class TestPublishTeamPackage:
             f"/api/v1/teams/{team.id}/packages",
             json={
                 "name": "hack-pkg",
-                "type": "mcp",
+                "type": "skill",
                 "visibility": "team",
                 "owner_type": "team",
             },
@@ -222,7 +222,7 @@ class TestTeamPackageList:
         assert isinstance(data, list)
         assert len(data) == 1
         pkg = data[0]
-        assert pkg["name"] == "web-search-mcp"
+        assert pkg["name"] == "web-search-skill"
         assert pkg["latest_version"] == "v1.1.0"
         assert pkg["my_installed_version"] == "v1.0.0"
         assert pkg["has_update"] is True
@@ -299,7 +299,7 @@ class TestTeamPackageDetail:
         )
         assert response.status_code == 200, response.json()
         data = response.json()
-        assert data["name"] == "web-search-mcp"
+        assert data["name"] == "web-search-skill"
         assert data["latest_version"] == "v1.0.0"
 
     @pytest.mark.asyncio
@@ -311,7 +311,7 @@ class TestTeamPackageDetail:
         other_pkg = Package(
             name="private-tool",
             scope="@other-team",
-            type="mcp",
+            type="skill",
             full_name="@other-team/private-tool",
             owner_id=another_team.id,
             owner_type="team",
@@ -356,7 +356,7 @@ class TestTeamPackageVersions:
             f"/api/v1/teams/{team.id}/packages/{team_package_v1.id}/versions",
             json={
                 "version": "v2.0.0",
-                "manifest": {"name": "web-search-mcp", "version": "v2.0.0", "type": "mcp"},
+                "manifest": {"name": "web-search-skill", "version": "v2.0.0", "type": "skill"},
                 "tarball": "dGVzdCB2Mi4wLjAgdGFyYmFsbGU=",
             },
             headers=auth_headers,
@@ -431,11 +431,11 @@ class TestTeamMemberPermissions:
             f"/api/v1/teams/{team.id}/packages",
             json={
                 "name": "member-tool",
-                "type": "mcp",
+                "type": "skill",
                 "description": "Member published",
                 "visibility": "team",
                 "owner_type": "team",
-                "manifest": {"name": "member-tool", "version": "0.1.0", "type": "mcp"},
+                "manifest": {"name": "member-tool", "version": "0.1.0", "type": "skill"},
                 "tarball": "dGVzdA==",
             },
             headers=member_headers,

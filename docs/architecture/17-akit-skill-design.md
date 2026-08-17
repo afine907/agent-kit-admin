@@ -18,17 +18,16 @@
 | 用户输入 | 映射命令 |
 |---|---|
 | "帮我安装 @team/web-search" | `akit install @team/web-search` |
-| "搜索数据库相关的 MCP" | `akit search database --type mcp` |
+| "搜索数据库相关的 Skill" | `akit search database --type skill` |
 | "看看我安装了哪些包" | `akit list` |
-| "发布当前目录的 MCP" | `akit publish ./` |
+| "发布当前目录的 Skill" | `akit publish ./` |
 | "更新所有已安装的包" | `akit update --all` |
-| "卸载 @team/redis-mcp" | `akit uninstall @team/redis-mcp` |
+| "卸载 @team/redis-skill" | `akit uninstall @team/redis-skill` |
 
 ### 2. 上下文感知
 
 - 自动检测当前目录是否有 `akit.json`
-- 自动判断是 MCP 还是 Skill
-- 自动识别 Agent 类型（Claude Code / Codex）
+- 自动识别包类型（skill）
 
 ### 3. 错误处理
 
@@ -57,7 +56,7 @@
 ```markdown
 ---
 name: akit
-description: Agent Kit Admin - 管理团队的 MCP 和 Skills
+description: Agent Kit Admin - 管理团队的 Skills
 ---
 
 # akit - Agent Kit Admin CLI
@@ -65,11 +64,10 @@ description: Agent Kit Admin - 管理团队的 MCP 和 Skills
 ## 何时使用此 Skill
 
 当用户想要：
-- 安装、卸载、更新 MCP 或 Skill
+- 安装、卸载、更新 Skill
 - 搜索可用的包
 - 查看已安装的包
-- 发布新的 MCP 或 Skill
-- 管理 Agent 配置
+- 发布新的 Skill
 
 时，使用此 Skill 来执行 `akit` 命令。
 
@@ -101,7 +99,7 @@ akit login --server <server-url> --token <token>
 akit search <keyword>
 
 # 按类型筛选
-akit search <keyword> --type mcp
+akit search <keyword> --type skill
 akit search <keyword> --type skill
 
 # 按 scope 筛选
@@ -152,7 +150,7 @@ akit update --all
 akit list
 
 # 按类型筛选
-akit list --type mcp
+akit list --type skill
 akit list --type skill
 ```
 
@@ -192,7 +190,7 @@ akit init
 - "搜索 xxx" / "search xxx" → `akit search xxx`
 - "找 xxx" / "find xxx" → `akit search xxx`
 - "有什么 xxx 相关的" → `akit search xxx`
-- "列出所有 MCP" → `akit list --type mcp`
+- "列出所有 Skill" → `akit list --type skill`
 
 ### 查看相关
 
@@ -287,11 +285,11 @@ export AKIT_TOKEN=<your-token>
 
 ## 示例对话
 
-### 示例 1: 安装 MCP
+### 示例 1: 安装 Skill
 
-**用户:** 帮我安装 @team/web-search 这个 MCP
+**用户:** 帮我安装 @team/web-search 这个 Skill
 
-**Claude:** 我来帮你安装这个 MCP。
+**Claude:** 我来帮你安装这个 Skill。
 
 ```bash
 akit install @team/web-search
@@ -304,46 +302,46 @@ akit install @team/web-search
   → Claude Code config updated
 ```
 
-安装成功！这个 MCP 提供了网页搜索功能。需要重启 Claude Code 才能使用。
+安装成功！这个 Skill 提供了网页搜索功能。需要重启 Claude Code 才能使用。
 
 ### 示例 2: 搜索包
 
-**用户:** 有什么数据库相关的 MCP？
+**用户:** 有什么数据库相关的 Skill？
 
-**Claude:** 我来搜索数据库相关的 MCP。
+**Claude:** 我来搜索数据库相关的 Skill。
 
 ```bash
-akit search database --type mcp
+akit search database --type skill
 ```
 
 搜索结果：
 
 | 包名 | 版本 | 评分 | 下载量 |
 |---|---|---|---|
-| @team/pg-mcp | 1.2.0 | ⭐ 4.8 | 234 |
-| @team/redis-mcp | 1.0.0 | ⭐ 4.5 | 156 |
-| @zhangsan/sqlite-mcp | 0.3.0 | ⭐ 4.2 | 89 |
+| @team/pg-skill | 1.2.0 | ⭐ 4.8 | 234 |
+| @team/redis-skill | 1.0.0 | ⭐ 4.5 | 156 |
+| @zhangsan/sqlite-skill | 0.3.0 | ⭐ 4.2 | 89 |
 
-推荐安装 `@team/pg-mcp`，它是 PostgreSQL 的 MCP 工具，评分最高。
+推荐安装 `@team/pg-skill`，它是 PostgreSQL Skill 工具，评分最高。
 
 需要我帮你安装吗？
 
-### 示例 3: 发布 MCP
+### 示例 3: 发布 Skill
 
-**用户:** 我想发布当前目录的 MCP
+**用户:** 我想发布当前目录的 Skill
 
 **Claude:** 我来帮你发布。先检查一下当前目录的配置。
 
 检测到 `akit.json`：
 ```json
 {
-  "name": "my-awesome-mcp",
+  "name": "my-awesome-skill",
   "version": "1.0.0",
-  "type": "mcp"
+  "type": "skill"
 }
 ```
 
-准备发布 `@xiaoming/my-awesome-mcp@1.0.0`。确认发布吗？
+准备发布 `@xiaoming/my-awesome-skill@1.0.0`。确认发布吗？
 
 **用户:** 确认
 
@@ -355,35 +353,35 @@ akit publish
 
 执行结果：
 ```
-✔ Published @xiaoming/my-awesome-mcp@1.0.0 successfully!
-  📦 Package: https://registry.company.com/@xiaoming/my-awesome-mcp
-  📋 Install: akit install @xiaoming/my-awesome-mcp
+✔ Published @xiaoming/my-awesome-skill@1.0.0 successfully!
+  📦 Package: https://registry.company.com/@xiaoming/my-awesome-skill
+  📋 Install: akit install @xiaoming/my-awesome-skill
 ```
 
 发布成功！其他人可以通过以下命令安装：
 ```bash
-akit install @xiaoming/my-awesome-mcp
+akit install @xiaoming/my-awesome-skill
 ```
 
 ### 示例 4: 查看已安装包
 
-**用户:** 我安装了哪些 MCP？
+**用户:** 我安装了哪些 Skill？
 
 **Claude:**
 
 ```bash
-akit list --type mcp
+akit list --type skill
 ```
 
-已安装的 MCP：
+已安装的 Skill：
 
 | 包名 | 版本 | 最新版本 | 状态 |
 |---|---|---|---|
-| @team/pg-mcp | 1.2.0 | 1.3.0 | ⚠️ 可更新 |
+| @team/pg-skill | 1.2.0 | 1.3.0 | ⚠️ 可更新 |
 | @team/web-search | 1.0.0 | 1.0.0 | ✅ 最新 |
-| @team/redis-mcp | 1.0.0 | 1.0.0 | ✅ 最新 |
+| @team/redis-skill | 1.0.0 | 1.0.0 | ✅ 最新 |
 
-`@team/pg-mcp` 有新版本可用，需要更新吗？
+`@team/pg-skill` 有新版本可用，需要更新吗？
 
 ---
 
@@ -394,22 +392,22 @@ akit list --type mcp
 ```markdown
 ---
 name: akit
-description: Agent Kit Admin - 管理团队的 MCP 和 Skills
+description: Agent Kit Admin - 管理团队的 Skills
 ---
 
 # akit - Agent Kit Admin CLI
 
 ## 概述
 
-akit 是 Agent Kit Admin 的命令行工具，用于管理团队的 MCP (Model Context Protocol) 和 Skills。
+akit 是 Agent Kit Admin 的命令行工具，用于管理团队的 Skill (Model Context Protocol) 和 Skills。
 
 ## 何时使用此 Skill
 
 当用户想要进行以下操作时使用此 Skill：
-- 安装、卸载、更新 MCP 或 Skill
+- 安装、卸载、更新 Skill
 - 搜索可用的包
 - 查看已安装的包
-- 发布新的 MCP 或 Skill
+- 发布新的 Skill 或 Skill
 - 管理 Agent 配置
 
 ## 前置条件检查
@@ -437,7 +435,7 @@ akit login --server <server-url> --token <token>
 ### 搜索
 ```bash
 akit search <keyword>
-akit search <keyword> --type mcp|skill
+akit search <keyword> --type skill
 akit search <keyword> --scope @team
 ```
 
@@ -467,7 +465,7 @@ akit update --all
 ### 列表
 ```bash
 akit list
-akit list --type mcp|skill
+akit list --type skill
 ```
 
 ### 发布
@@ -553,12 +551,12 @@ akit CLI 未安装。运行: npm install -g @agent-kit-admin/cli
 输出: 安装成功信息
 
 ### 搜索示例
-用户: "有什么数据库相关的 MCP？"
-执行: `akit search database --type mcp`
+用户: "有什么数据库相关的 Skill？"
+执行: `akit search database --type skill`
 输出: 搜索结果列表
 
 ### 发布示例
-用户: "发布当前目录的 MCP"
+用户: "发布当前目录的 Skill"
 执行: `akit publish`
 输出: 发布成功信息
 ```
@@ -655,12 +653,12 @@ Skill 是 CLI 的"自然语言接口"，不直接调用 API，而是通过 CLI �
 
 | 测试场景 | 用户输入 | 预期命令 | 预期结果 |
 |---|---|---|---|
-| 安装 MCP | "安装 @team/web-search" | `akit install @team/web-search` | 安装成功 |
-| 搜索 MCP | "搜索数据库" | `akit search database` | 返回结果列表 |
-| 查看详情 | "@team/pg-mcp 是什么" | `akit info @team/pg-mcp` | 显示包详情 |
+| 安装 Skill | "安装 @team/web-search" | `akit install @team/web-search` | 安装成功 |
+| 搜索 Skill | "搜索数据库" | `akit search database` | 返回结果列表 |
+| 查看详情 | "@team/pg-skill 是什么" | `akit info @team/pg-skill` | 显示包详情 |
 | 列出已安装 | "我安装了什么" | `akit list` | 显示已安装列表 |
-| 更新包 | "更新 @team/pg-mcp" | `akit update @team/pg-mcp` | 更新成功 |
-| 卸载包 | "删除 @team/redis-mcp" | `akit uninstall @team/redis-mcp` | 卸载成功 |
+| 更新包 | "更新 @team/pg-skill" | `akit update @team/pg-skill` | 更新成功 |
+| 卸载包 | "删除 @team/redis-skill" | `akit uninstall @team/redis-skill` | 卸载成功 |
 | 发布 | "发布当前项目" | `akit publish` | 发布成功 |
 
 ### 边界测试

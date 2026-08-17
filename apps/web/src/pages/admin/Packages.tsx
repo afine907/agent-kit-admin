@@ -66,7 +66,6 @@ export default function AdminPackages() {
 
   const getTypeBadge = (type: string) => {
     const styles: Record<string, string> = {
-      mcp: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
       skill: 'bg-cyan-500/10 text-cyan-500 border-cyan-500/20',
     };
     return (
@@ -108,7 +107,6 @@ export default function AdminPackages() {
           className="px-4 py-2 rounded-lg bg-background border border-input"
         >
           <option value="">{t('packages.allTypes')}</option>
-          <option value="mcp">MCP</option>
           <option value="skill">Skill</option>
         </select>
         <label className="flex items-center gap-2 cursor-pointer">
