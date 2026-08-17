@@ -15,6 +15,7 @@ from app.models.version import Version
 # 测试辅助
 # ---------------------------------------------------------------------------
 
+
 def _sse_events(text: str) -> list[dict]:
     """解析 SSE 响应文本为事件列表"""
     events = []
@@ -27,7 +28,7 @@ def _sse_events(text: str) -> list[dict]:
             continue
         if block.startswith("data:"):
             try:
-                events.append(json.loads(block[len("data:"):].strip()))
+                events.append(json.loads(block[len("data:") :].strip()))
             except json.JSONDecodeError:
                 events.append({"raw": block})
     return events
@@ -46,7 +47,7 @@ def _make_streaming_response(body: str | bytes, status_code: int = 200) -> Respo
 _FAKE_LLM_BODY = (
     'data: {"choices": [{"delta": {"content": "你"}}]}\n\n'
     'data: {"choices": [{"delta": {"content": "好"}}]}\n\n'
-    'data: [DONE]\n\n'
+    "data: [DONE]\n\n"
 )
 
 
@@ -97,7 +98,8 @@ async def _add_version(db, package_id, version="1.0.0", manifest=None, tag="late
     ver = Version(
         package_id=package_id,
         version=version,
-        manifest=manifest or {
+        manifest=manifest
+        or {
             "name": "test",
             "version": version,
             "type": "skill",
@@ -128,6 +130,7 @@ def _chat_payload(scope="@test", name="test-skill", **overrides) -> dict:
 # ---------------------------------------------------------------------------
 # /api/v1/agent/chat
 # ---------------------------------------------------------------------------
+
 
 class TestAgentChat:
     """聊天端点测试"""
@@ -323,6 +326,7 @@ class TestAgentChat:
 # ---------------------------------------------------------------------------
 # GET /api/v1/packages/{scope}/{name}/versions/{version}/content
 # ---------------------------------------------------------------------------
+
 
 class TestVersionContent:
     """Skill content 端点测试"""

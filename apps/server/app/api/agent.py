@@ -41,13 +41,13 @@ async def chat(
                 messages=messages,
             ):
                 if item["type"] == "meta":
-                    yield f'data: {json.dumps({"meta": {"model": item["model"]}})}\n\n'
+                    yield f"data: {json.dumps({'meta': {'model': item['model']}})}\n\n"
                 elif item["type"] == "delta":
-                    yield f'data: {json.dumps({"delta": item["text"]})}\n\n'
+                    yield f"data: {json.dumps({'delta': item['text']})}\n\n"
         except AppError as e:
-            yield f'data: {json.dumps({"error": {"code": e.error_code, "message": e.error_message}})}\n\n'
+            yield f"data: {json.dumps({'error': {'code': e.error_code, 'message': e.error_message}})}\n\n"
         except Exception:
-            yield f'data: {json.dumps({"error": {"code": ErrorCodes.UNKNOWN, "message": "服务器内部错误"}})}\n\n'
+            yield f"data: {json.dumps({'error': {'code': ErrorCodes.UNKNOWN, 'message': '服务器内部错误'}})}\n\n"
         finally:
             yield "data: [DONE]\n\n"
 

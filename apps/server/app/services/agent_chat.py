@@ -145,7 +145,7 @@ class AgentChatService:
                 async for line in response.aiter_lines():
                     if not line.startswith("data:"):
                         continue
-                    data = line[len("data:"):].strip()
+                    data = line[len("data:") :].strip()
                     if not data or data == "[DONE]":
                         continue
                     try:
