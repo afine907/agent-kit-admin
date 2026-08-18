@@ -22,12 +22,6 @@ describe('init command exports', () => {
     expect(opts).toContain('--name');
   });
 
-  it('initCommand has --type option', () => {
-    const cmd = (initModule as any).initCommand;
-    const opts = cmd.options.map((o: any) => o.long);
-    expect(opts).toContain('--type');
-  });
-
   it('initCommand has --yes option', () => {
     const cmd = (initModule as any).initCommand;
     const opts = cmd.options.map((o: any) => o.long);

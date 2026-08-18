@@ -36,8 +36,11 @@ def check_compliance(manifest: dict) -> CheckResult:
 
     # content 大小限制
     content = manifest.get("skill", {}).get("content", "")
-    if content and len(content) > MAX_CONTENT_BYTES:
-        errors.append(f"skill content 超过 50KB: {len(content)} bytes")
+    if content:
+        if not isinstance(content, str):
+            errors.append("skill content 必须是字符串类型")
+        elif len(content) > MAX_CONTENT_BYTES:
+            errors.append(f"skill content 超过 50KB: {len(content)} bytes")
 
     return CheckResult(
         status="fail" if errors else "pass",

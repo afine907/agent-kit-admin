@@ -1,6 +1,7 @@
 # apps/server/app/inspect/checks/functional.py
 """C. LLM 功能实测 - 调 Test Agent 跑标准问答验证 Skill content 有效"""
 
+import asyncio
 import json
 import logging
 
@@ -8,6 +9,9 @@ import httpx
 
 from app.config import get_settings
 from app.inspect.checks.types import CheckResult
+
+MAX_RESPONSE_LENGTH = 10000  # 10KB 上限，防止内存溢出
+LLM_TIMEOUT = 120  # LLM 调用总超时（秒）
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -36,6 +40,45 @@ def _evaluate_response(response: str) -> bool:
     if "超出" in response and "范围" in response:
         return False
     return True
+
+
+async def _read_sse_stream(
+    client: httpx.AsyncClient, payload: dict, settings
+) -> str:
+    """读取 SSE 流并拼接响应文本，带长度上限保护"""
+    full_response = ""
+    async with client.stream(
+        "POST",
+        f"{settings.OPENAI_BASE_URL.rstrip('/')}/chat/completions",
+        json=payload,
+        headers={"Authorization": f"Bearer {settings.OPENAI_API_KEY}"},
+    ) as response:
+        if response.status_code != 200:
+            raise RuntimeError(f"LLM HTTP {response.status_code}")
+
+        async for line in response.aiter_lines():
+            if not line.startswith("data:"):
+                continue
+            data = line[len("data:") :].strip()
+            if not data or data == "[DONE]":
+                continue
+            try:
+                chunk = json.loads(data)
+            except json.JSONDecodeError:
+                continue
+            choices = chunk.get("choices") or []
+            if not choices:
+                continue
+            delta = choices[0].get("delta") or {}
+            text = delta.get("content")
+            if text:
+                full_response += text
+                # 长度上限截断，防止内存溢出
+                if len(full_response) >= MAX_RESPONSE_LENGTH:
+                    logger.warning("LLM response truncated at %d chars", MAX_RESPONSE_LENGTH)
+                    break
+
+    return full_response
 
 
 async def check_functional(package, version, db, llm_client: httpx.AsyncClient | None = None) -> CheckResult:
@@ -71,38 +114,22 @@ async def check_functional(package, version, db, llm_client: httpx.AsyncClient |
 
     full_response = ""
     try:
-        async with client.stream(
-            "POST",
-            f"{settings.OPENAI_BASE_URL.rstrip('/')}/chat/completions",
-            json=payload,
-            headers={"Authorization": f"Bearer {settings.OPENAI_API_KEY}"},
-        ) as response:
-            if response.status_code != 200:
-                return CheckResult.error({"error": f"LLM HTTP {response.status_code}"})
-
-            async for line in response.aiter_lines():
-                if not line.startswith("data:"):
-                    continue
-                data = line[len("data:") :].strip()
-                if not data or data == "[DONE]":
-                    continue
-                try:
-                    chunk = json.loads(data)
-                except json.JSONDecodeError:
-                    continue
-                choices = chunk.get("choices") or []
-                if not choices:
-                    continue
-                delta = choices[0].get("delta") or {}
-                text = delta.get("content")
-                if text:
-                    full_response += text
+        full_response = await asyncio.wait_for(
+            _read_sse_stream(client, payload, settings),
+            timeout=LLM_TIMEOUT,
+        )
+    except asyncio.TimeoutError:
+        logger.warning("functional check LLM call timed out after %ds", LLM_TIMEOUT)
+        return CheckResult.error({"error": f"LLM 调用超时 ({LLM_TIMEOUT}s)"})
     except Exception as e:
         logger.exception("functional check LLM call failed")
         return CheckResult.error({"error": str(e)})
     finally:
         if llm_client is None:
-            await client.aclose()
+            try:
+                await client.aclose()
+            except Exception:
+                pass
 
     passed = _evaluate_response(full_response)
     return CheckResult(

@@ -249,3 +249,15 @@ class StorageService:
         except Exception as e:
             logger.warning(f"Failed to get file size {object_path}: {e}")
             return 0
+
+    async def object_exists(self, object_path: str) -> bool:
+        """检查对象是否存在于 MinIO"""
+        try:
+            loop = asyncio.get_running_loop()
+            await loop.run_in_executor(
+                None,
+                lambda: self.client.head_object(Bucket=self.bucket, Key=object_path),
+            )
+            return True
+        except Exception:
+            return False

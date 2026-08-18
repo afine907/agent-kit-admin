@@ -40,8 +40,8 @@ describe('diffManifests', () => {
     expect(diff.changed.some(c => c.key === 'config.timeout')).toBe(true);
   });
 
-  it('marks transport changes as breaking', () => {
-    const diff = diffManifests({ transport: 'stdio' }, { transport: 'http' });
+  it('marks trigger changes as breaking', () => {
+    const diff = diffManifests({ trigger: 'on_message' }, { trigger: 'on_mention' });
     expect(diff.changed[0].breaking).toBe(true);
   });
 });

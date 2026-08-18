@@ -9,7 +9,8 @@ WARN_DAYS = 180  # 半年未更新 → warn
 
 def check_freshness(package, version) -> CheckResult:
     """检查版本更新时间"""
-    last_update = getattr(version, 'created_at', None) or version.published_at or package.created_at
+    # Version 模型使用 published_at（无 created_at 字段）
+    last_update = version.published_at or package.created_at
     if not last_update:
         return CheckResult.pass_({"last_update_days": 0})
 

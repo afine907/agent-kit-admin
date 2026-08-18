@@ -66,26 +66,27 @@ class InspectorService:
             await self._update_package_status(str(package.id), "error")
             return check
 
-        # 四维检测（单个维度异常不影响其他）
-        results = []
-        for check_fn in [check_compliance, check_content, check_functional, check_freshness]:
+        # 四维检测（并发执行，单个维度异常不影响其他）
+        async def _safe_check(fn, *args):
             try:
-                if check_fn == check_compliance:
-                    result = check_compliance(version.manifest or {})
-                elif check_fn == check_content:
-                    result = await check_content(package, version, self.storage)
-                elif check_fn == check_functional:
-                    result = await check_functional(package, version, self.db)
-                elif check_fn == check_freshness:
-                    result = check_freshness(package, version)
-                else:
-                    result = CheckResult.error({"error": "unknown check"})
+                result = await fn(*args)
+                # 同步函数（compliance/freshness）直接返回 CheckResult
+                # 异步函数需要 await
+                return result
             except asyncio.TimeoutError:
-                result = CheckResult.error({"error": "检测超时 (60s)"})
+                return CheckResult.error({"error": "检测超时 (60s)"})
             except Exception as e:
-                logger.exception("check failed: %s", check_fn.__name__)
-                result = CheckResult.error({"error": str(e)})
-            results.append(result)
+                logger.exception("check failed: %s", fn.__name__)
+                return CheckResult.error({"error": str(e)})
+
+        # compliance 和 freshness 是同步函数，用 to_thread 包装
+        loop = asyncio.get_event_loop()
+        results = await asyncio.gather(
+            loop.run_in_executor(None, check_compliance, version.manifest or {}),
+            _safe_check(check_content, package, version, self.storage),
+            _safe_check(check_functional, package, version, self.db),
+            loop.run_in_executor(None, check_freshness, package, version),
+        )
 
         # 构建结果对象
         compliance = results[0]

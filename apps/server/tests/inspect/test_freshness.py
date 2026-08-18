@@ -7,7 +7,7 @@ def _make_pkg_ver(days_since_update):
     now = datetime.now(timezone.utc)
     mock_pkg = MagicMock()
     mock_ver = MagicMock()
-    mock_ver.created_at = now - timedelta(days=days_since_update)
+    mock_ver.published_at = now - timedelta(days=days_since_update)
     mock_ver.version = "1.0.0"
     return mock_pkg, mock_ver
 
