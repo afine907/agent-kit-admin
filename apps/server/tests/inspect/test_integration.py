@@ -2,13 +2,11 @@
 
 import pytest
 import uuid
-import httpx
 from httpx import AsyncClient, MockTransport, Response
-from unittest.mock import AsyncMock, MagicMock
-from sqlalchemy import select, update
+from unittest.mock import AsyncMock
+from sqlalchemy import select
 from app.models.package import Package
 from app.models.version import Version
-from app.models.health_check import AgentHealthCheck
 from app.inspect.inspector import InspectorService
 from app.inspect.events import mark_needs_check
 
@@ -138,7 +136,7 @@ async def test_pending_check_flow(db, mock_llm):
     mock_storage.object_exists.return_value = True
 
     inspector = InspectorService(db, mock_storage)
-    check = await inspector.run_check(pkg, ver, trigger="manual")
+    await inspector.run_check(pkg, ver, trigger="manual")
     await db.commit()
 
     # 验证 needs_check 已被清除

@@ -40,7 +40,7 @@ async def test_get_health_status(client: AsyncClient, db, auth_headers):
     pkg, check = await _create_skill_with_check(db, "healthy")
 
     response = await client.get(
-        f"/api/v1/health/check/test/api-test-skill",
+        "/api/v1/health/check/test/api-test-skill",
         headers=auth_headers,
     )
     assert response.status_code == 200
@@ -57,7 +57,7 @@ async def test_trigger_check(client: AsyncClient, db, auth_headers):
     await db.flush()
 
     response = await client.post(
-        f"/api/v1/health/check/test/api-test-skill",
+        "/api/v1/health/check/test/api-test-skill",
         headers=auth_headers,
     )
     assert response.status_code == 200

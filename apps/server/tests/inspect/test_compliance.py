@@ -1,4 +1,3 @@
-import pytest
 
 from app.inspect.checks.compliance import check_compliance
 

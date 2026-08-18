@@ -1,6 +1,5 @@
 import pytest
 import uuid
-from datetime import datetime, timezone
 from app.models.health_check import AgentHealthCheck
 from app.models.package import Package
 
@@ -8,7 +7,6 @@ from app.models.package import Package
 @pytest.mark.asyncio
 async def test_agent_health_check_model(db):
     """AgentHealthCheck model can be created with all fields"""
-    from app.models.version import Version
 
     pkg = Package(
         id=str(uuid.uuid4()),
