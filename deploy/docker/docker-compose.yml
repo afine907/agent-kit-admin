@@ -95,6 +95,41 @@ services:
     networks:
       - akit-network
 
+  # Inspector Worker — 巡检后台服务
+  worker:
+    profiles: ["prod"]
+    build:
+      context: ../../apps/server
+      dockerfile: Dockerfile
+    container_name: akit-worker
+    restart: unless-stopped
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-agentkit}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME:-agentkit}
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_BUCKET: packages
+      JWT_SECRET: ${JWT_SECRET:?请设置 JWT_SECRET}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      INSPECTOR_SAMPLE_RATE: ${INSPECTOR_SAMPLE_RATE:-0.2}
+      INSPECTOR_CRON_HOUR: ${INSPECTOR_CRON_HOUR:-2}
+      INSPECTOR_MAX_LLM_PER_RUN: ${INSPECTOR_MAX_LLM_PER_RUN:-50}
+      INSPECTOR_POLL_INTERVAL: ${INSPECTOR_POLL_INTERVAL:-30}
+    depends_on:
+      db:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    command: python -m app.worker
+    networks:
+      - akit-network
+
   # Web (React) — 生产环境
   web:
     profiles: ["prod"]
