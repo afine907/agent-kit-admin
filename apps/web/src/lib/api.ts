@@ -258,6 +258,22 @@ export interface SkillContentResponse {
   version: string;
 }
 
+// 健康检测
+export interface HealthDimensionResult {
+  status: string;
+  detail: Record<string, unknown>;
+}
+
+export interface HealthCheckResponse {
+  overall: string;
+  compliance: HealthDimensionResult;
+  content: HealthDimensionResult;
+  functional: HealthDimensionResult;
+  freshness: HealthDimensionResult;
+  checked_at?: string;
+  trigger?: string;
+}
+
 // 聊天消息
 export interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
@@ -528,6 +544,13 @@ export const api = {
     getDownloadTrends: (days: number = 30) =>
       client.get<DownloadTrendsResponse>('/api/v1/admin/stats/downloads', { params: { days } }).then((r) => r.data),
   },
+
+  // 健康检测
+  getHealthCheck: (scope: string, name: string) =>
+    client.get<HealthCheckResponse>(`/api/v1/health/check/${scope}/${name}`).then((r) => r.data),
+
+  triggerHealthCheck: (scope: string, name: string) =>
+    client.post(`/api/v1/health/check/${scope}/${name}`).then((r) => r.data),
 
   // 聊天 Agent（SSE 流式，使用原生 fetch + ReadableStream）
   agent: {

@@ -2,7 +2,7 @@
  * PackageDetail 页面 - 终端风格包详情
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { usePackage, useVersions } from '../hooks/usePackages';
@@ -12,8 +12,9 @@ import { ReviewList } from '../components/ReviewList';
 import { ReviewForm } from '../components/ReviewForm';
 import { RatingDistribution } from '../components/RatingDistribution';
 import { PackageStats } from '../components/PackageStats';
+import { HealthCheckBadge } from '../components/HealthCheckBadge';
 import { useReviews } from '../hooks/useReviews';
-import { ReviewResponse } from '../lib/api';
+import { ReviewResponse, api, HealthCheckResponse } from '../lib/api';
 import {
   ChevronRight,
   ArrowLeft,
@@ -39,6 +40,35 @@ export default function PackageDetail() {
   const { data: pkg, isLoading, error } = usePackage(scope || '', name || '');
   const { data: versions } = useVersions(scope || '', name || '');
   const { data: reviewsData } = useReviews(scope || '', name || '');
+
+  const [health, setHealth] = useState<HealthCheckResponse | null>(null);
+  const [healthLoading, setHealthLoading] = useState(false);
+
+  useEffect(() => {
+    if (!scope || !name) return;
+    api.getHealthCheck(scope, name).then(setHealth).catch(() => setHealth(null));
+  }, [scope, name]);
+
+  const handleRecheck = useCallback(async () => {
+    if (!scope || !name) return;
+    setHealthLoading(true);
+    try {
+      await api.triggerHealthCheck(scope, name);
+      // Poll for result after a delay
+      setTimeout(async () => {
+        try {
+          const updated = await api.getHealthCheck(scope, name);
+          setHealth(updated);
+        } catch {
+          // ignore
+        } finally {
+          setHealthLoading(false);
+        }
+      }, 5000);
+    } catch {
+      setHealthLoading(false);
+    }
+  }, [scope, name]);
 
   const locale = i18n.language === 'zh' ? 'zh-CN' : 'en-US';
 
@@ -232,6 +262,21 @@ export default function PackageDetail() {
               )}
             </div>
           </div>
+
+          {/* 健康状态 */}
+          {health && (
+            <div className="animate-fade-in-up" style={{ animationDelay: '150ms' }}>
+              <HealthCheckBadge
+                overall={health.overall}
+                compliance={health.compliance}
+                content={health.content}
+                functional={health.functional}
+                freshness={health.freshness}
+                checkedAt={health.checked_at}
+                onRecheck={healthLoading ? undefined : handleRecheck}
+              />
+            </div>
+          )}
 
           {/* 时间卡片 */}
           <div className="p-5 rounded-xl bg-card border border-border/50 animate-fade-in-up" style={{ animationDelay: '200ms' }}>
