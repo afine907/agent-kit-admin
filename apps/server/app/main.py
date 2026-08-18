@@ -9,7 +9,7 @@ from sqlalchemy import text
 from app.config import get_settings
 from app.errors import AppError, app_error_handler
 from app.middleware import RequestIDMiddleware, LoggingMiddleware
-from app.api import auth, packages, versions, admin, reviews, teams, agent, webhooks
+from app.api import auth, packages, versions, admin, reviews, teams, agent, webhooks, health
 
 # 配置日志
 logging.basicConfig(
@@ -119,6 +119,7 @@ app.include_router(teams.router, prefix="/api/v1")
 app.include_router(admin.router, prefix="/api/v1")
 app.include_router(agent.router, prefix="/api/v1")
 app.include_router(webhooks.router, prefix="/api/v1/teams")
+app.include_router(health.router, prefix="/api/v1")
 
 
 @app.get("/api/health")
