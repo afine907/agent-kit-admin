@@ -1,29 +1,30 @@
-# AGENTS.md — Agent Index
+# AGENTS.md - Agent Index
 
-> This repository is **AI-first and spec-driven**. All structured work begins from a written Deep Work Plan (DWP), not ad-hoc prompts.
+> This repository is **AI-first**. All structured work begins from a clear plan, not ad-hoc prompts.
 
 ## Repository Overview
 
-**Agent Kit Admin** — a private Package Registry for AI Agent ecosystems. Manages Agent Skills for teams using Claude Code, Codex, and other AI agents. Think "npm registry" but for AI agent capabilities.
+**Agent Kit Admin** - a private Package Registry for AI Agent ecosystems. Manages Agent Skills for teams using Claude Code, Codex, and other AI agents. Think "npm registry" but for AI agent capabilities.
 
-**Core flow:** `akit publish` (upload package) → Registry stores in PostgreSQL + MinIO → `akit install` (download + record)
+**Core flow:** kit publish (upload package) -> Registry stores in PostgreSQL + MinIO -> kit install (download + record)
 
 | Component | Stack | Directory | Purpose |
 |---|---|---|---|
-| **server** | Python 3.11+ / FastAPI / SQLAlchemy 2.0 | `apps/server/` | REST API + package registry logic |
-| **cli** | Node.js 20+ / TypeScript / Commander.js | `apps/cli/` | `akit` CLI — publish, install, manage |
-| **web** | React 18 / Vite 5 / shadcn/ui | `apps/web/` | SPA admin dashboard |
+| **server** | Python 3.11+ / FastAPI / SQLAlchemy 2.0 | pps/server/ | REST API + package registry logic |
+| **cli** | Node.js 20+ / TypeScript / Commander.js | pps/cli/ | kit CLI - publish, install, manage |
+| **web** | React 18 / Vite 5 / shadcn/ui | pps/web/ | SPA admin dashboard |
 
-Infrastructure: PostgreSQL 16 + MinIO + Caddy — all via Docker Compose.
+Infrastructure: PostgreSQL 16 + MinIO + Caddy - all via Docker Compose.
 
 ## Mandatory Rules
 
 1. **English-only in code, commits, and agent-facing docs.** UI text and user-facing CLI output may be in Chinese (per project convention).
-2. **Conventional Commits** — `<type>(<scope>): <subject>` — types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`, `ci`.
-3. **Pre-commit gates** — all lint, typecheck, and tests must pass locally before committing.
-4. **Spec-driven work** — any non-trivial task starts with a written plan (DWP), not spontaneous edits.
-5. **Non-destructive changes** — reconcile existing work, never overwrite without asking.
-6. **Layered architecture** — API Layer → Service Layer → Model Layer. No shortcuts.
+2. **Conventional Commits** - <type>(<scope>): <subject> - types: eat, ix, docs, style, 
+efactor, perf, 	est, chore, ci.
+3. **Pre-commit gates** - all lint, typecheck, and tests must pass locally before committing.
+4. **Spec-driven work** - any non-trivial task starts with a written plan, not spontaneous edits.
+5. **Non-destructive changes** - reconcile existing work, never overwrite without asking.
+6. **Layered architecture** - API Layer -> Service Layer -> Model Layer. No shortcuts.
 
 ## Quick Commands
 
@@ -80,26 +81,15 @@ make db-revision            # Create new migration
 make db-reset               # Reset database
 ```
 
-### Deep Work Plan
-
-```bash
-/dwp-create <goal>          # Create a structured work plan
-/dwp-execute                # Execute current plan task-by-task
-/dwp-status                 # Report progress
-/dwp-refine                 # Adjust plan (add/remove/reorder tasks)
-/dwp-resume                 # Resume interrupted plan
-/dwp-verify                 # Run conformance check
-```
-
 ## Project Conventions
 
-> 详细的项目规范（分层架构、Package Manifest、软删除策略、Scope Namespace、代码质量门）见 [CLAUDE.md](CLAUDE.md)。
+> Detailed project conventions (layered architecture, Package Manifest, soft delete strategy, Scope Namespace, code quality gates) see [CLAUDE.md](CLAUDE.md).
 
 ## Documentation Index
 
 | Document | Purpose |
 |---|---|
-| [CLAUDE.md](CLAUDE.md) | 项目规范（架构约定、Manifest、质量门） |
+| [CLAUDE.md](CLAUDE.md) | Project conventions (architecture, Manifest, quality gates) |
 | [docs/README.md](docs/README.md) | Documentation index |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System architecture overview |
 | [docs/TESTING_GUIDE.md](docs/TESTING_GUIDE.md) | Testing conventions and commands |
@@ -109,8 +99,7 @@ make db-reset               # Reset database
 | [docs/AI_AGENT_ONBOARDING.md](docs/AI_AGENT_ONBOARDING.md) | AI agent onboarding guide |
 | [docs/AI_AGENT_COLLAB.md](docs/AI_AGENT_COLLAB.md) | Agent collaboration patterns |
 | [docs/PERFORMANCE.md](docs/PERFORMANCE.md) | Performance considerations |
-| [docs/architecture/](docs/architecture/) | Detailed architecture docs |
-| [docs/specs/](docs/specs/) | Phase specs and feature plans |
+| [docs/PRODUCT_SPEC.md](docs/PRODUCT_SPEC.md) | Product specification and scope |
 
 ## Agent & Skill Catalog
 
@@ -118,12 +107,12 @@ See [.agents/docs/skills_agents_catalog.md](.agents/docs/skills_agents_catalog.m
 
 | Type | Name | Description |
 |---|---|---|
-| Skill | `akit` | Trigger-style CLI operations (install, search, publish) |
-| Skill | `akit-agent` | Proactive team package monitoring |
+| Skill | kit | Trigger-style CLI operations (install, search, publish) |
+| Skill | kit-agent | Proactive team package monitoring |
 
 ## Git Branches
 
-- `master` — production, always deployable
-- `feat/*` — feature branches
-- `fix/*` — fix branches
-- `worktree-agent-*` — ephemeral AI agent branches (gitignored)
+- master - production, always deployable
+- eat/* - feature branches
+- ix/* - fix branches
+- worktree-agent-* - ephemeral AI agent branches (gitignored)

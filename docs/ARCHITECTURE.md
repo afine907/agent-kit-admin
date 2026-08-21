@@ -1,12 +1,10 @@
 # Architecture Overview
 
-> Detailed architecture docs: [`docs/architecture/02-architecture.md`](architecture/02-architecture.md)
-
 ## System Shape
 
 Three tightly coupled components forming one product:
 
-```
+`
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
 │  Web (SPA)  │────▶│ Server (API)│◀────│  CLI (akit) │
 │  React/Vite │     │   FastAPI   │     │  Commander  │
@@ -18,27 +16,27 @@ Three tightly coupled components forming one product:
               │ PostgreSQL │ │  MinIO  │
               │  Metadata  │ │ Tarballs│
               └───────────┘ └─────────┘
-```
+`
 
 ## Component Responsibilities
 
-### Server (`apps/server/`)
+### Server (pps/server/)
 - **Stack:** Python 3.11+, FastAPI, SQLAlchemy 2.0 (async), Alembic
-- **Role:** REST API, package registry logic, auth, team management
+- **Role:** REST API, package registry logic, auth, team management, health inspection
 - **Pattern:** Route → Service → Model (layered architecture)
-- **Entry:** `app.main:app` (ASGI via uvicorn)
+- **Entry:** pp.main:app (ASGI via uvicorn)
 
-### CLI (`apps/cli/`)
+### CLI (pps/cli/)
 - **Stack:** Node.js 20+, TypeScript, Commander.js
-- **Role:** `akit` CLI — publish, install, manage packages
+- **Role:** kit CLI — publish, install, manage packages
 - **Pattern:** Commands → API client
-- **Entry:** `src/bin/akit.ts` (dev via tsx), `dist/bin/akit.js` (built)
+- **Entry:** src/bin/akit.ts (dev via tsx), dist/bin/akit.js (built)
 
-### Web (`apps/web/`)
+### Web (pps/web/)
 - **Stack:** React 18, Vite 5, shadcn/ui, TanStack Query, Zustand
 - **Role:** SPA admin dashboard
 - **Pattern:** Pages → Components → API client (TanStack Query)
-- **Entry:** `src/main.tsx`
+- **Entry:** src/main.tsx
 
 ## Data Flow
 
@@ -56,7 +54,9 @@ Three tightly coupled components forming one product:
 
 ## Key Design Decisions
 
-- **Soft delete:** Packages use `deleted_at` column; deleted names cannot be re-registered
-- **Scope namespace:** `@username` and `@team-slug` share one namespace — no collisions
+- **Soft delete:** Packages use deleted_at column; deleted names cannot be re-registered
+- **Scope namespace:** @username and @team-slug share one namespace — no collisions
 - **Monorepo:** pnpm workspace with three apps; shared Docker Compose deployment
-- **Manifest:** Every package requires `akit.json` (schema in `docs/architecture/18-manifest-schema.md`)
+- **Manifest:** Every package requires kit.json with 
+ame, ersion, 	ype fields
+- **Health Inspection:** Automated package health checks via inspector + worker pattern

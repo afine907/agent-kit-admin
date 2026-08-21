@@ -1,7 +1,5 @@
 # Testing Guide
 
-> Detailed test architecture: [`docs/testing/test-architecture.md`](testing/test-architecture.md)
-
 ## Quick Reference
 
 | Component | Framework | Command | Pattern |
@@ -18,12 +16,12 @@ make test
 
 ## Coverage Targets
 
-| Metric | Target | Current (2026-07-11) |
-|---|---|---|
-| Server Statements | ≥ 80% | **80%** ✅ |
-| Server Branches | ≥ 70% | — |
-| CLI Statements | ≥ 70% | — |
-| Web Statements | ≥ 70% | — |
+| Metric | Target |
+|---|---|
+| Server Statements | >= 80% |
+| Server Branches | >= 70% |
+| CLI Statements | >= 70% |
+| Web Statements | >= 70% |
 
 ### Run Coverage
 
@@ -38,14 +36,6 @@ cd apps/cli && pnpm test -- --coverage
 cd apps/web && pnpm test -- --coverage
 ```
 
-### Coverage Baselines (established 2026-07-11)
-
-- **Server**: 80% statements (622 missing of 3043 total)
-  - Low: `app/services/storage.py` (31%), `app/services/auth.py` (63%), `app/cli.py` (46%)
-  - High: `app/schemas/*`, `app/models/*` (93%+)
-- **CLI**: config pending (vitest coverage provider issue — Task 1 will resolve)
-- **Web**: not yet measured
-
 ## Server Tests
 
 - Location: `apps/server/tests/`
@@ -54,12 +44,13 @@ cd apps/web && pnpm test -- --coverage
 - Coverage: `pytest --cov=app --cov-report=xml`
 
 ### Key test files:
-- `test_auth.py` — Authentication flows
-- `test_packages.py` — Package CRUD
-- `test_teams.py` — Team management
-- `test_api_keys.py` — API key operations
-- `test_rate_limiting.py` — Rate limit enforcement
-- `test_e2e_journeys.py` — End-to-end user flows
+- `test_auth.py` - Authentication flows
+- `test_packages.py` - Package CRUD
+- `test_teams.py` - Team management
+- `test_api_keys.py` - API key operations
+- `test_rate_limiting.py` - Rate limit enforcement
+- `test_e2e_journeys.py` - End-to-end user flows
+- `tests/inspect/test_*.py` - Health inspection tests
 
 ## CLI Tests
 
@@ -77,7 +68,7 @@ cd apps/web && pnpm test -- --coverage
 ## Test Conventions
 
 1. Each test verifies one behavior
-2. Tests are independent — no execution order dependency
+2. Tests are independent - no execution order dependency
 3. Use fixtures for shared setup (server) or beforeEach (CLI/Web)
 4. Mock external dependencies, not internal modules (use dependency injection)
 5. Test the happy path, boundary conditions, error handling, and integration points

@@ -3,10 +3,10 @@
 ## Server
 
 ### Database
-- Use async SQLAlchemy throughout — no sync calls in async context
+- Use async SQLAlchemy throughout - no sync calls in async context
 - Connection pooling via SQLAlchemy's built-in pool
-- Indexes on frequently queried columns (see `docs/architecture/04-data-model.md`)
-- Soft delete queries always include `WHERE deleted_at IS NULL` filter
+- Indexes on frequently queried columns (name, scope, tags, created_at)
+- Soft delete queries always include WHERE deleted_at IS NULL filter
 
 ### API
 - Pagination on all list endpoints (default page size: 20, max: 100)
@@ -48,6 +48,6 @@
 
 ## Infrastructure
 
-- PostgreSQL: tune `shared_buffers`, `work_mem` for workload
+- PostgreSQL: tune shared_buffers, work_mem for workload
 - MinIO: use SSD storage for package tarballs
 - Caddy: enable gzip compression for API responses

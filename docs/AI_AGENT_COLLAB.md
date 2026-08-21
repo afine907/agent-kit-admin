@@ -2,12 +2,11 @@
 
 ## Single Agent Workflow
 
-Most work is done by a single agent (Claude Code) following the DWP methodology:
+Most work is done by a single agent (Claude Code) following a plan-first approach:
 
-1. `/dwp-create <goal>` — plan the work
-2. `/dwp-execute` — execute task by task
-3. `/dwp-status` — check progress at any time
-4. `/dwp-verify` — confirm conformance when done
+1. Analyze the task and form a plan
+2. Execute step by step
+3. Verify conformance when done
 
 ## Multi-Agent Patterns
 
@@ -15,14 +14,14 @@ Most work is done by a single agent (Claude Code) following the DWP methodology:
 
 When multiple agents work in parallel, each gets an isolated git worktree:
 
-```
+`
 main branch
-├── worktree-agent-1/  (feature A)
-├── worktree-agent-2/  (feature B)
-└── worktree-agent-3/  (bugfix C)
-```
+|- worktree-agent-1/  (feature A)
+|- worktree-agent-2/  (feature B)
+|- worktree-agent-3/  (bugfix C)
+`
 
-Each worktree is independent — no merge conflicts until integration.
+Each worktree is independent - no merge conflicts until integration.
 
 ### Agent Roles
 
@@ -38,17 +37,17 @@ When one agent finishes and another continues:
 
 1. First agent commits work to its branch
 2. Second agent checks out the branch
-3. Second agent reads plan file to reconstruct context
-4. Second agent continues from next pending task
+3. Second agent reads commit messages to reconstruct context
+4. Second agent continues from where the previous left off
 
 ## Communication
 
-- Agents communicate through **plan files** (`.dwp/plans/`) and **commit messages**
+- Agents communicate through **commit messages** and **code comments**
 - No direct agent-to-agent messaging
-- Plan files serve as the shared state
+- Code and commits serve as the shared state
 
 ## Conflict Resolution
 
 - Each agent works on a separate worktree/branch
 - Merge conflicts are resolved at PR time by a human
-- Plan files track who did what and why
+- Clear commit messages track who did what and why
