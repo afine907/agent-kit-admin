@@ -20,8 +20,6 @@ async def owner(db):
         email="owner@example.com",
         display_name="Owner",
         password_hash=hash_password("OwnerPass123!"),
-        oauth_provider="local",
-        oauth_id=None,
         role="member",
         status="active",
     )
@@ -38,8 +36,6 @@ async def member(db):
         email="member@example.com",
         display_name="Member",
         password_hash=hash_password("MemberPass123!"),
-        oauth_provider="local",
-        oauth_id=None,
         role="member",
         status="active",
     )
@@ -56,8 +52,6 @@ async def outsider(db):
         email="outsider@example.com",
         display_name="Outsider",
         password_hash=hash_password("OutsiderPass123!"),
-        oauth_provider="local",
-        oauth_id=None,
         role="member",
         status="active",
     )
@@ -323,3 +317,4 @@ async def test_search_includes_visible_team_packages(client, public_pkg, team_pk
     names = [p["name"] for p in resp.json()["data"]]
     assert "public-pkg" in names
     assert "team-pkg" in names
+

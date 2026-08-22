@@ -174,7 +174,7 @@ export interface AdminUserResponse {
   avatar_url?: string;
   role: string;
   status: string;
-  oauth_provider: string;
+
   last_login_at?: string;
   created_at?: string;
 }
@@ -242,9 +242,7 @@ export interface PackageStatsResponse {
   trends: DownloadTrend[];
 }
 
-export interface AppConfig {
-  oauth_provider: string;
-}
+
 
 // Skill content 端点响应
 export interface SkillContentResponse {
@@ -345,11 +343,9 @@ export interface PublishTeamPackageData {
 
 // API 函数
 export const api = {
-  // 配置
-  getConfig: () => client.get<{ data: AppConfig }>('/api/v1/config').then((r) => r.data),
+
 
   // 认证
-  getOAuthUrl: (provider: string) => `/api/v1/auth/oauth/${provider}`,
   getMe: () => client.get<User>('/api/v1/auth/me').then((r) => r.data),
 
   // 本地登录/注册
@@ -626,3 +622,5 @@ export const api = {
     },
   },
 };
+
+

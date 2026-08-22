@@ -28,17 +28,13 @@ def upgrade() -> None:
         sa.Column("username", sa.String(50), nullable=False),
         sa.Column("email", sa.String(255), nullable=True),
         sa.Column("display_name", sa.String(100), nullable=True),
-        sa.Column("avatar_url", sa.Text(), nullable=True),
-        sa.Column("oauth_provider", sa.String(20), nullable=False),
-        sa.Column("oauth_id", sa.String(100), nullable=False),
+        sa.Column("avatar_url", sa.Text(), nullable=True),
         sa.Column("created_at", postgresql.TIMESTAMP(timezone=True), server_default=sa.text("now()"), nullable=True),
         sa.Column("updated_at", postgresql.TIMESTAMP(timezone=True), server_default=sa.text("now()"), nullable=True),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("username"),
-        sa.UniqueConstraint("email"),
-        sa.UniqueConstraint("oauth_provider", "oauth_id"),
-    )
-    op.create_index("idx_users_oauth", "users", ["oauth_provider", "oauth_id"])
+        sa.UniqueConstraint("email"),
+    )
 
     # teams 表
     op.create_table(
@@ -194,3 +190,4 @@ def downgrade() -> None:
     op.drop_table("teams")
     op.drop_table("users")
     # ### end Alembic commands ###
+

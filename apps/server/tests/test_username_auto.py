@@ -55,7 +55,6 @@ class TestUsernameAutoNumbering:
                 email=f"test{suffix}@example.com",
                 display_name=f"Test{suffix}",
                 password_hash=hash_password("Pass123!"),
-                oauth_provider="local",
                 role="member",
                 status="active",
             )
@@ -85,3 +84,4 @@ class TestUsernameAutoNumbering:
             },
         )
         assert response.status_code == 409
+

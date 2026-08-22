@@ -7,7 +7,7 @@ import { useAuthStore } from './stores/authStore';
 // 路由懒加载 — 按需拆分页面 chunk
 const Home = React.lazy(() => import('./pages/Home'));
 const Login = React.lazy(() => import('./pages/Login'));
-const AuthCallback = React.lazy(() => import('./pages/AuthCallback'));
+
 const PackageDetail = React.lazy(() => import('./pages/PackageDetail'));
 const Profile = React.lazy(() => import('./pages/Profile'));
 const Publish = React.lazy(() => import('./pages/Publish'));
@@ -55,8 +55,7 @@ function App() {
         >
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/login" element={<Login />} />
             <Route path="/packages/:scope/:name" element={<PackageDetail />} />
             <Route
               path="/packages/:scope/:name/edit"
@@ -136,3 +135,4 @@ function App() {
 }
 
 export default App;
+

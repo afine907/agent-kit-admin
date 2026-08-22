@@ -221,27 +221,6 @@ export class ApiClient {
   // ============================================
 
   /**
-   * 获取 OAuth 登录 URL
-   */
-  async getOAuthUrl(provider: string): Promise<string> {
-    const response = await this.client.get<{ url: string }>(
-      `/api/v1/auth/oauth/${provider}`
-    );
-    return response.data.url;
-  }
-
-  /**
-   * 处理 OAuth 回调
-   */
-  async handleOAuthCallback(provider: string, code: string): Promise<AuthResponse> {
-    const response = await this.client.get<AuthResponse>(
-      `/api/v1/auth/oauth/${provider}/callback`,
-      { params: { code } }
-    );
-    return response.data;
-  }
-
-  /**
    * 获取当前用户信息
    */
   async getMe(): Promise<AuthResponse['user']> {
@@ -716,3 +695,5 @@ export interface WebhookInfo {
 
 // Singleton export
 export const apiClient = new ApiClient();
+
+

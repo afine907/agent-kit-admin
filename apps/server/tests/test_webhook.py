@@ -17,8 +17,6 @@ async def team_owner(db):
         email="webhook_owner@example.com",
         display_name="Webhook Owner",
         password_hash=hash_password("OwnerPass123!"),
-        oauth_provider="local",
-        oauth_id=None,
         role="member",
         status="active",
     )
@@ -35,8 +33,6 @@ async def team_member(db):
         email="webhook_member@example.com",
         display_name="Webhook Member",
         password_hash=hash_password("MemberPass123!"),
-        oauth_provider="local",
-        oauth_id=None,
         role="member",
         status="active",
     )
@@ -199,8 +195,6 @@ async def test_list_webhooks_non_member_forbidden(client, team, db):
         email="outsider@example.com",
         display_name="Outsider",
         password_hash=hash_password("OutsiderPass123!"),
-        oauth_provider="local",
-        oauth_id=None,
         role="member",
         status="active",
     )
@@ -230,3 +224,4 @@ def test_webhook_signature_verification():
 
     # 错误签名
     assert WebhookService.verify_signature(secret, body, "sha256=wrong") is False
+

@@ -17,7 +17,7 @@
 | **Agent Skill** | 发布可被 Agent 调用的 Skill 配置 |
 | **CLI 工具** | `akit` 命令行，无缝集成到 Cursor/Claude Code |
 | **Web UI** | 可视化包浏览、团队管理、安装追踪 |
-| **OAuth 登录** | 支持企微、飞书、钉钉 SSO |
+| **本地认证** | 邮箱密码注册登录 + API Key 认证 |
 
 ---
 
@@ -48,7 +48,9 @@ docker compose up -d
 # 终端 1: 启动 API
 cd apps/server
 cp .env.example .env
-source venv/bin/activate
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -e ".[dev]"
 uvicorn app.main:app --reload --port 8000
 
 # 终端 2: 启动 Web
@@ -94,6 +96,8 @@ akit publish --team @myteam
 akit --version          # 查看版本
 akit login              # 登录
 akit register           # 注册
+akit logout             # 登出
+akit whoami             # 查看当前用户
 
 akit list               # 列出已安装的包
 akit list --team @myteam  # 列出团队包
@@ -130,7 +134,7 @@ akit uninstall @scope/name   # 卸载包
 
 ```
 ┌─────────────────────────────────────────────┐
-│                  Web UI (Next.js)            │
+│              Web UI (React + Vite)           │
 │   http://localhost:3000                      │
 │   团队页面 / 包浏览 / 安装追踪                │
 └────────────────────┬────────────────────────┘
@@ -174,7 +178,7 @@ pnpm test
 
 ```bash
 # Server
-cd apps/server && ruff check . && mypy app
+cd apps/server && ruff check . && ruff format --check .
 
 # CLI
 cd apps/cli && pnpm lint && pnpm typecheck
@@ -190,12 +194,19 @@ cd apps/web && pnpm lint && pnpm typecheck
 ### 环境变量 (apps/server/.env)
 
 ```env
-DATABASE_URL=postgresql+asyncpg://user:pass@localhost:5432/agentkit
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=agentkit
+DB_PASSWORD=agentkit_dev_2024
+DB_NAME=agentkit
+
 MINIO_ENDPOINT=localhost:9000
-MINIO_ACCESS_KEY=minioadmin
-MINIO_SECRET_KEY=minioadmin
+MINIO_ROOT_USER=minioadmin
+MINIO_ROOT_PASSWORD=minioadmin_dev_2024
+MINIO_BUCKET=packages
+
 JWT_SECRET=your-secret-key
-CORS_ORIGINS=http://localhost:3000
+CORS_ORIGINS=["http://localhost:5173","http://localhost:3000"]
 ```
 
 ### API 地址
@@ -210,6 +221,12 @@ AKIT_SERVER=https://your-registry.com akit list
 
 ---
 
+## 贡献指南
+
+欢迎提交 Issue 和 PR！请参阅 [CONTRIBUTING.md](CONTRIBUTING.md) 了解贡献流程。
+
+---
+
 ## License
 
-MIT
+[MIT](LICENSE)

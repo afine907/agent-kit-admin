@@ -34,9 +34,5 @@ describe('login command exports', () => {
     expect(opts).toContain('--password');
   });
 
-  it('loginCommand has --provider option', () => {
-    const cmd = (loginModule as any).loginCommand;
-    const opts = cmd.options.map((o: any) => o.long);
-    expect(opts).toContain('--provider');
-  });
 });
+

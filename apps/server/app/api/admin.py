@@ -264,8 +264,7 @@ async def list_users(
                 "display_name": u.display_name,
                 "avatar_url": u.avatar_url,
                 "role": u.role,
-                "status": u.status,
-                "oauth_provider": u.oauth_provider,
+                "status": u.status,
                 "last_login_at": u.last_login_at.isoformat() if u.last_login_at else None,
                 "created_at": u.created_at.isoformat() if u.created_at else None,
             }
@@ -298,8 +297,7 @@ async def get_user(
         "display_name": user.display_name,
         "avatar_url": user.avatar_url,
         "role": user.role,
-        "status": user.status,
-        "oauth_provider": user.oauth_provider,
+        "status": user.status,
         "last_login_at": user.last_login_at.isoformat() if user.last_login_at else None,
         "created_at": user.created_at.isoformat() if user.created_at else None,
     }
@@ -482,3 +480,4 @@ async def get_download_trends(
         current_date += timedelta(days=1)
 
     return {"trends": trends, "days": days}
+

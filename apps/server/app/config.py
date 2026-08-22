@@ -19,7 +19,6 @@ class Settings(BaseSettings):
     # 应用
     APP_NAME: str = "Agent Kit Admin"
     APP_VERSION: str = "0.1.0"
-    APP_BASE_URL: str = "http://localhost:8000"  # 应用基础 URL，用于 OAuth 回调等
     DEBUG: bool = False
     ENVIRONMENT: str = "development"  # development / staging / production
 
@@ -58,23 +57,6 @@ class Settings(BaseSettings):
     JWT_SECRET: str = _DEV_JWT_SECRET
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRE_HOURS: int = 24
-
-    # OAuth - 启用的 IM 提供商（wechat_work / feishu / dingtalk）
-    # 设置后只启用对应的 OAuth 登录，留空则显示所有已配置的提供商
-    OAUTH_PROVIDER: str = ""
-
-    # OAuth - 企业微信
-    WECHAT_WORK_CORP_ID: str = ""
-    WECHAT_WORK_SECRET: str = ""
-    WECHAT_WORK_AGENT_ID: str = ""
-
-    # OAuth - 飞书
-    FEISHU_APP_ID: str = ""
-    FEISHU_APP_SECRET: str = ""
-
-    # OAuth - 钉钉
-    DINGTALK_APP_KEY: str = ""
-    DINGTALK_APP_SECRET: str = ""
 
     # LLM (OpenAI 兼容接口) - 用于 Skill 测试对话 Agent
     # OPENAI_API_KEY 为空时不阻塞启动，聊天端点返回干净的 503 LLM_NOT_CONFIGURED

@@ -37,8 +37,6 @@ async def test_login_local_user(client: AsyncClient, db):
         email="login@example.com",
         display_name="登录用户",
         password_hash=hash_password("TestPass123!"),
-        oauth_provider="local",
-        oauth_id=None,
         role="member",
         status="active",
     )
@@ -62,8 +60,6 @@ async def test_login_wrong_password(client: AsyncClient, db):
         email="wrong@example.com",
         display_name="密码错误",
         password_hash=hash_password("CorrectPass123!"),
-        oauth_provider="local",
-        oauth_id=None,
         role="member",
         status="active",
     )
@@ -84,8 +80,6 @@ async def test_register_duplicate_username(client: AsyncClient, db):
         email="dup1@example.com",
         display_name="重复用户",
         password_hash=hash_password("Pass123!"),
-        oauth_provider="local",
-        oauth_id=None,
         role="member",
         status="active",
     )
@@ -634,3 +628,4 @@ async def test_team_package_management_journey(
         headers=auth_headers,
     )
     assert resp.status_code == 400
+

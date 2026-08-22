@@ -1,7 +1,6 @@
 """认证 API 路由"""
 
-from fastapi import APIRouter, Depends, Query, Path
-from fastapi.responses import RedirectResponse
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
@@ -12,30 +11,6 @@ from app.models.user import User
 from app.schemas.auth import RegisterRequest, LoginRequest, RefreshRequest, CreateAPIKeyRequest, UpdateProfileRequest
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-
-# OAuth 提供商白名单
-VALID_OAUTH_PROVIDERS = {"wechat_work", "feishu", "dingtalk"}
-
-
-def _validate_oauth_provider(provider: str) -> None:
-    """校验 OAuth 提供商是否合法且已启用"""
-    from app.errors import AppError, ErrorCodes
-    from app.config import get_settings
-
-    if provider not in VALID_OAUTH_PROVIDERS:
-        raise AppError(
-            code=ErrorCodes.NOT_FOUND,
-            message="OAuth provider not found",
-            status_code=404,
-        )
-
-    settings = get_settings()
-    if settings.OAUTH_PROVIDER and provider != settings.OAUTH_PROVIDER:
-        raise AppError(
-            code=ErrorCodes.AUTH_FORBIDDEN,
-            message=f"OAuth provider '{provider}' is not enabled",
-            status_code=403,
-        )
 
 
 class DevLoginRequest(BaseModel):
@@ -119,7 +94,7 @@ async def dev_login(
         role=data.role,
     )
 
-    # 复用 AuthService 的 create_token（使用 python-jose + timezone-aware datetime）
+    # 复用 AuthService 的 create_token
     token = auth_service.create_token(str(user.id), user.username)
 
     return {
@@ -131,34 +106,6 @@ async def dev_login(
             "avatar_url": user.avatar_url,
         },
     }
-
-
-@router.get("/oauth/{provider}")
-async def oauth_login(provider: str = Path(..., description="OAuth 提供商")):
-    """OAuth 登录跳转 - 302 重定向到授权页"""
-    _validate_oauth_provider(provider)
-
-    from app.database import AsyncSessionLocal
-
-    async with AsyncSessionLocal() as db:
-        auth_service = AuthService(db)
-        url = auth_service.get_oauth_url(provider)
-    return RedirectResponse(url=url, status_code=302)
-
-
-@router.get("/oauth/{provider}/callback")
-async def oauth_callback(
-    provider: str = Path(..., description="OAuth 提供商"),
-    code: str = Query(...),
-    state: str = Query(..., description="OAuth state 参数，用于防止 CSRF 攻击"),
-    db: AsyncSession = Depends(get_db),
-):
-    """OAuth 回调 - 返回 JWT Token 和用户信息"""
-    _validate_oauth_provider(provider)
-
-    auth_service = AuthService(db)
-    result = await auth_service.handle_oauth_callback(provider, code, state)
-    return result
 
 
 @router.get("/me")

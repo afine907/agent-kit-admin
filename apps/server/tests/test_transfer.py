@@ -15,8 +15,6 @@ async def user_a(db):
         email="owner_a@example.com",
         display_name="Owner A",
         password_hash=hash_password("OwnerAPass123!"),
-        oauth_provider="local",
-        oauth_id=None,
         role="member",
         status="active",
     )
@@ -33,8 +31,6 @@ async def user_b(db):
         email="owner_b@example.com",
         display_name="Owner B",
         password_hash=hash_password("OwnerBPass123!"),
-        oauth_provider="local",
-        oauth_id=None,
         role="member",
         status="active",
     )
@@ -182,3 +178,4 @@ async def test_transfer_package_not_found(client, user_a):
         headers=_auth_header(user_a),
     )
     assert resp.status_code == 404
+

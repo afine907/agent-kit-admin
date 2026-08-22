@@ -208,9 +208,6 @@ export default function AdminUsers() {
                   <td className="px-6 py-4">{getRoleBadge(user.role)}</td>
                   <td className="px-6 py-4">{getStatusBadge(user.status)}</td>
                   <td className="px-6 py-4 text-sm text-muted-foreground">
-                    {user.oauth_provider === 'local' ? t('users.local') : user.oauth_provider}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-muted-foreground">
                     {user.created_at ? new Date(user.created_at).toLocaleDateString(locale) : '-'}
                   </td>
                   <td className="px-6 py-4">
@@ -298,3 +295,5 @@ export default function AdminUsers() {
     </div>
   );
 }
+
+

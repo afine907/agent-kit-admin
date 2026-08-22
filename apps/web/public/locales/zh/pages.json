@@ -18,16 +18,9 @@
     "registerBtn": "注册",
     "noAccount": "没有账号？",
     "hasAccount": "已有账号？",
-    "or": "或",
-    "oauthLogin": "使用 {{provider}} 登录",
     "loginFailed": "登录失败",
     "registerFailed": "注册失败",
     "footer": "登录即表示您同意我们的服务条款和隐私政策",
-    "providers": {
-      "wechat_work": "企业微信",
-      "feishu": "飞书",
-      "dingtalk": "钉钉"
-    },
     "registerTitle": "注册账号"
   },
   "home": {

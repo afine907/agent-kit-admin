@@ -35,8 +35,6 @@ async def create_admin(email: str, password: str, username: str = "admin"):
                 email=email,
                 display_name="Super Admin",
                 password_hash=hash_password(password),
-                oauth_provider="local",
-                oauth_id=None,
                 role="super_admin",
                 status="active",
             )
@@ -82,3 +80,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+

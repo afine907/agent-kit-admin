@@ -5,44 +5,6 @@ from httpx import AsyncClient
 from app.models.user import User
 
 
-class TestOAuth:
-    """OAuth 认证测试"""
-
-    @pytest.mark.asyncio
-    async def test_oauth_redirect_wechat_work(self, client: AsyncClient):
-        """测试企业微信 OAuth 跳转（未配置时返回 500）"""
-        response = await client.get(
-            "/api/v1/auth/oauth/wechat_work",
-            follow_redirects=False,
-        )
-        # 未配置 OAuth 时返回 500，已配置时返回 302
-        assert response.status_code in [302, 500]
-
-    @pytest.mark.asyncio
-    async def test_oauth_redirect_feishu(self, client: AsyncClient):
-        """测试飞书 OAuth 跳转（未配置时返回 500）"""
-        response = await client.get(
-            "/api/v1/auth/oauth/feishu",
-            follow_redirects=False,
-        )
-        assert response.status_code in [302, 500]
-
-    @pytest.mark.asyncio
-    async def test_oauth_redirect_dingtalk(self, client: AsyncClient):
-        """测试钉钉 OAuth 跳转（未配置时返回 500）"""
-        response = await client.get(
-            "/api/v1/auth/oauth/dingtalk",
-            follow_redirects=False,
-        )
-        assert response.status_code in [302, 500]
-
-    @pytest.mark.asyncio
-    async def test_oauth_invalid_provider(self, client: AsyncClient):
-        """测试无效的 OAuth 提供商"""
-        response = await client.get("/api/v1/auth/oauth/invalid")
-        assert response.status_code in [400, 404, 422]
-
-
 class TestGetMe:
     """获取当前用户信息测试"""
 
@@ -187,3 +149,4 @@ class TestDevLogin:
         )
         assert me_response.status_code == 200
         assert me_response.json()["role"] == "admin"
+

@@ -32,7 +32,6 @@ class ErrorCodes:
     AUTH_REQUIRED = 20001
     AUTH_INVALID_TOKEN = 20001  # Token 无效或过期统一用 20001
     AUTH_EXPIRED_TOKEN = 20001
-    AUTH_OAUTH_FAILED = 20001
     AUTH_FORBIDDEN = 20002
 
     # 用户错误

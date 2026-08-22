@@ -45,8 +45,7 @@ class TestLocalRegister:
         user = result.scalar_one_or_none()
         assert user is not None
         assert user.email == "dbuser@example.com"
-        assert user.password_hash is not None
-        assert user.oauth_provider == "local"
+        assert user.password_hash is not None
         assert user.role == "member"
         assert user.status == "active"
 
@@ -318,3 +317,5 @@ class TestLogout:
         """未认证登出应返回 401"""
         response = await client.post("/api/v1/auth/logout")
         assert response.status_code == 401
+
+

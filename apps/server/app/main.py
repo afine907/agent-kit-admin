@@ -170,11 +170,9 @@ async def root():
 
 @app.get("/api/v1/config")
 async def get_config():
-    """获取前端配置 - 包含 OAuth 提供商信息"""
+    """获取前端配置"""
     return {
-        "data": {
-            "oauth_provider": settings.OAUTH_PROVIDER,
-        }
+        "data": {}
     }
 
 

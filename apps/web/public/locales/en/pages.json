@@ -18,16 +18,9 @@
     "registerBtn": "Sign Up",
     "noAccount": "Don't have an account?",
     "hasAccount": "Already have an account?",
-    "or": "or",
-    "oauthLogin": "Sign in with {{provider}}",
     "loginFailed": "Login failed",
     "registerFailed": "Registration failed",
     "footer": "By signing in, you agree to our Terms of Service and Privacy Policy",
-    "providers": {
-      "wechat_work": "WeChat Work",
-      "feishu": "Feishu",
-      "dingtalk": "DingTalk"
-    },
     "registerTitle": "Create account"
   },
   "home": {

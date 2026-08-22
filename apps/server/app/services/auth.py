@@ -1,10 +1,8 @@
-"""认证服务 - OAuth + JWT + 本地认证"""
+"""认证服务 - JWT + 本地认证"""
 
 import logging
-import secrets
 from datetime import datetime, timedelta, timezone
 
-import httpx
 from cachetools import TTLCache
 from jose import jwt, JWTError
 from sqlalchemy import select
@@ -35,7 +33,7 @@ _login_failures: TTLCache[str, dict] = TTLCache(
     ttl=_LOGIN_LOCKOUT_MINUTES * 60,  # 自动过期，防止无限增长
 )
 
-logger.warning("认证服务使用内存存储（登录限制/OAuth state/Token 黑名单），多实例部署时请改用 Redis")
+logger.warning("认证服务使用内存存储（登录限制/Token 黑名单），多实例部署时请改用 Redis")
 
 
 class UserSnapshot:
@@ -45,7 +43,7 @@ class UserSnapshot:
     仅包含认证和权限检查所需的字段。
     """
 
-    __slots__ = ("id", "username", "email", "display_name", "avatar_url", "oauth_provider", "role", "status")
+    __slots__ = ("id", "username", "email", "display_name", "avatar_url", "role", "status")
 
     def __init__(
         self,
@@ -54,7 +52,6 @@ class UserSnapshot:
         email: str | None = None,
         display_name: str | None = None,
         avatar_url: str | None = None,
-        oauth_provider: str = "local",
         role: str = "member",
         status: str = "active",
     ):
@@ -63,16 +60,8 @@ class UserSnapshot:
         self.email = email
         self.display_name = display_name
         self.avatar_url = avatar_url
-        self.oauth_provider = oauth_provider
         self.role = role
         self.status = status
-
-
-# OAuth state 存储 - 用于防止 CSRF 攻击
-# 格式: {state_token: {"provider": str, "expires": datetime}}
-# 生产环境应使用 Redis 等分布式存储
-_oauth_state_store: dict[str, dict] = {}
-_OAUTH_STATE_TTL_MINUTES = 10  # state 有效期 10 分钟
 
 
 class AuthService:
@@ -90,7 +79,6 @@ class AuthService:
             "email": user.email,
             "display_name": user.display_name,
             "avatar_url": user.avatar_url,
-            "oauth_provider": user.oauth_provider,
             "role": user.role,
             "status": user.status,
         }
@@ -172,7 +160,6 @@ class AuthService:
             email=data.get("email"),
             display_name=data.get("display_name"),
             avatar_url=data.get("avatar_url"),
-            oauth_provider=data.get("oauth_provider"),
             role=data.get("role", "member"),
             status=data.get("status", "active"),
         )
@@ -339,8 +326,6 @@ class AuthService:
             email=email,
             display_name=display_name or username,
             password_hash=hash_password(password),
-            oauth_provider="local",
-            oauth_id=None,
             role="member",
             status="active",
         )
@@ -407,8 +392,6 @@ class AuthService:
             email=email,
             display_name=display_name or final_username,
             password_hash=hash_password(password),
-            oauth_provider="local",
-            oauth_id=None,
             role="member",
             status="active",
         )
@@ -571,373 +554,8 @@ class AuthService:
         user = User(
             username=username,
             display_name=display_name,
-            oauth_provider="dev",
-            oauth_id=f"dev_{username}",
+            password_hash=hash_password("dev_password_not_usable"),
             role=role or "member",
-        )
-        self.db.add(user)
-        await self.db.commit()
-        await self.db.refresh(user)
-        return user
-
-    # ============================================
-    # OAuth
-    # ============================================
-
-    def get_oauth_url(self, provider: str) -> str:
-        """获取 OAuth 授权 URL"""
-        # 使用配置的 APP_BASE_URL 构建回调地址
-        base_url = settings.APP_BASE_URL.rstrip("/")
-
-        # 生成随机 state token 用于防止 CSRF 攻击
-        state_token = secrets.token_urlsafe(32)
-        _oauth_state_store[state_token] = {
-            "provider": provider,
-            "expires": datetime.now(timezone.utc) + timedelta(minutes=_OAUTH_STATE_TTL_MINUTES),
-        }
-
-        # 清理过期的 state
-        self._cleanup_expired_states()
-
-        if provider == "wechat_work":
-            if not settings.WECHAT_WORK_CORP_ID:
-                raise AppError(
-                    code=ErrorCodes.AUTH_OAUTH_FAILED, message="WeChat Work is not configured", status_code=500
-                )
-            return (
-                f"https://open.work.weixin.qq.com/wwopen/sso/qrConnect"
-                f"?appid={settings.WECHAT_WORK_CORP_ID}"
-                f"&agentid={settings.WECHAT_WORK_AGENT_ID}"
-                f"&redirect_uri={base_url}/api/v1/auth/oauth/wechat_work/callback"
-                f"&state={state_token}"
-            )
-        elif provider == "feishu":
-            if not settings.FEISHU_APP_ID:
-                raise AppError(code=ErrorCodes.AUTH_OAUTH_FAILED, message="Feishu is not configured", status_code=500)
-            return (
-                f"https://open.feishu.cn/open-apis/authen/v1/authorize"
-                f"?app_id={settings.FEISHU_APP_ID}"
-                f"&redirect_uri={base_url}/api/v1/auth/oauth/feishu/callback"
-                f"&state={state_token}"
-            )
-        elif provider == "dingtalk":
-            if not settings.DINGTALK_APP_KEY:
-                raise AppError(code=ErrorCodes.AUTH_OAUTH_FAILED, message="DingTalk is not configured", status_code=500)
-            return (
-                f"https://login.dingtalk.com/oauth2/auth"
-                f"?client_id={settings.DINGTALK_APP_KEY}"
-                f"&redirect_uri={base_url}/api/v1/auth/oauth/dingtalk/callback"
-                f"&response_type=code"
-                f"&scope=openid"
-                f"&state={state_token}"
-            )
-        else:
-            raise AppError(
-                code=ErrorCodes.AUTH_OAUTH_FAILED, message=f"Unsupported provider: {provider}", status_code=400
-            )
-
-    def _cleanup_expired_states(self) -> None:
-        """清理过期的 OAuth state"""
-        now = datetime.now(timezone.utc)
-        expired_keys = [key for key, value in _oauth_state_store.items() if value["expires"] < now]
-        for key in expired_keys:
-            del _oauth_state_store[key]
-
-    def _verify_oauth_state(self, state: str | None, provider: str) -> None:
-        """验证 OAuth state token
-
-        使用 dict.pop() 原子操作获取并删除 state，防止并发请求的竞态条件。
-        两个并发请求同时通过 CSRF 防护的风险被消除，因为 pop() 是原子的。
-        """
-        if not state:
-            raise AppError(
-                code=ErrorCodes.AUTH_OAUTH_FAILED,
-                message="Missing OAuth state parameter",
-                status_code=400,
-            )
-
-        # 原子操作: 获取并删除 state，防止竞态条件
-        # pop() 确保同一 state 只能被一个请求成功获取
-        state_data = _oauth_state_store.pop(state, None)
-        if not state_data:
-            raise AppError(
-                code=ErrorCodes.AUTH_OAUTH_FAILED,
-                message="Invalid or expired OAuth state",
-                status_code=400,
-            )
-
-        # 检查是否过期
-        if state_data["expires"] < datetime.now(timezone.utc):
-            raise AppError(
-                code=ErrorCodes.AUTH_OAUTH_FAILED,
-                message="OAuth state has expired",
-                status_code=400,
-            )
-
-        # 验证 provider
-        if state_data["provider"] != provider:
-            raise AppError(
-                code=ErrorCodes.AUTH_OAUTH_FAILED,
-                message="OAuth state does not match provider",
-                status_code=400,
-            )
-
-    async def handle_oauth_callback(self, provider: str, code: str, state: str | None = None) -> dict:
-        """处理 OAuth 回调，返回 token 和用户信息"""
-        # 验证 OAuth state 以防止 CSRF 攻击
-        self._verify_oauth_state(state, provider)
-
-        # 获取 OAuth 用户信息
-        oauth_user = await self._get_oauth_user(provider, code)
-
-        # 查找或创建用户
-        user = await self._find_or_create_user(
-            provider=provider,
-            oauth_id=oauth_user["oauth_id"],
-            username=oauth_user["username"],
-            display_name=oauth_user.get("display_name"),
-            avatar_url=oauth_user.get("avatar_url"),
-            email=oauth_user.get("email"),
-        )
-
-        # 生成 JWT Token
-        token = self.create_token(str(user.id), str(user.username))
-
-        return {
-            "token": token,
-            "user": {
-                "id": str(user.id),
-                "username": user.username,
-                "display_name": user.display_name,
-                "avatar_url": user.avatar_url,
-            },
-        }
-
-    async def _get_oauth_user(self, provider: str, code: str) -> dict:
-        """通过 OAuth code 获取用户信息"""
-        async with httpx.AsyncClient() as client:
-            if provider == "wechat_work":
-                return await self._wechat_work_callback(client, code)
-            elif provider == "feishu":
-                return await self._feishu_callback(client, code)
-            elif provider == "dingtalk":
-                return await self._dingtalk_callback(client, code)
-            else:
-                raise AppError(
-                    code=ErrorCodes.AUTH_OAUTH_FAILED, message=f"Unsupported provider: {provider}", status_code=400
-                )
-
-    async def _wechat_work_callback(self, client: httpx.AsyncClient, code: str) -> dict:
-        """企业微信 OAuth 回调处理"""
-        # 获取 access_token
-        token_resp = await client.get(
-            "https://qyapi.weixin.qq.com/cgi-bin/gettoken",
-            params={
-                "corpid": settings.WECHAT_WORK_CORP_ID,
-                "corpsecret": settings.WECHAT_WORK_SECRET,
-            },
-        )
-        if token_resp.status_code != 200:
-            raise AppError(
-                code=ErrorCodes.AUTH_OAUTH_FAILED,
-                message=f"WeChat Work failed to get access_token: HTTP {token_resp.status_code}",
-                status_code=502,
-            )
-        token_data = token_resp.json()
-        if token_data.get("errcode", 0) != 0:
-            raise AppError(
-                code=ErrorCodes.AUTH_OAUTH_FAILED,
-                message=f"WeChat Work failed to get access_token: {token_data.get('errmsg', 'unknown error')}",
-                status_code=502,
-            )
-        access_token = token_data.get("access_token")
-
-        # 获取用户信息
-        user_resp = await client.get(
-            "https://qyapi.weixin.qq.com/cgi-bin/user/getuserinfo",
-            params={"access_token": access_token, "code": code},
-        )
-        if user_resp.status_code != 200:
-            raise AppError(
-                code=ErrorCodes.AUTH_OAUTH_FAILED,
-                message=f"WeChat Work failed to get user info: HTTP {user_resp.status_code}",
-                status_code=502,
-            )
-        user_data = user_resp.json()
-        if user_data.get("errcode", 0) != 0:
-            raise AppError(
-                code=ErrorCodes.AUTH_OAUTH_FAILED,
-                message=f"WeChat Work failed to get user info: {user_data.get('errmsg', 'unknown error')}",
-                status_code=502,
-            )
-
-        return {
-            "oauth_id": user_data.get("userid", ""),
-            "username": user_data.get("userid", ""),
-            "display_name": user_data.get("name", ""),
-            "avatar_url": user_data.get("avatar", ""),
-        }
-
-    async def _feishu_callback(self, client: httpx.AsyncClient, code: str) -> dict:
-        """飞书 OAuth 回调处理"""
-        # 先获取 tenant_access_token
-        tenant_resp = await client.post(
-            "https://open.feishu.cn/open-apis/auth/v3/app_access_token/internal",
-            json={
-                "app_id": settings.FEISHU_APP_ID,
-                "app_secret": settings.FEISHU_APP_SECRET,
-            },
-        )
-        if tenant_resp.status_code != 200:
-            raise AppError(
-                code=ErrorCodes.AUTH_OAUTH_FAILED,
-                message=f"Feishu failed to get tenant_access_token: HTTP {tenant_resp.status_code}",
-                status_code=502,
-            )
-        tenant_data = tenant_resp.json()
-        tenant_token = tenant_data.get("app_access_token")
-        if not tenant_token:
-            raise AppError(
-                code=ErrorCodes.AUTH_OAUTH_FAILED,
-                message=f"Feishu failed to get tenant_access_token: {tenant_data.get('msg', 'unknown error')}",
-                status_code=502,
-            )
-
-        # 使用 tenant_access_token 获取用户 access_token
-        token_resp = await client.post(
-            "https://open.feishu.cn/open-apis/authen/v1/oidc/access_token",
-            json={"grant_type": "authorization_code", "code": code},
-            headers={"Authorization": f"Bearer {tenant_token}"},
-        )
-        if token_resp.status_code != 200:
-            raise AppError(
-                code=ErrorCodes.AUTH_OAUTH_FAILED,
-                message=f"Feishu failed to get access_token: HTTP {token_resp.status_code}",
-                status_code=502,
-            )
-        token_data = token_resp.json()
-        if token_data.get("code", 0) != 0:
-            raise AppError(
-                code=ErrorCodes.AUTH_OAUTH_FAILED,
-                message=f"Feishu failed to get access_token: {token_data.get('msg', 'unknown error')}",
-                status_code=502,
-            )
-        access_token = token_data.get("data", {}).get("access_token")
-
-        # 获取用户信息
-        user_resp = await client.get(
-            "https://open.feishu.cn/open-apis/authen/v1/user_info",
-            headers={"Authorization": f"Bearer {access_token}"},
-        )
-        if user_resp.status_code != 200:
-            raise AppError(
-                code=ErrorCodes.AUTH_OAUTH_FAILED,
-                message=f"Feishu failed to get user info: HTTP {user_resp.status_code}",
-                status_code=502,
-            )
-        user_resp_data = user_resp.json()
-        if user_resp_data.get("code", 0) != 0:
-            raise AppError(
-                code=ErrorCodes.AUTH_OAUTH_FAILED,
-                message=f"Feishu failed to get user info: {user_resp_data.get('msg', 'unknown error')}",
-                status_code=502,
-            )
-        user_data = user_resp_data.get("data", {})
-
-        return {
-            "oauth_id": user_data.get("open_id", ""),
-            "username": user_data.get("name", ""),
-            "display_name": user_data.get("name", ""),
-            "avatar_url": user_data.get("avatar_url", ""),
-            "email": user_data.get("email", ""),
-        }
-
-    async def _dingtalk_callback(self, client: httpx.AsyncClient, code: str) -> dict:
-        """钉钉 OAuth 回调处理"""
-        # 获取 access_token
-        token_resp = await client.post(
-            "https://api.dingtalk.com/v1.0/oauth2/userAccessToken",
-            json={
-                "clientId": settings.DINGTALK_APP_KEY,
-                "clientSecret": settings.DINGTALK_APP_SECRET,
-                "code": code,
-                "grantType": "authorization_code",
-            },
-        )
-        if token_resp.status_code != 200:
-            raise AppError(
-                code=ErrorCodes.AUTH_OAUTH_FAILED,
-                message=f"DingTalk failed to get access_token: HTTP {token_resp.status_code}",
-                status_code=502,
-            )
-        token_data = token_resp.json()
-        access_token = token_data.get("accessToken")
-        if not access_token:
-            raise AppError(
-                code=ErrorCodes.AUTH_OAUTH_FAILED,
-                message=f"DingTalk failed to get access_token: {token_data.get('message', 'accessToken not returned')}",
-                status_code=502,
-            )
-
-        # 获取用户信息
-        user_resp = await client.get(
-            "https://api.dingtalk.com/v1.0/contact/users/me",
-            headers={"x-acs-dingtalk-access-token": access_token},
-        )
-        if user_resp.status_code != 200:
-            raise AppError(
-                code=ErrorCodes.AUTH_OAUTH_FAILED,
-                message=f"DingTalk failed to get user info: HTTP {user_resp.status_code}",
-                status_code=502,
-            )
-        user_data = user_resp.json()
-
-        return {
-            "oauth_id": user_data.get("openId", ""),
-            "username": user_data.get("nick", ""),
-            "display_name": user_data.get("nick", ""),
-            "avatar_url": user_data.get("avatarUrl", ""),
-        }
-
-    async def _find_or_create_user(
-        self,
-        provider: str,
-        oauth_id: str,
-        username: str,
-        display_name: str | None = None,
-        avatar_url: str | None = None,
-        email: str | None = None,
-    ) -> User:
-        """查找或创建用户"""
-        # 查找已有用户
-        result = await self.db.execute(
-            select(User).where(
-                User.oauth_provider == provider,
-                User.oauth_id == oauth_id,
-            )
-        )
-        user = result.scalar_one_or_none()
-
-        if user:
-            # 更新用户信息
-            if display_name:
-                user.display_name = display_name  # type: ignore[assignment]
-            if avatar_url:
-                user.avatar_url = avatar_url  # type: ignore[assignment]
-            if email:
-                user.email = email  # type: ignore[assignment]
-            await self.db.commit()
-            await self.db.refresh(user)
-            return user
-
-        # 创建新用户
-        user = User(
-            username=username,
-            display_name=display_name,
-            avatar_url=avatar_url,
-            email=email,
-            oauth_provider=provider,
-            oauth_id=oauth_id,
         )
         self.db.add(user)
         await self.db.commit()

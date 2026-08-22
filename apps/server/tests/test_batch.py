@@ -14,8 +14,6 @@ async def owner(db):
         email="batch_owner@example.com",
         display_name="Batch Owner",
         password_hash=hash_password("OwnerPass123!"),
-        oauth_provider="local",
-        oauth_id=None,
         role="member",
         status="active",
     )
@@ -31,8 +29,6 @@ async def other_user(db):
         email="batch_other@example.com",
         display_name="Batch Other",
         password_hash=hash_password("OtherPass123!"),
-        oauth_provider="local",
-        oauth_id=None,
         role="member",
         status="active",
     )
@@ -190,3 +186,4 @@ async def test_batch_deprecate_permission_denied(client, packages, other_user):
     data = resp.json()
     assert len(data["failed"]) == 1
     assert data["failed"][0]["error"] == "Permission denied"
+

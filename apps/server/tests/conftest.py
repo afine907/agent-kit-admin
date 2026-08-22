@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sess
 from app.main import app
 from app.database import Base, get_db
 from app.models.user import User
+from app.core.security import hash_password
 from app.middleware.rate_limit import _rate_limiter
 from app.models.package import Package
 from app.models.version import Version
@@ -105,14 +106,15 @@ def _generate_token(user: User) -> str:
 
 @pytest.fixture
 async def test_user(db: AsyncSession):
-    """创建测试用户 (OAuth 用户)"""
+    from app.core.security import hash_password
+
+    """创建测试用户"""
     user = User(
         username="testuser",
         email="test@example.com",
         display_name="Test User",
         avatar_url="https://example.com/avatar.png",
-        oauth_provider="wechat_work",
-        oauth_id="test-oauth-id-001",
+        password_hash=hash_password("TestPass123!"),
         role="member",
         status="active",
     )
@@ -132,8 +134,6 @@ async def local_user(db: AsyncSession):
         email="local@example.com",
         display_name="Local User",
         password_hash=hash_password("SecurePass123!"),
-        oauth_provider="local",
-        oauth_id=None,
         role="member",
         status="active",
     )
@@ -153,8 +153,6 @@ async def admin_user(db: AsyncSession):
         email="admin@example.com",
         display_name="Admin User",
         password_hash=hash_password("AdminPass123!"),
-        oauth_provider="local",
-        oauth_id=None,
         role="admin",
         status="active",
     )
@@ -174,8 +172,6 @@ async def super_admin_user(db: AsyncSession):
         email="superadmin@example.com",
         display_name="Super Admin",
         password_hash=hash_password("SuperAdminPass123!"),
-        oauth_provider="local",
-        oauth_id=None,
         role="super_admin",
         status="active",
     )
@@ -195,8 +191,6 @@ async def suspended_user(db: AsyncSession):
         email="suspended@example.com",
         display_name="Suspended User",
         password_hash=hash_password("SuspendedPass123!"),
-        oauth_provider="local",
-        oauth_id=None,
         role="member",
         status="suspended",
     )
@@ -213,8 +207,7 @@ async def another_user(db: AsyncSession):
         username="anotheruser",
         email="another@example.com",
         display_name="Another User",
-        oauth_provider="wechat_work",
-        oauth_id="test-oauth-id-002",
+        password_hash=hash_password("AnotherPass123!"),
         role="member",
         status="active",
     )
@@ -526,3 +519,10 @@ def disable_rate_limit(request):
     _rate_limiter.reset()
     with patch.object(_rate_limiter, "check", return_value=(True, 0)):
         yield
+
+
+
+
+
+
+
