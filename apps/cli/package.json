@@ -1,6 +1,6 @@
 {
   "name": "akit",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "type": "module",
   "description": "Agent Kit Admin CLI - AI Agent 包管理工具",
   "main": "dist/index.js",
